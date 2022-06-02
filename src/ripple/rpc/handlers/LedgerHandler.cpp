@@ -23,6 +23,7 @@
 #include <ripple/json/Object.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/protocol/nftPageMask.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/Role.h>
@@ -228,6 +229,49 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                             lb->key().data(), lb->key().size());
                     if (ub != desired->stateMap().end())
                         obj->set_successor(ub->key().data(), ub->key().size());
+                    if (objectType == ltNFTOKEN_PAGE)
+                    {
+                        std::array<std::uint8_t, 32> buf{};
+                        std::memcpy(buf.data(), k.data(), 20);
+                        auto nftPageMin = uint256{buf};
+                        if (!inBase && inDesired)
+                        {
+                            auto newFirst =
+                                desired->stateMap().upper_bound(nftPageMin);
+                            if (newFirst != desired->stateMap().end() &&
+                                newFirst->key() == k)
+                            {
+                                auto succ = response.add_book_successors();
+                                succ->set_book_base(
+                                    nftPageMin.data(), nftPageMin.size());
+                                succ->set_first_book(k.data(), k.size());
+                            }
+                        }
+                        if (inBase && !inDesired)
+                        {
+                            auto oldFirst =
+                                base->stateMap().upper_bound(nftPageMin);
+                            if (oldFirst != base->stateMap().end() &&
+                                oldFirst->key() == k)
+                            {
+                                auto newFirst =
+                                    desired->stateMap().upper_bound(nftPageMin);
+                                uint256 nftPageMax = nft::pageMask;
+                                std::memcpy(
+                                    nftPageMax.data(), nftPageMin.data(), 20);
+                                if (newFirst != desired->stateMap().end() &&
+                                    newFirst->key() < nftPageMax)
+                                {
+                                    auto succ = response.add_book_successors();
+                                    succ->set_book_base(
+                                        nftPageMin.data(), nftPageMin.size());
+                                    succ->set_first_book(
+                                        newFirst->key().data(),
+                                        newFirst->key().size());
+                                }
+                            }
+                        }
+                    }
                     if (objectType == ltDIR_NODE)
                     {
                         auto sle = std::make_shared<SLE>(SerialIter{blob}, k);
