@@ -76,10 +76,10 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
             }
         }
     }
-
+    JLOG(ctx.j.info()) << __func__ << "TESTTttttt PRECLAIMMMMMM Teettetetadfasafdsafsd";
     // If there are too many offers, then burning the token would produce too
     // much metadata.  Disallow burning a token with too many offers.
-    return nft::notTooManyOffers(ctx.view, ctx.tx[sfNFTokenID]);
+    return tesSUCCESS;
 }
 
 TER
@@ -104,9 +104,14 @@ NFTokenBurn::doApply()
         view().update(issuer);
     }
 
-    // Optimized deletion of all offers.
-    nft::removeAllTokenOffers(view(), keylet::nft_sells(ctx_.tx[sfNFTokenID]));
-    nft::removeAllTokenOffers(view(), keylet::nft_buys(ctx_.tx[sfNFTokenID]));
+    auto const deletedBuyOffers = nft::removeSpecifiedTokenOffers(view(), keylet::nft_buys(ctx_.tx[sfNFTokenID]), maxDeletableTokenOfferEntries);
+    if (maxDeletableTokenOfferEntries - deletedBuyOffers > 0)
+    {
+        nft::removeSpecifiedTokenOffers(view(), keylet::nft_sells(ctx_.tx[sfNFTokenID]), maxDeletableTokenOfferEntries - deletedBuyOffers);
+    } 
+    // // Optimized deletion of all offers.
+    // nft::removeAllTokenOffers(view(), keylet::nft_sells(ctx_.tx[sfNFTokenID]));
+    // nft::removeAllTokenOffers(view(), keylet::nft_buys(ctx_.tx[sfNFTokenID]));
 
     return tesSUCCESS;
 }

@@ -523,6 +523,7 @@ findTokenAndPage(
 void
 removeAllTokenOffers(ApplyView& view, Keylet const& directory)
 {
+    
     view.dirDelete(directory, [&view](uint256 const& id) {
         auto offer = view.peek(Keylet{ltNFTOKEN_OFFER, id});
 
@@ -549,6 +550,39 @@ removeAllTokenOffers(ApplyView& view, Keylet const& directory)
         view.erase(offer);
     });
 }
+
+
+std::size_t
+removeSpecifiedTokenOffers(ApplyView& view, Keylet const& directory, std::uint32_t maxDeletableOffers)
+{
+    std::optional<std::uint64_t> pi;
+    std::vector<uint256> offers;
+    do
+    {
+        auto const page = view.peek(keylet::page(directory, pi.value_or(0)));
+
+        if(!page)
+            break;
+
+        for (auto const& id : page->getFieldV256(sfIndexes))
+        {
+
+            offers.push_back(id);
+            if (maxDeletableOffers == offers.size())
+                break;
+        }
+        pi = (*page)[~sfIndexNext];
+    } while (pi && maxDeletableOffers != offers.size());
+
+    for (auto const& id : offers)
+    {
+        if (auto const offer = view.peek(keylet::nftoffer(id)))
+        {
+            deleteTokenOffer(view, offer);
+        }
+    }
+    return offers.size();
+} 
 
 TER
 notTooManyOffers(ReadView const& view, uint256 const& nftokenID)
