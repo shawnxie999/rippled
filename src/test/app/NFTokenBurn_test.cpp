@@ -572,7 +572,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
         std::vector<uint256> offerIndexes;
         offerIndexes.reserve(maxTokenOfferCancelCount - 1);
 
-        // Create 'maxTokenOfferCancelCount - 1' number of buy offers
+        // Create 499 buy-offers
         for (uint32_t i = 0; i < maxTokenOfferCancelCount - 1; ++i)
         {
             Account const acct(std::string("acct") + std::to_string(i));
@@ -607,7 +607,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
         env(token::burn(alice, nftokenID));
         env.close();
 
-        // Burning the token should remove all 499 offers from the ledger.
+        // Burning the token should remove all 499 buy-offers from the ledger.
         for (uint256 const& offerIndex : offerIndexes)
         {
             BEAST_EXPECT(!env.le(keylet::nftoffer(offerIndex)));  
