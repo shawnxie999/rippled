@@ -498,6 +498,8 @@ class NFTokenBurn_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice);
         env.close();
 
+        // We burn the token when it has 501 buy offers.
+        // Only 500 offers should be removed, and one offer is left over.
         uint256 const nftokenID =
             token::getNextID(env, alice, 0, tfTransferable);
         env(token::mint(alice, 0),
@@ -525,7 +527,6 @@ class NFTokenBurn_test : public beast::unit_test::suite
             BEAST_EXPECT(env.le(keylet::nftoffer(offerIndex)));
         }
 
-
         env(token::burn(alice, nftokenID));
         env.close();
 
@@ -540,11 +541,8 @@ class NFTokenBurn_test : public beast::unit_test::suite
         BEAST_EXPECT(offerIndexes.size() == maxTokenOfferCancelCount + 1);
         BEAST_EXPECT(offerDeletedCount == maxTokenOfferCancelCount);
     
-
-        // alice should have ownerCounts of one and becky should have ownerCounts of zero.
+        // alice should have ownerCounts of zero.
         BEAST_EXPECT(ownerCount(env, alice) == 0);
-
-
     }
 
     void
@@ -561,7 +559,9 @@ class NFTokenBurn_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice);
         env.close();
 
-
+        // We burn the token that has 499 buy-offers and 2 sell-offers.
+        // 499 buy-offers, and, 1 sell-offer are removed.
+        // One sell-offer will be left over.
         uint256 const nftokenID =
             token::getNextID(env, alice, 0, tfTransferable);
         env(token::mint(alice, 0),
@@ -607,18 +607,18 @@ class NFTokenBurn_test : public beast::unit_test::suite
         env(token::burn(alice, nftokenID));
         env.close();
 
-        // Burning the token should remove all 'maxTokenOfferCancelCount - 1' offers from the ledger.
+        // Burning the token should remove all 499 offers from the ledger.
         for (uint256 const& offerIndex : offerIndexes)
         {
             BEAST_EXPECT(!env.le(keylet::nftoffer(offerIndex)));  
         }
 
-        // Burning the token should remove the maxTokenOfferCancelCount(th) offer that alice created
+        // Burning the token should remove the 500th offer that alice created
         // And leave out any additional offers
         BEAST_EXPECT(!env.le(keylet::nftoffer(aliceOfferIndex1)));
         BEAST_EXPECT(env.le(keylet::nftoffer(aliceOfferIndex2)));
         
-        // alice should have ownerCounts of one and becky should have ownerCounts of zero.
+        // alice should have ownerCounts of one.
         BEAST_EXPECT(ownerCount(env, alice) == 1);
 
     }
