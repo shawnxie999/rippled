@@ -76,7 +76,6 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
             }
         }
     }
-    JLOG(ctx.j.info()) << __func__ << "TESTTttttt PRECLAIMMMMMM Teettetetadfasafdsafsd";
     // If there are too many offers, then burning the token would produce too
     // much metadata.  Disallow burning a token with too many offers.
     return tesSUCCESS;
