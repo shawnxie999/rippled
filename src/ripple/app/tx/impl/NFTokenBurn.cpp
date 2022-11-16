@@ -102,7 +102,7 @@ NFTokenBurn::doApply()
         view().update(issuer);
     }
 
-    // Delete up to 500 offers, and prefers buy offers first
+    // Delete up to 500 offers, but prefers buy offers first
     auto const deletedBuyOffers = nft::removeTokenOffersWithLimit(view(), keylet::nft_buys(ctx_.tx[sfNFTokenID]), maxDeletableTokenOfferEntries);
     if (maxDeletableTokenOfferEntries - deletedBuyOffers > 0)
     {
