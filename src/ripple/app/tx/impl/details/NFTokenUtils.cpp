@@ -523,7 +523,6 @@ findTokenAndPage(
 void
 removeAllTokenOffers(ApplyView& view, Keylet const& directory)
 {
-    
     view.dirDelete(directory, [&view](uint256 const& id) {
         auto offer = view.peek(Keylet{ltNFTOKEN_OFFER, id});
 
