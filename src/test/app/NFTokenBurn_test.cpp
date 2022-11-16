@@ -545,7 +545,6 @@ class NFTokenBurn_test : public beast::unit_test::suite
         {
             if(!env.le(keylet::nftoffer(offerIndex)))
                 offerDeletedCount++;
-     
         }
 
         BEAST_EXPECT(offerIndexes.size() == maxTokenOfferCancelCount + 1);
