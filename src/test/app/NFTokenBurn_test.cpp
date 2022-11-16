@@ -566,14 +566,14 @@ class NFTokenBurn_test : public beast::unit_test::suite
 
         Env env{*this, features};
 
-        // We create 499 buy offers and 2 sell offers.
-        // When the token is burned, all of the 499 buy offers should be removed, and only one of the sell offers is removed.
-        // In total, 500 offers are removed
         Account const alice("alice");
         env.fund(XRP(1000), alice);
         env.close();
+        
+        // We create 499 buy offers and 2 sell offers.
+        // When the token is burned, all of the 499 buy offers should be removed, and only one of the sell offers is removed.
+        // In total, 500 offers are removed
         std::vector<uint256> offerIndexes;
-
         auto const nftokenID = createNftAndOffers(env, alice, offerIndexes, maxDeletableTokenOfferEntries - 1);
 
         // Verify all offers are present in the ledger.
