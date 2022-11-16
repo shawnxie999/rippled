@@ -58,7 +58,7 @@ void
 removeAllTokenOffers(ApplyView& view, Keylet const& directory);
 
 std::size_t
-removeSpecifiedTokenOffers(ApplyView& view, Keylet const& directory, std::uint32_t maxDeletableOffers);
+removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::uint32_t maxDeletableOffers);
 
 /** Returns tesSUCCESS if NFToken has few enough offers that it can be burned */
 TER

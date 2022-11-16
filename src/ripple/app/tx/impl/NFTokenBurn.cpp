@@ -103,10 +103,10 @@ NFTokenBurn::doApply()
     }
 
     // Delete up to 500 offers, and prefers buy offers first
-    auto const deletedBuyOffers = nft::removeSpecifiedTokenOffers(view(), keylet::nft_buys(ctx_.tx[sfNFTokenID]), maxDeletableTokenOfferEntries);
+    auto const deletedBuyOffers = nft::removeTokenOffersWithLimit(view(), keylet::nft_buys(ctx_.tx[sfNFTokenID]), maxDeletableTokenOfferEntries);
     if (maxDeletableTokenOfferEntries - deletedBuyOffers > 0)
     {
-        nft::removeSpecifiedTokenOffers(view(), keylet::nft_sells(ctx_.tx[sfNFTokenID]), maxDeletableTokenOfferEntries - deletedBuyOffers);
+        nft::removeTokenOffersWithLimit(view(), keylet::nft_sells(ctx_.tx[sfNFTokenID]), maxDeletableTokenOfferEntries - deletedBuyOffers);
     } 
 
     return tesSUCCESS;
