@@ -86,7 +86,6 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
         // much metadata.  Disallow burning a token with too many offers.
         return nft::notTooManyOffers(ctx.view, ctx.tx[sfNFTokenID]);
     }
-    
 }
 
 TER
