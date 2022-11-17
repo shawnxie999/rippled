@@ -127,7 +127,6 @@ NFTokenBurn::doApply()
         nft::removeAllTokenOffers(view(), keylet::nft_buys(ctx_.tx[sfNFTokenID]));
     }
 
-
     return tesSUCCESS;
 }
 
