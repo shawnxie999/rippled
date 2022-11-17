@@ -519,7 +519,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        // Test what happens if an NFT is unburnable when there are 
+        // Test what happens if a NFT is unburnable when there are 
         // more than 500 offers, before fixUnburnableNFToken goes live
         {
             Env env{*this, features - fixUnburnableNFToken};
