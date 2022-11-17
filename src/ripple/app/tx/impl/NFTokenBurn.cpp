@@ -76,6 +76,7 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
             }
         }
     }
+    
     if (ctx.view.rules().enabled(fixUnburnableNFToken))
     { 
         return tesSUCCESS;
