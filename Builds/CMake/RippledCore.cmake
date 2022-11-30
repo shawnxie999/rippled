@@ -648,6 +648,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/impl/ShardVerificationScheduler.cpp
   src/ripple/rpc/impl/Status.cpp
   src/ripple/rpc/impl/TransactionSign.cpp
+  src/ripple/rpc/impl/NFTokenID.cpp
   #[===============================[
      main sources:
        subdir: perflog
