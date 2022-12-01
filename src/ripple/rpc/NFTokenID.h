@@ -52,7 +52,7 @@ void
 insertNFTokenID(
     Json::Value& response,
     RPC::JsonContext const&,
-    std::shared_ptr<STTx const> const&,
+    std::shared_ptr<Transaction> const& transaction,
     TxMeta const&);
 
 

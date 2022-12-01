@@ -58,10 +58,10 @@ void
 insertNFTokenID(
     Json::Value& response,
     RPC::JsonContext const& context,
-    std::shared_ptr<STTx const> const& transaction,
+    std::shared_ptr<Transaction> const& transaction,
     TxMeta const& transactionMeta)
 {
-    if(!canHaveNFTokenID(transaction, transactionMeta))
+    if(!canHaveNFTokenID(transaction->getSTransaction(), transactionMeta))
         return;
 
     auto affectedNodes = transactionMeta.getAsObject().getFieldArray(sfAffectedNodes);

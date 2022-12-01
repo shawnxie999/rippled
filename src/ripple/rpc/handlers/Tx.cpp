@@ -29,7 +29,7 @@
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
-
+#include <ripple/rpc/NFTokenID.h>
 namespace ripple {
 
 // {
@@ -290,71 +290,73 @@ populateJsonResponse(
         else if (auto m = std::get_if<std::shared_ptr<TxMeta>>(&result.meta))
         {
             auto& meta = *m;
-            auto affectedNodes = meta->getAsObject().getFieldArray(sfAffectedNodes);
+           
+            // auto affectedNodes = meta->getAsObject().getFieldArray(sfAffectedNodes);
 
-            std::optional<uint256> newNFTokenID;
-            for(auto & node: affectedNodes){
+            // std::optional<uint256> newNFTokenID;
+            // for(auto & node: affectedNodes){
                  
-                 if(node.getFieldU16(sfLedgerEntryType) == ltNFTOKEN_PAGE && node.isFieldPresent(sfPreviousFields)){
-                    auto const& previousFields = node.getFieldObject(sfPreviousFields);
-                    auto const& finalFields = node.getFieldObject(sfFinalFields);
+            //      if(node.getFieldU16(sfLedgerEntryType) == ltNFTOKEN_PAGE && node.isFieldPresent(sfPreviousFields)){
+            //         auto const& previousFields = node.getFieldObject(sfPreviousFields);
+            //         auto const& finalFields = node.getFieldObject(sfFinalFields);
 
-                    if(!previousFields.isFieldPresent(sfNFTokens) || !finalFields.isFieldPresent(sfNFTokens))
-                        continue;
+            //         if(!previousFields.isFieldPresent(sfNFTokens) || !finalFields.isFieldPresent(sfNFTokens))
+            //             continue;
                     
-                    auto const& prevTokens = previousFields.getFieldArray(sfNFTokens);
-                    std::vector<uint256> prevIDs;
+            //         auto const& prevTokens = previousFields.getFieldArray(sfNFTokens);
+            //         std::vector<uint256> prevIDs;
 
-                    for(auto const& nftoken: prevTokens)
-                        prevIDs.emplace_back(nftoken.getFieldH256(sfNFTokenID));
+            //         for(auto const& nftoken: prevTokens)
+            //             prevIDs.emplace_back(nftoken.getFieldH256(sfNFTokenID));
                     
-                    auto const& finalTokens = finalFields.getFieldArray(sfNFTokens);
-                    std::vector<uint256> finalIDs;
+            //         auto const& finalTokens = finalFields.getFieldArray(sfNFTokens);
+            //         std::vector<uint256> finalIDs;
 
-                    for(auto const& nftoken: finalTokens)
-                        finalIDs.emplace_back(nftoken.getFieldH256(sfNFTokenID));
+            //         for(auto const& nftoken: finalTokens)
+            //             finalIDs.emplace_back(nftoken.getFieldH256(sfNFTokenID));
 
-                    std::vector<uint256> diff;
-                    std::sort(prevIDs.begin(), prevIDs.end());
-                    std::sort(finalIDs.begin(), finalIDs.end());
+            //         std::vector<uint256> diff;
+            //         std::sort(prevIDs.begin(), prevIDs.end());
+            //         std::sort(finalIDs.begin(), finalIDs.end());
                     
-                    std::set_difference(prevIDs.begin(), prevIDs.end(), finalIDs.begin(), finalIDs.end(), std::back_inserter(diff));
-                    if(diff.size() <= 0)
-                        continue;
+            //         std::set_difference(prevIDs.begin(), prevIDs.end(), finalIDs.begin(), finalIDs.end(), std::back_inserter(diff));
+            //         if(diff.size() <= 0)
+            //             continue;
 
-                    newNFTokenID = diff[0];
-                    break;
+            //         newNFTokenID = diff[0];
+            //         break;
 
-                 }
-                 else if( node.getFieldU16(sfLedgerEntryType) == ltNFTOKEN_PAGE && node.isFieldPresent(sfNewFields) ){
-                    auto const& newFields = node.getFieldObject(sfNewFields);
+            //      }
+            //      else if( node.getFieldU16(sfLedgerEntryType) == ltNFTOKEN_PAGE && node.isFieldPresent(sfNewFields) ){
+            //         auto const& newFields = node.getFieldObject(sfNewFields);
 
-                    if(!newFields.isFieldPresent(sfNFTokens))
-                        continue;
+            //         if(!newFields.isFieldPresent(sfNFTokens))
+            //             continue;
                 
-                    auto const& nftokens = newFields.getFieldArray(sfNFTokens);
+            //         auto const& nftokens = newFields.getFieldArray(sfNFTokens);
 
-                    if(nftokens.size() <= 0)
-                        continue;
+            //         if(nftokens.size() <= 0)
+            //             continue;
                
-                    newNFTokenID = nftokens[0].getFieldH256(sfNFTokenID);
-                    break;   
+            //         newNFTokenID = nftokens[0].getFieldH256(sfNFTokenID);
+            //         break;   
                     
-                 }
-            }
-            // for(auto const& node: test2){
-            //     if(node.getFieldU16(sfLedgerEntryType) == ltNFTOKEN_PAGE && node.getField(sfPreviousFields)){
-            //         count<<"hello";
-            //     }
+            //      }
             // }
-            if(newNFTokenID)
-                response[jss::nft_id] = to_string(newNFTokenID.value());
+            // // for(auto const& node: test2){
+            // //     if(node.getFieldU16(sfLedgerEntryType) == ltNFTOKEN_PAGE && node.getField(sfPreviousFields)){
+            // //         count<<"hello";
+            // //     }
+            // // }
+            // if(newNFTokenID)
+            //     response[jss::nft_id] = to_string(newNFTokenID.value());
 
             if (meta)
             {
                 response[jss::meta] = meta->getJson(JsonOptions::none);
                 insertDeliveredAmount(
                     response[jss::meta], context, result.txn, *meta);
+                insertNFTokenID(response, context, result.txn, *meta);
             }
         }       
         response[jss::validated] = result.validated;
