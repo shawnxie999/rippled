@@ -16,7 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
+#include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
@@ -89,7 +89,7 @@ private:
     incLgrSeqForAccDel(
         jtx::Env& env,
         jtx::Account const& acc,
-        std::uint32_t margin = 0.)
+        std::uint32_t margin = 0)
     {
         int const delta = [&]() -> int {
             if (env.seq(acc) + 255 > openLedgerSeq(env))
@@ -961,72 +961,69 @@ public:
             BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
         }
 
-        // {
-        //     env.enableFeature(featureDeletableAccounts);
-        //     env.close();
+        {
+            env.enableFeature(fixNFTokenRemint);
+            env.close();
 
-        //     // Close enough ledgers to be able to delete alice's account.
-        //     incLgrSeqForAccDel(env, alice);
+            // Close enough ledgers to be able to delete alice's account.
+            incLgrSeqForAccDel(env, alice);
 
-        //     // Verify that alice's account root is present.
-        //     Keylet const aliceAcctKey{keylet::account(alice.id())};
-        //     BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
+            // Verify that alice's account root is present.
+            Keylet const aliceAcctKey{keylet::account(alice.id())};
+            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
 
-        //     auto const alicePreDelBal{env.balance(alice)};
-        //     auto const beckyPreDelBal{env.balance(becky)};
+            auto const acctDelFee1{drops(env.current()->fees().increment)};
+            env(acctdelete(alice, becky), fee(acctDelFee1), ter(tecTOO_SOON));
+            env.close();
 
-        //     auto const acctDelFee1{drops(env.current()->fees().increment)};
-        //     env(acctdelete(alice, becky), fee(acctDelFee1), ter(tecTOO_SOON));
-        //     env.close();
+            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
 
-        //     BEAST_EXPECT(env.current()->exists(aliceAcctKey));
+            auto const alicePreDelBal{env.balance(alice)};
+            auto const beckyPreDelBal{env.balance(becky)};
 
-        //     auto const alicePreDelBal{env.balance(alice)};
-        //     auto const beckyPreDelBal{env.balance(becky)};
+            // Verify that alice's account root is still present and alice and
+            // becky both have their XRP.
+            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
+            BEAST_EXPECT(env.balance(alice) == alicePreDelBal);
+            BEAST_EXPECT(env.balance(becky) == beckyPreDelBal);
 
-        //     // Verify that alice's account root is still present and alice and
-        //     // becky both have their XRP.
-        //     BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-        //     BEAST_EXPECT(env.balance(alice) == alicePreDelBal);
-        //     BEAST_EXPECT(env.balance(becky) == beckyPreDelBal);
+            // Close the ledger until the ledger sequence is large enough to close
+            // the account, which has minted NFTs
+            auto incLgrSeqForNFTokenAccDel = [&](jtx::Account const& acc) {
+                int delta = 0;
+                auto const deletableLgrSeq = (*env.le(acc))[sfSequence] + (*env.le(acc))[sfMintedNFTokens]+ 255;
 
-        //     // Close the ledger until the ledger sequence is large enough to close
-        //     // the account, which has minted NFTs
-        //     auto incLgrSeqForNFTokenAccDel = [&](jtx::Account const& acc) {
-        //         int delta = 0;
-        //         auto const deletableLgrSeq = (*env.le(acc))[sfSequence] + (*env.le(acc))[sfMintedNFTokens]+ 255;
-
-        //         if(deletableLgrSeq > openLedgerSeq(env))
-        //             delta = deletableLgrSeq - openLedgerSeq(env);
+                if(deletableLgrSeq > openLedgerSeq(env))
+                    delta = deletableLgrSeq - openLedgerSeq(env);
        
-        //         BEAST_EXPECT(delta >= 0);
-        //         for (int i = 0; i < delta; ++i)
-        //             env.close();
+                BEAST_EXPECT(delta >= 0);
+                for (int i = 0; i < delta; ++i)
+                    env.close();
 
-        //         BEAST_EXPECT(openLedgerSeq(env) == deletableLgrSeq + 255);
-        //     };
+                BEAST_EXPECT(openLedgerSeq(env) == deletableLgrSeq + 255);
+            };
 
-        //     // Close more ledgers to be able to delete alice's account 
-        //     incLgrSeqForNFTokenAccDel(alice);
+            // Close more ledgers to be able to delete alice's account 
+            incLgrSeqForNFTokenAccDel(alice);
 
-        //     auto const acctDelFee2{drops(env.current()->fees().increment)};
-        //     env(acctdelete(alice, becky), fee(acctDelFee2));
-        //     env.close();
+            auto const acctDelFee2{drops(env.current()->fees().increment)};
+            env(acctdelete(alice, becky), fee(acctDelFee2));
+            env.close();
 
 
-        //     // alice's account is still in the most recently closed ledger.
-        //     BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
+            // alice's account is still in the most recently closed ledger.
+            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
 
-        //     // Verify that alice's account root is gone from the current ledger
-        //     // and becky has alice's XRP.
-        //     BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
-        //     BEAST_EXPECT(
-        //         env.balance(becky) == alicePreDelBal + beckyPreDelBal - acctDelFee2);
+            // Verify that alice's account root is gone from the current ledger
+            // and becky has alice's XRP.
+            BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
+            BEAST_EXPECT(
+                env.balance(becky) == alicePreDelBal + beckyPreDelBal - acctDelFee2);
 
-        //     env.close();
-        //     BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
+            env.close();
+            BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
 
-        // }
+        }
 
     }
 

@@ -223,6 +223,11 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
         return tecTOO_SOON;
 
+    if(ctx.view.rules().enabled(fixNFTokenRemint)){
+        if ((*sleAccount)[sfFirstNFTokenSequence] + (*sleAccount)[sfMintedNFTokens] + seqDelta > ctx.view.seq())
+            return tecTOO_SOON;
+    }
+
     // Verify that the account does not own any objects that would prevent
     // the account from being deleted.
     Keylet const ownerDirKeylet{keylet::ownerDir(account)};

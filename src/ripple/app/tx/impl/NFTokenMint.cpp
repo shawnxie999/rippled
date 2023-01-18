@@ -160,14 +160,32 @@ NFTokenMint::doApply()
             // Should not happen.  Checked in preclaim.
             return Unexpected(tecNO_ISSUER);
 
-        // Get the unique sequence number for this token:
-        std::uint32_t const tokenSeq = (*root)[~sfMintedNFTokens].value_or(0);
-        {
-            std::uint32_t const nextTokenSeq = tokenSeq + 1;
-            if (nextTokenSeq < tokenSeq)
-                return Unexpected(tecMAX_SEQUENCE_REACHED);
+        std::uint32_t tokenSeq;
+        if(ctx_.view().rules().enabled(fixNFTokenRemint)){
+            // Get the unique sequence number for this token:
+            std::uint32_t const firstNFTokenSeq = (*root)[~sfFirstNFTokenSequence].value_or((*root)[sfSequence]);
+            tokenSeq = firstNFTokenSeq + (*root)[~sfMintedNFTokens].value_or(0);
+            {
+                std::uint32_t const nextTokenSeq = tokenSeq + 1;
+                if (nextTokenSeq < tokenSeq)
+                    return Unexpected(tecMAX_SEQUENCE_REACHED);
 
-            (*root)[sfMintedNFTokens] = nextTokenSeq;
+                (*root)[sfMintedNFTokens] = (*root)[~sfMintedNFTokens].value_or(0) + 1;
+
+                if(!(*root)[sfFirstNFTokenSequence])
+                    (*root)[sfFirstNFTokenSequence] = firstNFTokenSeq;
+            }
+        }
+        else{
+            // Get the unique sequence number for this token:
+            tokenSeq = (*root)[~sfMintedNFTokens].value_or(0);
+            {
+                std::uint32_t const nextTokenSeq = tokenSeq + 1;
+                if (nextTokenSeq < tokenSeq)
+                    return Unexpected(tecMAX_SEQUENCE_REACHED);
+
+                (*root)[sfMintedNFTokens] = nextTokenSeq;
+            }
         }
         ctx_.view().update(root);
         return tokenSeq;
