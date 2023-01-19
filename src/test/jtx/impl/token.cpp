@@ -65,9 +65,12 @@ getNextID(
     std::uint16_t flags,
     std::uint16_t xferFee)
 {
-    // Get the nftSeq from the account root of the issuer.
-    std::uint32_t const nftSeq = {
+     std::uint32_t const nftSeq = {
         env.le(issuer)->at(~sfMintedNFTokens).value_or(0)};
+
+    // auto const acctSeq = env.le(issuer)->at(sfSequence) ;
+    // // Get the nftSeq from the account root of the issuer.
+    // std::uint32_t const nftSeq = env.le(issuer)->at(~sfFirstNFTokenSequence).value_or(acctSeq) + env.le(issuer)->at(~sfMintedNFTokens).value_or(0);
     return getID(issuer, nfTokenTaxon, nftSeq, flags, xferFee);
 }
 

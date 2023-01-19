@@ -55,7 +55,7 @@ LedgerFormats::LedgerFormats()
             {sfNFTokenMinter,        soeOPTIONAL},
             {sfMintedNFTokens,       soeDEFAULT},
             {sfBurnedNFTokens,       soeDEFAULT},
-            {sfFirstNFTokenSequence, soeDEFAULT},
+            {sfFirstNFTokenSequence, soeOPTIONAL},
         },
         commonFields);
 
