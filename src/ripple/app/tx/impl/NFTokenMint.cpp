@@ -164,6 +164,7 @@ NFTokenMint::doApply()
         if(ctx_.view().rules().enabled(fixNFTokenRemint)){
             // Get the unique sequence number for this token:
             std::uint32_t const firstNFTokenSeq = (*root)[~sfFirstNFTokenSequence].value_or((*root)[sfSequence]);
+            auto test =(*root)[sfSequence];
             tokenSeq = firstNFTokenSeq + (*root)[~sfMintedNFTokens].value_or(0);
             {
                 std::uint32_t const nextTokenSeq = tokenSeq + 1;
@@ -172,8 +173,8 @@ NFTokenMint::doApply()
 
                 (*root)[sfMintedNFTokens] = (*root)[~sfMintedNFTokens].value_or(0) + 1;
 
-                if(!(*root)[sfFirstNFTokenSequence])
-                    (*root)[sfFirstNFTokenSequence] = firstNFTokenSeq;
+
+                (*root)[sfFirstNFTokenSequence] = firstNFTokenSeq;
             }
         }
         else{
