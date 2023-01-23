@@ -162,8 +162,10 @@ NFTokenMint::doApply()
 
         std::uint32_t tokenSeq;
         if(ctx_.view().rules().enabled(fixNFTokenRemint)){
+            auto accSeq = (*root)[sfSequence];
+
             // Get FirstNFTokenSequence, otherwise initialize to the current account sequence
-            std::uint32_t const firstNFTokenSeq = (*root)[~sfFirstNFTokenSequence].value_or((*root)[sfSequence]);
+            std::uint32_t const firstNFTokenSeq = (*root)[~sfFirstNFTokenSequence].value_or((*root)[~sfNFTokenMinter] == ctx_.tx[sfAccount]? accSeq : accSeq - 1);
 
             // Get the unique sequence number of this token:
             tokenSeq = firstNFTokenSeq + (*root)[~sfMintedNFTokens].value_or(0);
