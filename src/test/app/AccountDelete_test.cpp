@@ -975,11 +975,16 @@ public:
             env.close();
 
             std::vector<uint256> nftIDs;
-
+            std::cout<<"==================================== "<<std::endl; //prints 4
+            std::cout<<"Cur ledger seq: "<<openLedgerSeq(env)<<std::endl; //prints 4
+            std::cout<<"sfSequence: "<<env.seq(alice)<<std::endl; //prints 4
+            std::cout<<"sfMintedNFTokens "<<(*env.le(alice))[sfMintedNFTokens]<<std::endl; //prints 4
+    std::cout<<"sfFirstNFTokenSequence: "<<(*env.le(alice))[~sfFirstNFTokenSequence].value_or(0)<<std::endl; //prints 4
+             std::cout<<"==================================== "<<std::endl; //prints 4
             nftIDs.reserve(500);
             for(int i = 0; i<500; i++){
                 uint256 const nftokenID =
-                    getNextNFTokenID(env, alice, 0, tfTransferable);
+                    token::getNextID(env, alice, 0, tfTransferable);
                 nftIDs.push_back(nftokenID);
              
                 env(token::mint(alice, 0),
@@ -1022,30 +1027,30 @@ public:
             env(token::setMinter(alice, minter));
             env.close();
 
-    //         std::cout<<"==================================== "<<std::endl; //prints 4
-    //         std::cout<<"Cur ledger seq: "<<openLedgerSeq(env)<<std::endl; //prints 4
-    //         std::cout<<"sfSequence: "<<(*env.le(alice))[sfSequence]<<std::endl; //prints 4
-    //         std::cout<<"sfMintedNFTokens "<<(*env.le(alice))[sfMintedNFTokens]<<std::endl; //prints 4
-    // std::cout<<"sfFirstNFTokenSequence: "<<(*env.le(alice))[~sfFirstNFTokenSequence].value_or(0)<<std::endl; //prints 4
-    //          std::cout<<"==================================== "<<std::endl; //prints 4
+            std::cout<<"==================================== "<<std::endl; //prints 4
+            std::cout<<"Cur ledger seq: "<<openLedgerSeq(env)<<std::endl; //prints 4
+            std::cout<<"sfSequence: "<<(*env.le(alice))[sfSequence]<<std::endl; //prints 4
+            std::cout<<"sfMintedNFTokens "<<(*env.le(alice))[sfMintedNFTokens]<<std::endl; //prints 4
+    std::cout<<"sfFirstNFTokenSequence: "<<(*env.le(alice))[~sfFirstNFTokenSequence].value_or(0)<<std::endl; //prints 4
+             std::cout<<"==================================== "<<std::endl; //prints 4
 
             std::vector<uint256> nftIDs;
 
             nftIDs.reserve(500);
             for(int i = 0; i<500; i++){
                 uint256 const nftokenID =
-                    getNextNFTokenID(env, alice, 0u);
+                    token::getNextID(env, alice, 0u);
                 nftIDs.push_back(nftokenID);
                 env(token::mint(minter),token::issuer(alice));
                     
             }
          
-            // std::cout<<"=================Mint all nft=================== "<<std::endl; //prints 4
-            // std::cout<<"Cur ledger seq: "<<openLedgerSeq(env)<<std::endl; //prints 4
-            // std::cout<<"sfSequence: "<<(*env.le(alice))[sfSequence]<<std::endl; //prints 4
-            // std::cout<<"sfMintedNFTokens "<<(*env.le(alice))[sfMintedNFTokens]<<std::endl; //prints 4
-            // std::cout<<"sfFirstNFTokenSequence: "<<(*env.le(alice))[~sfFirstNFTokenSequence].value_or(0)<<std::endl; //prints 4
-            //  std::cout<<"==================================== "<<std::endl; //prints 4
+            std::cout<<"=================Mint all nft=================== "<<std::endl; //prints 4
+            std::cout<<"Cur ledger seq: "<<openLedgerSeq(env)<<std::endl; //prints 4
+            std::cout<<"sfSequence: "<<(*env.le(alice))[sfSequence]<<std::endl; //prints 4
+            std::cout<<"sfMintedNFTokens "<<(*env.le(alice))[sfMintedNFTokens]<<std::endl; //prints 4
+            std::cout<<"sfFirstNFTokenSequence: "<<(*env.le(alice))[~sfFirstNFTokenSequence].value_or(0)<<std::endl; //prints 4
+             std::cout<<"==================================== "<<std::endl; //prints 4
 
             env.close(); 
 
@@ -1058,20 +1063,20 @@ public:
         
             env.close();
 
-        //     std::cout<<"=================after burn all nft=================== "<<std::endl; //prints 4
-        //     std::cout<<"Cur ledger seq: "<<openLedgerSeq(env)<<std::endl; //prints 4
-        //     std::cout<<"sfSequence: "<<(*env.le(alice))[sfSequence]<<std::endl; //prints 4
-        //     std::cout<<"sfMintedNFTokens "<<(*env.le(alice))[sfMintedNFTokens]<<std::endl; //prints 4
-        //  std::cout<<"sfFirstNFTokenSequence: "<<(*env.le(alice))[~sfFirstNFTokenSequence].value_or(0)<<std::endl; //prints 4
-        //      std::cout<<"==================================== "<<std::endl; //prints 4
+            std::cout<<"=================after burn all nft=================== "<<std::endl; //prints 4
+            std::cout<<"Cur ledger seq: "<<openLedgerSeq(env)<<std::endl; //prints 4
+            std::cout<<"sfSequence: "<<(*env.le(alice))[sfSequence]<<std::endl; //prints 4
+            std::cout<<"sfMintedNFTokens "<<(*env.le(alice))[sfMintedNFTokens]<<std::endl; //prints 4
+         std::cout<<"sfFirstNFTokenSequence: "<<(*env.le(alice))[~sfFirstNFTokenSequence].value_or(0)<<std::endl; //prints 4
+             std::cout<<"==================================== "<<std::endl; //prints 4
             incLgrSeqForAccDel(env, alice);
 
-        //     std::cout<<"===========Close enough ledger========================= "<<std::endl; //prints 4
-        //     std::cout<<"Cur ledger seq: "<<openLedgerSeq(env)<<std::endl; //prints 4
-        //     std::cout<<"sfSequence: "<<(*env.le(alice))[sfSequence]<<std::endl; //prints 4
-        //     std::cout<<"sfMintedNFTokens "<<(*env.le(alice))[sfMintedNFTokens]<<std::endl; //prints 4
-        // std::cout<<"sfFirstNFTokenSequence: "<<(*env.le(alice))[~sfFirstNFTokenSequence].value_or(0)<<std::endl; //prints 4
-        //      std::cout<<"==================================== "<<std::endl; //prints 4
+            std::cout<<"===========Close enough ledger========================= "<<std::endl; //prints 4
+            std::cout<<"Cur ledger seq: "<<openLedgerSeq(env)<<std::endl; //prints 4
+            std::cout<<"sfSequence: "<<(*env.le(alice))[sfSequence]<<std::endl; //prints 4
+            std::cout<<"sfMintedNFTokens "<<(*env.le(alice))[sfMintedNFTokens]<<std::endl; //prints 4
+        std::cout<<"sfFirstNFTokenSequence: "<<(*env.le(alice))[~sfFirstNFTokenSequence].value_or(0)<<std::endl; //prints 4
+             std::cout<<"==================================== "<<std::endl; //prints 4
             // Verify that alice's account root is present.
             Keylet const aliceAcctKey{keylet::account(alice.id())};
             BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
