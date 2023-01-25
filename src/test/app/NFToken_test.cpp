@@ -4751,7 +4751,7 @@ class NFToken_test : public beast::unit_test::suite
         uint256 const nftId{token::getNextID(env, issuer, 0u, tfTransferable)};
         env(token::mint(issuer, 0u),
             txflags(tfTransferable),
-            ticket::use(issuerTicketSeq+3));
+            ticket::use(issuerTicketSeq++));
         std::cout<<" nftId "<<nftId<<std::endl;
         env.close();
         BEAST_EXPECT(ownerCount(env, issuer) == 10);
@@ -5387,10 +5387,10 @@ class NFToken_test : public beast::unit_test::suite
         // testCancelTooManyOffers(features);
         // testBrokeredAccept(features);
         // testNFTokenOfferOwner(features);
-        testNFTokenWithTickets(features);
-        // testNFTokenDeleteAccount(features);
-        // testNftXxxOffers(features);
-        // testFixNFTokenNegOffer(features);
+        //testNFTokenWithTickets(features);
+        testNFTokenDeleteAccount(features);
+        testNftXxxOffers(features);
+        testFixNFTokenNegOffer(features);
     }
 
 public:
