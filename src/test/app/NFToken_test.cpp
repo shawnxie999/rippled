@@ -4693,25 +4693,13 @@ class NFToken_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        Env env{*this, features };
+        Env env{*this, features};
 
         Account const issuer{"issuer"};
         Account const buyer{"buyer"};
         env.fund(XRP(10000), issuer, buyer);
         env.close();
 
-    //         std::cout<<"==================================== "<<std::endl; //prints 4
-    //         std::cout<<"sfSequence: "<<(*env.le(issuer))[sfSequence]<<std::endl; //prints 4
-    //         std::cout<<"sfMintedNFTokens "<<(*env.le(issuer))[sfMintedNFTokens]<<std::endl; //prints 4
-    // std::cout<<"sfFirstNFTokenSequence: "<<(*env.le(issuer))[~sfFirstNFTokenSequence].value_or(0)<<std::endl; //prints 4
-    //          std::cout<<"==================================== "<<std::endl; //prints 4
-    //            uint256 const nftokenID =
-    //                 token::getNextID(env, issuer, 0, tfTransferable);
-   
-             
-    //             env(token::mint(issuer, 0),
-    //                 token::uri(std::string(maxTokenURILength, 'u')),
-    //                 txflags(tfTransferable));
         // issuer and buyer grab enough tickets for all of the following
         // transactions.  Note that once the tickets are acquired issuer's
         // and buyer's account sequence numbers should not advance.
@@ -4726,33 +4714,13 @@ class NFToken_test : public beast::unit_test::suite
         env.close();
         std::uint32_t const buyerSeq{env.seq(buyer)};
         BEAST_EXPECT(ticketCount(env, buyer) == 10);
-            std::cout<<"==================================== "<<std::endl; //prints 4
-            std::cout<<"sfSequence: "<<env.seq(issuer)<<std::endl; //prints 4
-            std::cout<<"sfMintedNFTokens "<<(*env.le(issuer))[sfMintedNFTokens]<<std::endl; //prints 4
-    std::cout<<"sfFirstNFTokenSequence: "<<(*env.le(issuer))[~sfFirstNFTokenSequence].value_or(0)<<std::endl; //prints 4
-             std::cout<<"==================================== "<<std::endl; //prints 4
+
         // NFTokenMint
         BEAST_EXPECT(ownerCount(env, issuer) == 10);
-
-
-    //         std::cout<<"==================================== "<<std::endl; //prints 4
-    //         std::cout<<"sfSequence: "<<(*env.le(issuer))[sfSequence]<<std::endl; //prints 4
-    //         std::cout<<"sfMintedNFTokens "<<(*env.le(issuer))[sfMintedNFTokens]<<std::endl; //prints 4
-    // std::cout<<"sfFirstNFTokenSequence: "<<(*env.le(issuer))[~sfFirstNFTokenSequence].value_or(0)<<std::endl; //prints 4
-    //          std::cout<<"==================================== "<<std::endl; //prints 4
-    //            uint256 const nftokenID =
-    //                 token::getNextID(env, issuer, 0, tfTransferable);
-   
-             
-    //             env(token::mint(issuer, 0),
-    //                 token::uri(std::string(maxTokenURILength, 'u')),
-    //                 txflags(tfTransferable));
-
         uint256 const nftId{token::getNextID(env, issuer, 0u, tfTransferable)};
         env(token::mint(issuer, 0u),
             txflags(tfTransferable),
             ticket::use(issuerTicketSeq++));
-        std::cout<<" nftId "<<nftId<<std::endl;
         env.close();
         BEAST_EXPECT(ownerCount(env, issuer) == 10);
         BEAST_EXPECT(ticketCount(env, issuer) == 9);
@@ -5365,29 +5333,29 @@ class NFToken_test : public beast::unit_test::suite
     void
     testWithFeats(FeatureBitset features)
     {
-        // testEnabled(features);
-        // testMintReserve(features);
-        // testMintMaxTokens(features);
-        // testMintInvalid(features);
-        // testBurnInvalid(features);
-        // testCreateOfferInvalid(features);
-        // testCancelOfferInvalid(features);
-        // testAcceptOfferInvalid(features);
-        // testMintFlagBurnable(features);
-        // testMintFlagOnlyXRP(features);
-        // testMintFlagCreateTrustLine(features);
-        // testMintFlagTransferable(features);
-        // testMintTransferFee(features);
-        // testMintTaxon(features);
-        // testMintURI(features);
-        // testCreateOfferDestination(features);
-        // testCreateOfferDestinationDisallowIncoming(features);
-        // testCreateOfferExpiration(features);
-        // testCancelOffers(features);
-        // testCancelTooManyOffers(features);
-        // testBrokeredAccept(features);
-        // testNFTokenOfferOwner(features);
-        //testNFTokenWithTickets(features);
+        testEnabled(features);
+        testMintReserve(features);
+        testMintMaxTokens(features);
+        testMintInvalid(features);
+        testBurnInvalid(features);
+        testCreateOfferInvalid(features);
+        testCancelOfferInvalid(features);
+        testAcceptOfferInvalid(features);
+        testMintFlagBurnable(features);
+        testMintFlagOnlyXRP(features);
+        testMintFlagCreateTrustLine(features);
+        testMintFlagTransferable(features);
+        testMintTransferFee(features);
+        testMintTaxon(features);
+        testMintURI(features);
+        testCreateOfferDestination(features);
+        testCreateOfferDestinationDisallowIncoming(features);
+        testCreateOfferExpiration(features);
+        testCancelOffers(features);
+        testCancelTooManyOffers(features);
+        testBrokeredAccept(features);
+        testNFTokenOfferOwner(features);
+        testNFTokenWithTickets(features);
         testNFTokenDeleteAccount(features);
         testNftXxxOffers(features);
         testFixNFTokenNegOffer(features);
@@ -5401,9 +5369,9 @@ public:
         FeatureBitset const all{supported_amendments()};
         FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
-        // testWithFeats(all - fixNFTDir);
-        // testWithFeats(all - disallowIncoming);
-        // testWithFeats(all - fixNFTokenRemint);
+        testWithFeats(all - fixNFTDir);
+        testWithFeats(all - disallowIncoming);
+        testWithFeats(all - fixNFTokenRemint);
         testWithFeats(all);
     }
 };
