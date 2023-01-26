@@ -223,11 +223,16 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
         return tecTOO_SOON;
 
-    if(ctx.view.rules().enabled(fixNFTokenRemint)){
-        // std::cout<<"first nftoken seq "<<(*sleAccount)[sfFirstNFTokenSequence]  + 0<<std::endl;
-        //  std::cout<<"sfMintedNFTokens "<<(*sleAccount)[sfMintedNFTokens] + 0<<std::endl;
+    if (ctx.view.rules().enabled(fixNFTokenRemint))
+    {
+        // std::cout<<"first nftoken seq
+        // "<<(*sleAccount)[sfFirstNFTokenSequence]  + 0<<std::endl;
+        //  std::cout<<"sfMintedNFTokens "<<(*sleAccount)[sfMintedNFTokens] +
+        //  0<<std::endl;
         //   std::cout<<"ctx.view.seq()"<<ctx.view.seq()  + 0<<std::endl;
-        if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) + (*sleAccount)[sfMintedNFTokens] + seqDelta > ctx.view.seq())
+        if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
+                (*sleAccount)[sfMintedNFTokens] + seqDelta >
+            ctx.view.seq())
             return tecTOO_SOON;
     }
 

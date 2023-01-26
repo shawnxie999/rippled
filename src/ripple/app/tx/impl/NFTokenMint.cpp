@@ -161,27 +161,38 @@ NFTokenMint::doApply()
             return Unexpected(tecNO_ISSUER);
 
         std::uint32_t tokenSeq;
-        if(ctx_.view().rules().enabled(fixNFTokenRemint)){
+        if (ctx_.view().rules().enabled(fixNFTokenRemint))
+        {
             auto accSeq = (*root)[sfSequence];
 
             // If the issuer hasn't minted a NFT before, we must
-            // initialize sfFirstNFTokenSequence to equal to the current account sequence.
-            // in the general, we must subtract account sequence by one, since it is incremented by the transactor beforehand.
-            // In scenarios where there is AuthorizedMinter or Tickets, we use the account sequence directly because it is not incremented
-            std::uint32_t const firstNFTokenSeq = (*root)[~sfFirstNFTokenSequence].value_or((*root)[~sfNFTokenMinter] == ctx_.tx[sfAccount]||ctx_.tx.getSeqProxy().isTicket()? accSeq : accSeq - 1);
+            // initialize sfFirstNFTokenSequence to equal to the current account
+            // sequence. in the general, we must subtract account sequence by
+            // one, since it is incremented by the transactor beforehand. In
+            // scenarios where there is AuthorizedMinter or Tickets, we use the
+            // account sequence directly because it is not incremented
+            std::uint32_t const firstNFTokenSeq =
+                (*root)[~sfFirstNFTokenSequence].value_or(
+                    (*root)[~sfNFTokenMinter] == ctx_.tx[sfAccount] ||
+                            ctx_.tx.getSeqProxy().isTicket()
+                        ? accSeq
+                        : accSeq - 1);
 
-            // Get the unique sequence number of this token by sfFirstNFTokenSequence + sfMintedNFTokens 
+            // Get the unique sequence number of this token by
+            // sfFirstNFTokenSequence + sfMintedNFTokens
             tokenSeq = firstNFTokenSeq + (*root)[~sfMintedNFTokens].value_or(0);
             {
                 std::uint32_t const nextTokenSeq = tokenSeq + 1;
                 if (nextTokenSeq < tokenSeq)
                     return Unexpected(tecMAX_SEQUENCE_REACHED);
 
-                (*root)[sfMintedNFTokens] = (*root)[~sfMintedNFTokens].value_or(0) + 1;
+                (*root)[sfMintedNFTokens] =
+                    (*root)[~sfMintedNFTokens].value_or(0) + 1;
                 (*root)[sfFirstNFTokenSequence] = firstNFTokenSeq;
             }
         }
-        else{
+        else
+        {
             // Get the unique sequence number for this token:
             tokenSeq = (*root)[~sfMintedNFTokens].value_or(0);
             {
