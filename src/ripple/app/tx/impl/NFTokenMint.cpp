@@ -167,7 +167,7 @@ NFTokenMint::doApply()
 
             // If the issuer hasn't minted a NFT before, we must
             // initialize sfFirstNFTokenSequence to equal to the current account
-            // sequence. in the general, we must subtract account sequence by
+            // sequence. In general, we must subtract account sequence by
             // one, since it is incremented by the transactor beforehand. In
             // scenarios where there is AuthorizedMinter or Tickets, we use the
             // account sequence directly because it is not incremented
