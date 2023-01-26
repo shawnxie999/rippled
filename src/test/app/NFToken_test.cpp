@@ -546,6 +546,7 @@ class NFToken_test : public beast::unit_test::suite
 
             while (seq < 33)
             {
+                // Must add FirstNFTokenSequence to correctly offset the starting NFT sequence number
                 env(token::burn(alice, token::getID(alice, 0, (*env.le(alice))[sfFirstNFTokenSequence] + seq++)));
                 env.close();
                 checkAliceOwnerMintedBurned((33 - seq) ? 1 : 0, 33, seq, __LINE__);
@@ -667,6 +668,7 @@ class NFToken_test : public beast::unit_test::suite
             }
 
             // minter has one more NFT to burn.  Should take her owner count to 0.
+            // Must add FirstNFTokenSequence to correctly offset the starting NFT sequence number
             env(token::burn(minter, token::getID(alice, 0, (*env.le(alice))[sfFirstNFTokenSequence] + nftSeq++)));
             env.close();
             checkMintersOwnerMintedBurned(0, 66, nftSeq, 0, 0, 0, __LINE__);
