@@ -1292,16 +1292,16 @@ public:
     void
     run() override
     {
-        // testBasics();
-        // testDirectories();
-        // testOwnedTypes();
-        // testResurrection();
-        // testAmendmentEnable();
-        // testTooManyOffers();
-        // testImplicitlyCreatedTrustline();
-        // testBalanceTooSmallForFee();
-        // testWithTickets();
-        // testDest();
+        testBasics();
+        testDirectories();
+        testOwnedTypes();
+        testResurrection();
+        testAmendmentEnable();
+        testTooManyOffers();
+        testImplicitlyCreatedTrustline();
+        testBalanceTooSmallForFee();
+        testWithTickets();
+        testDest();
         testNFTokenRemintAmendmentEnable();
     }
 };

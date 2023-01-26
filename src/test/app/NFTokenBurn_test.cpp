@@ -611,6 +611,7 @@ public:
         FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
         testWithFeats(all - fixNFTDir);
+        testWithFeats(all - fixNFTokenRemint);
         testWithFeats(all);
     }
 };
