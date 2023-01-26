@@ -542,15 +542,13 @@ class NFToken_test : public beast::unit_test::suite
             checkAliceOwnerMintedBurned(2, 33, 0, __LINE__);
 
             // alice burns the NFTs she created: check that pages consolidate
-            std::uint32_t seq = (*env.le(alice))[sfFirstNFTokenSequence];
-            std::uint32_t seqMin = (*env.le(alice))[sfFirstNFTokenSequence];
-            std::uint32_t seqMax = seq + 33;
+            std::uint32_t seq = 0;
 
-            while (seq < seqMax)
+            while (seq < 33)
             {
-                env(token::burn(alice, token::getID(alice, 0, seq++)));
+                env(token::burn(alice, token::getID(alice, 0, (*env.le(alice))[sfFirstNFTokenSequence] + seq++)));
                 env.close();
-                checkAliceOwnerMintedBurned((seqMax - seq) ? 1 : 0, 33, seq - seqMin, __LINE__);
+                checkAliceOwnerMintedBurned((33 - seq) ? 1 : 0, 33, seq, __LINE__);
             }
 
             // alice burns a non-existent NFT.
