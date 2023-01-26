@@ -67,8 +67,8 @@ getNextID(
 {
     std::uint32_t nftSeq;
 
-    // If fixNFTokenRemint amendment is on, we must use
-    // generate the NFT sequence using the new construct
+    // If fixNFTokenRemint amendment is on, we must
+    // generate the NFT sequence using new construct
     if (env.current()->rules().enabled(fixNFTokenRemint))
         nftSeq = {
             env.le(issuer)
