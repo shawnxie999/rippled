@@ -210,537 +210,277 @@ class NFToken_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        if (!features[fixNFTokenRemint])
-        {
-            Env env{*this, features};
-            Account const alice{"alice"};
-            Account const minter{"minter"};
 
-            // Fund alice and minter enough to exist, but not enough to meet
-            // the reserve for creating their first NFT.  Account reserve for
-            // unit tests is 200 XRP, not 20.
-            env.fund(XRP(200), alice, minter);
-            env.close();
-            BEAST_EXPECT(env.balance(alice) == XRP(200));
-            BEAST_EXPECT(env.balance(minter) == XRP(200));
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 0);
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const minter{"minter"};
 
-            // alice does not have enough XRP to cover the reserve for an NFT
-            // page.
-            env(token::mint(alice, 0u), ter(tecINSUFFICIENT_RESERVE));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(mintedCount(env, alice) == 0);
-            BEAST_EXPECT(burnedCount(env, alice) == 0);
+        // Fund alice and minter enough to exist, but not enough to meet
+        // the reserve for creating their first NFT.  Account reserve for
+        // unit tests is 200 XRP, not 20.
+        env.fund(XRP(200), alice, minter);
+        env.close();
+        BEAST_EXPECT(env.balance(alice) == XRP(200));
+        BEAST_EXPECT(env.balance(minter) == XRP(200));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(ownerCount(env, minter) == 0);
 
-            // Pay alice almost enough to make the reserve for an NFT page.
-            env(pay(env.master, alice, XRP(50) + drops(9)));
-            env.close();
+        // alice does not have enough XRP to cover the reserve for an NFT
+        // page.
+        env(token::mint(alice, 0u), ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(mintedCount(env, alice) == 0);
+        BEAST_EXPECT(burnedCount(env, alice) == 0);
 
-            // A lambda that checks alice's ownerCount, mintedCount, and
-            // burnedCount all in one fell swoop.
-            auto checkAliceOwnerMintedBurned = [&env, this, &alice](
-                                                   std::uint32_t owners,
-                                                   std::uint32_t minted,
-                                                   std::uint32_t burned,
-                                                   int line) {
-                auto oneCheck = [line, this](
-                                    char const* type,
-                                    std::uint32_t found,
-                                    std::uint32_t exp) {
-                    if (found == exp)
-                        pass();
-                    else
-                    {
-                        std::stringstream ss;
-                        ss << "Wrong " << type << " count.  Found: " << found
-                           << "; Expected: " << exp;
-                        fail(ss.str(), __FILE__, line);
-                    }
-                };
-                oneCheck("owner", ownerCount(env, alice), owners);
-                oneCheck("minted", mintedCount(env, alice), minted);
-                oneCheck("burned", burnedCount(env, alice), burned);
+        // Pay alice almost enough to make the reserve for an NFT page.
+        env(pay(env.master, alice, XRP(50) + drops(9)));
+        env.close();
+
+        // A lambda that checks alice's ownerCount, mintedCount, and
+        // burnedCount all in one fell swoop.
+        auto checkAliceOwnerMintedBurned = [&env, this, &alice](
+                                                std::uint32_t owners,
+                                                std::uint32_t minted,
+                                                std::uint32_t burned,
+                                                int line) {
+            auto oneCheck = [line, this](
+                                char const* type,
+                                std::uint32_t found,
+                                std::uint32_t exp) {
+                if (found == exp)
+                    pass();
+                else
+                {
+                    std::stringstream ss;
+                    ss << "Wrong " << type << " count.  Found: " << found
+                        << "; Expected: " << exp;
+                    fail(ss.str(), __FILE__, line);
+                }
             };
+            oneCheck("owner", ownerCount(env, alice), owners);
+            oneCheck("minted", mintedCount(env, alice), minted);
+            oneCheck("burned", burnedCount(env, alice), burned);
+        };
 
-            // alice still does not have enough XRP for the reserve of an NFT
-            // page.
-            env(token::mint(alice, 0u), ter(tecINSUFFICIENT_RESERVE));
-            env.close();
-            checkAliceOwnerMintedBurned(0, 0, 0, __LINE__);
+        // alice still does not have enough XRP for the reserve of an NFT
+        // page.
+        env(token::mint(alice, 0u), ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        checkAliceOwnerMintedBurned(0, 0, 0, __LINE__);
 
-            // Pay alice enough to make the reserve for an NFT page.
-            env(pay(env.master, alice, drops(11)));
-            env.close();
+        // Pay alice enough to make the reserve for an NFT page.
+        env(pay(env.master, alice, drops(11)));
+        env.close();
 
-            // Now alice can mint an NFT.
+        // Now alice can mint an NFT.
+        env(token::mint(alice));
+        env.close();
+        checkAliceOwnerMintedBurned(1, 1, 0, __LINE__);
+
+        // Alice should be able to mint an additional 31 NFTs without
+        // any additional reserve requirements.
+        for (int i = 1; i < 32; ++i)
+        {
             env(token::mint(alice));
-            env.close();
-            checkAliceOwnerMintedBurned(1, 1, 0, __LINE__);
+            checkAliceOwnerMintedBurned(1, i + 1, 0, __LINE__);
+        }
 
-            // Alice should be able to mint an additional 31 NFTs without
-            // any additional reserve requirements.
-            for (int i = 1; i < 32; ++i)
-            {
-                env(token::mint(alice));
-                checkAliceOwnerMintedBurned(1, i + 1, 0, __LINE__);
-            }
+        // That NFT page is full.  Creating an additional NFT page requires
+        // additional reserve.
+        env(token::mint(alice), ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        checkAliceOwnerMintedBurned(1, 32, 0, __LINE__);
 
-            // That NFT page is full.  Creating an additional NFT page requires
-            // additional reserve.
-            env(token::mint(alice), ter(tecINSUFFICIENT_RESERVE));
-            env.close();
-            checkAliceOwnerMintedBurned(1, 32, 0, __LINE__);
+        // Pay alice almost enough to make the reserve for an NFT page.
+        env(pay(env.master, alice, XRP(50) + drops(329)));
+        env.close();
 
-            // Pay alice almost enough to make the reserve for an NFT page.
-            env(pay(env.master, alice, XRP(50) + drops(329)));
-            env.close();
+        // alice still does not have enough XRP for the reserve of an NFT
+        // page.
+        env(token::mint(alice), ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        checkAliceOwnerMintedBurned(1, 32, 0, __LINE__);
 
-            // alice still does not have enough XRP for the reserve of an NFT
-            // page.
-            env(token::mint(alice), ter(tecINSUFFICIENT_RESERVE));
-            env.close();
-            checkAliceOwnerMintedBurned(1, 32, 0, __LINE__);
+        // Pay alice enough to make the reserve for an NFT page.
+        env(pay(env.master, alice, drops(11)));
+        env.close();
 
-            // Pay alice enough to make the reserve for an NFT page.
-            env(pay(env.master, alice, drops(11)));
-            env.close();
+        // Now alice can mint an NFT.
+        env(token::mint(alice));
+        env.close();
+        checkAliceOwnerMintedBurned(2, 33, 0, __LINE__);
 
-            // Now alice can mint an NFT.
-            env(token::mint(alice));
-            env.close();
-            checkAliceOwnerMintedBurned(2, 33, 0, __LINE__);
+        // alice burns the NFTs she created: check that pages consolidate
+        std::uint32_t seq = 0;
 
-            // alice burns the NFTs she created: check that pages consolidate
-            std::uint32_t seq = 0;
-
-            while (seq < 33)
-            {
+        while (seq < 33)
+        {
+            if(features[fixNFTokenRemint])
+                // If fixNFTokenRemint is enabled, we must add FirstNFTokenSequence to offset the starting
+                // NFT sequence number
+                env(token::burn(alice, token::getID(alice, 0, (*env.le(alice))[sfFirstNFTokenSequence] + seq++)));  
+            else
                 env(token::burn(alice, token::getID(alice, 0, seq++)));
-                env.close();
-                checkAliceOwnerMintedBurned(
-                    (33 - seq) ? 1 : 0, 33, seq, __LINE__);
-            }
 
-            // alice burns a non-existent NFT.
-            env(token::burn(alice, token::getID(alice, 197, 5)),
-                ter(tecNO_ENTRY));
             env.close();
-            checkAliceOwnerMintedBurned(0, 33, 33, __LINE__);
-
-            // That was fun!  Now let's see what happens when we let someone
-            // else mint NFTs on alice's behalf.  alice gives permission to
-            // minter.
-            env(token::setMinter(alice, minter));
-            env.close();
-            BEAST_EXPECT(
-                env.le(alice)->getAccountID(sfNFTokenMinter) == minter.id());
-
-            // A lambda that checks minter's and alice's ownerCount,
-            // mintedCount, and burnedCount all in one fell swoop.
-            auto checkMintersOwnerMintedBurned = [&env, this, &alice, &minter](
-                                                     std::uint32_t aliceOwners,
-                                                     std::uint32_t aliceMinted,
-                                                     std::uint32_t aliceBurned,
-                                                     std::uint32_t minterOwners,
-                                                     std::uint32_t minterMinted,
-                                                     std::uint32_t minterBurned,
-                                                     int line) {
-                auto oneCheck = [this](
-                                    char const* type,
-                                    std::uint32_t found,
-                                    std::uint32_t exp,
-                                    int line) {
-                    if (found == exp)
-                        pass();
-                    else
-                    {
-                        std::stringstream ss;
-                        ss << "Wrong " << type << " count.  Found: " << found
-                           << "; Expected: " << exp;
-                        fail(ss.str(), __FILE__, line);
-                    }
-                };
-                oneCheck(
-                    "alice owner", ownerCount(env, alice), aliceOwners, line);
-                oneCheck(
-                    "alice minted", mintedCount(env, alice), aliceMinted, line);
-                oneCheck(
-                    "alice burned", burnedCount(env, alice), aliceBurned, line);
-                oneCheck(
-                    "minter owner",
-                    ownerCount(env, minter),
-                    minterOwners,
-                    line);
-                oneCheck(
-                    "minter minted",
-                    mintedCount(env, minter),
-                    minterMinted,
-                    line);
-                oneCheck(
-                    "minter burned",
-                    burnedCount(env, minter),
-                    minterBurned,
-                    line);
-            };
-
-            std::uint32_t nftSeq = 33;
-
-            // Pay minter almost enough to make the reserve for an NFT page.
-            env(pay(env.master, minter, XRP(50) - drops(1)));
-            env.close();
-            checkMintersOwnerMintedBurned(0, 33, nftSeq, 0, 0, 0, __LINE__);
-
-            // minter still does not have enough XRP for the reserve of an NFT
-            // page. Just for grins (and code coverage), minter mints NFTs that
-            // include a URI.
-            env(token::mint(minter),
-                token::issuer(alice),
-                token::uri("uri"),
-                ter(tecINSUFFICIENT_RESERVE));
-            env.close();
-            checkMintersOwnerMintedBurned(0, 33, nftSeq, 0, 0, 0, __LINE__);
-
-            // Pay minter enough to make the reserve for an NFT page.
-            env(pay(env.master, minter, drops(11)));
-            env.close();
-
-            // Now minter can mint an NFT for alice.
-            env(token::mint(minter), token::issuer(alice), token::uri("uri"));
-            env.close();
-            checkMintersOwnerMintedBurned(0, 34, nftSeq, 1, 0, 0, __LINE__);
-
-            // Minter should be able to mint an additional 31 NFTs for alice
-            // without any additional reserve requirements.
-            for (int i = 1; i < 32; ++i)
-            {
-                env(token::mint(minter),
-                    token::issuer(alice),
-                    token::uri("uri"));
-                checkMintersOwnerMintedBurned(
-                    0, i + 34, nftSeq, 1, 0, 0, __LINE__);
-            }
-
-            // Pay minter almost enough for the reserve of an additional NFT
-            // page.
-            env(pay(env.master, minter, XRP(50) + drops(319)));
-            env.close();
-
-            // That NFT page is full.  Creating an additional NFT page requires
-            // additional reserve.
-            env(token::mint(minter),
-                token::issuer(alice),
-                token::uri("uri"),
-                ter(tecINSUFFICIENT_RESERVE));
-            env.close();
-            checkMintersOwnerMintedBurned(0, 65, nftSeq, 1, 0, 0, __LINE__);
-
-            // Pay minter enough for the reserve of an additional NFT page.
-            env(pay(env.master, minter, drops(11)));
-            env.close();
-
-            // Now minter can mint an NFT.
-            env(token::mint(minter), token::issuer(alice), token::uri("uri"));
-            env.close();
-            checkMintersOwnerMintedBurned(0, 66, nftSeq, 2, 0, 0, __LINE__);
-
-            // minter burns the NFTs she created.
-            while (nftSeq < 65)
-            {
-                env(token::burn(minter, token::getID(alice, 0, nftSeq++)));
-                env.close();
-                checkMintersOwnerMintedBurned(
-                    0, 66, nftSeq, (65 - seq) ? 1 : 0, 0, 0, __LINE__);
-            }
-
-            // minter has one more NFT to burn.  Should take her owner count to
-            // 0.
-            env(token::burn(minter, token::getID(alice, 0, nftSeq++)));
-            env.close();
-            checkMintersOwnerMintedBurned(0, 66, nftSeq, 0, 0, 0, __LINE__);
-
-            // minter burns a non-existent NFT.
-            env(token::burn(minter, token::getID(alice, 2009, 3)),
-                ter(tecNO_ENTRY));
-            env.close();
-            checkMintersOwnerMintedBurned(0, 66, nftSeq, 0, 0, 0, __LINE__);
+            checkAliceOwnerMintedBurned(
+                (33 - seq) ? 1 : 0, 33, seq, __LINE__);
         }
 
-        if (features[fixNFTokenRemint])
+        // alice burns a non-existent NFT.
+        env(token::burn(alice, token::getID(alice, 197, 5)),
+            ter(tecNO_ENTRY));
+        env.close();
+        checkAliceOwnerMintedBurned(0, 33, 33, __LINE__);
+
+        // That was fun!  Now let's see what happens when we let someone
+        // else mint NFTs on alice's behalf.  alice gives permission to
+        // minter.
+        env(token::setMinter(alice, minter));
+        env.close();
+        BEAST_EXPECT(
+            env.le(alice)->getAccountID(sfNFTokenMinter) == minter.id());
+
+        // A lambda that checks minter's and alice's ownerCount,
+        // mintedCount, and burnedCount all in one fell swoop.
+        auto checkMintersOwnerMintedBurned = [&env, this, &alice, &minter](
+                                                    std::uint32_t aliceOwners,
+                                                    std::uint32_t aliceMinted,
+                                                    std::uint32_t aliceBurned,
+                                                    std::uint32_t minterOwners,
+                                                    std::uint32_t minterMinted,
+                                                    std::uint32_t minterBurned,
+                                                    int line) {
+            auto oneCheck = [this](
+                                char const* type,
+                                std::uint32_t found,
+                                std::uint32_t exp,
+                                int line) {
+                if (found == exp)
+                    pass();
+                else
+                {
+                    std::stringstream ss;
+                    ss << "Wrong " << type << " count.  Found: " << found
+                        << "; Expected: " << exp;
+                    fail(ss.str(), __FILE__, line);
+                }
+            };
+            oneCheck(
+                "alice owner", ownerCount(env, alice), aliceOwners, line);
+            oneCheck(
+                "alice minted", mintedCount(env, alice), aliceMinted, line);
+            oneCheck(
+                "alice burned", burnedCount(env, alice), aliceBurned, line);
+            oneCheck(
+                "minter owner",
+                ownerCount(env, minter),
+                minterOwners,
+                line);
+            oneCheck(
+                "minter minted",
+                mintedCount(env, minter),
+                minterMinted,
+                line);
+            oneCheck(
+                "minter burned",
+                burnedCount(env, minter),
+                minterBurned,
+                line);
+        };
+
+        std::uint32_t nftSeq = 33;
+
+        // Pay minter almost enough to make the reserve for an NFT page.
+        env(pay(env.master, minter, XRP(50) - drops(1)));
+        env.close();
+        checkMintersOwnerMintedBurned(0, 33, nftSeq, 0, 0, 0, __LINE__);
+
+        // minter still does not have enough XRP for the reserve of an NFT
+        // page. Just for grins (and code coverage), minter mints NFTs that
+        // include a URI.
+        env(token::mint(minter),
+            token::issuer(alice),
+            token::uri("uri"),
+            ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        checkMintersOwnerMintedBurned(0, 33, nftSeq, 0, 0, 0, __LINE__);
+
+        // Pay minter enough to make the reserve for an NFT page.
+        env(pay(env.master, minter, drops(11)));
+        env.close();
+
+        // Now minter can mint an NFT for alice.
+        env(token::mint(minter), token::issuer(alice), token::uri("uri"));
+        env.close();
+        checkMintersOwnerMintedBurned(0, 34, nftSeq, 1, 0, 0, __LINE__);
+
+        // Minter should be able to mint an additional 31 NFTs for alice
+        // without any additional reserve requirements.
+        for (int i = 1; i < 32; ++i)
         {
-            Env env{*this, features};
-            Account const alice{"alice"};
-            Account const minter{"minter"};
-
-            // Fund alice and minter enough to exist, but not enough to meet
-            // the reserve for creating their first NFT.  Account reserve for
-            // unit tests is 200 XRP, not 20.
-            env.fund(XRP(200), alice, minter);
-            env.close();
-            BEAST_EXPECT(env.balance(alice) == XRP(200));
-            BEAST_EXPECT(env.balance(minter) == XRP(200));
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 0);
-
-            // alice does not have enough XRP to cover the reserve for an NFT
-            // page.
-            env(token::mint(alice, 0u), ter(tecINSUFFICIENT_RESERVE));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(mintedCount(env, alice) == 0);
-            BEAST_EXPECT(burnedCount(env, alice) == 0);
-
-            // Pay alice almost enough to make the reserve for an NFT page.
-            env(pay(env.master, alice, XRP(50) + drops(9)));
-            env.close();
-
-            // A lambda that checks alice's ownerCount, mintedCount, and
-            // burnedCount all in one fell swoop.
-            auto checkAliceOwnerMintedBurned = [&env, this, &alice](
-                                                   std::uint32_t owners,
-                                                   std::uint32_t minted,
-                                                   std::uint32_t burned,
-                                                   int line) {
-                auto oneCheck = [line, this](
-                                    char const* type,
-                                    std::uint32_t found,
-                                    std::uint32_t exp) {
-                    if (found == exp)
-                        pass();
-                    else
-                    {
-                        std::stringstream ss;
-                        ss << "Wrong " << type << " count.  Found: " << found
-                           << "; Expected: " << exp;
-                        fail(ss.str(), __FILE__, line);
-                    }
-                };
-                oneCheck("owner", ownerCount(env, alice), owners);
-                oneCheck("minted", mintedCount(env, alice), minted);
-                oneCheck("burned", burnedCount(env, alice), burned);
-            };
-
-            // alice still does not have enough XRP for the reserve of an NFT
-            // page.
-            env(token::mint(alice, 0u), ter(tecINSUFFICIENT_RESERVE));
-            env.close();
-            checkAliceOwnerMintedBurned(0, 0, 0, __LINE__);
-
-            // Pay alice enough to make the reserve for an NFT page.
-            env(pay(env.master, alice, drops(11)));
-            env.close();
-
-            // Now alice can mint an NFT.
-            env(token::mint(alice));
-            env.close();
-            checkAliceOwnerMintedBurned(1, 1, 0, __LINE__);
-
-            // Alice should be able to mint an additional 31 NFTs without
-            // any additional reserve requirements.
-            for (int i = 1; i < 32; ++i)
-            {
-                env(token::mint(alice));
-                checkAliceOwnerMintedBurned(1, i + 1, 0, __LINE__);
-            }
-
-            // That NFT page is full.  Creating an additional NFT page requires
-            // additional reserve.
-            env(token::mint(alice), ter(tecINSUFFICIENT_RESERVE));
-            env.close();
-            checkAliceOwnerMintedBurned(1, 32, 0, __LINE__);
-
-            // Pay alice almost enough to make the reserve for an NFT page.
-            env(pay(env.master, alice, XRP(50) + drops(329)));
-            env.close();
-
-            // alice still does not have enough XRP for the reserve of an NFT
-            // page.
-            env(token::mint(alice), ter(tecINSUFFICIENT_RESERVE));
-            env.close();
-            checkAliceOwnerMintedBurned(1, 32, 0, __LINE__);
-
-            // Pay alice enough to make the reserve for an NFT page.
-            env(pay(env.master, alice, drops(11)));
-            env.close();
-
-            // Now alice can mint an NFT.
-            env(token::mint(alice));
-            env.close();
-            checkAliceOwnerMintedBurned(2, 33, 0, __LINE__);
-
-            // alice burns the NFTs she created: check that pages consolidate
-            std::uint32_t seq = 0;
-
-            while (seq < 33)
-            {
-                // Must add FirstNFTokenSequence to correctly offset the
-                // starting NFT sequence number
-                env(token::burn(
-                    alice,
-                    token::getID(
-                        alice,
-                        0,
-                        (*env.le(alice))[sfFirstNFTokenSequence] + seq++)));
-                env.close();
-                checkAliceOwnerMintedBurned(
-                    (33 - seq) ? 1 : 0, 33, seq, __LINE__);
-            }
-
-            // alice burns a non-existent NFT.
-            env(token::burn(alice, token::getID(alice, 197, 5)),
-                ter(tecNO_ENTRY));
-            env.close();
-            checkAliceOwnerMintedBurned(0, 33, 33, __LINE__);
-
-            // That was fun!  Now let's see what happens when we let someone
-            // else mint NFTs on alice's behalf.  alice gives permission to
-            // minter.
-            env(token::setMinter(alice, minter));
-            env.close();
-            BEAST_EXPECT(
-                env.le(alice)->getAccountID(sfNFTokenMinter) == minter.id());
-
-            // A lambda that checks minter's and alice's ownerCount,
-            // mintedCount, and burnedCount all in one fell swoop.
-            auto checkMintersOwnerMintedBurned = [&env, this, &alice, &minter](
-                                                     std::uint32_t aliceOwners,
-                                                     std::uint32_t aliceMinted,
-                                                     std::uint32_t aliceBurned,
-                                                     std::uint32_t minterOwners,
-                                                     std::uint32_t minterMinted,
-                                                     std::uint32_t minterBurned,
-                                                     int line) {
-                auto oneCheck = [this](
-                                    char const* type,
-                                    std::uint32_t found,
-                                    std::uint32_t exp,
-                                    int line) {
-                    if (found == exp)
-                        pass();
-                    else
-                    {
-                        std::stringstream ss;
-                        ss << "Wrong " << type << " count.  Found: " << found
-                           << "; Expected: " << exp;
-                        fail(ss.str(), __FILE__, line);
-                    }
-                };
-                oneCheck(
-                    "alice owner", ownerCount(env, alice), aliceOwners, line);
-                oneCheck(
-                    "alice minted", mintedCount(env, alice), aliceMinted, line);
-                oneCheck(
-                    "alice burned", burnedCount(env, alice), aliceBurned, line);
-                oneCheck(
-                    "minter owner",
-                    ownerCount(env, minter),
-                    minterOwners,
-                    line);
-                oneCheck(
-                    "minter minted",
-                    mintedCount(env, minter),
-                    minterMinted,
-                    line);
-                oneCheck(
-                    "minter burned",
-                    burnedCount(env, minter),
-                    minterBurned,
-                    line);
-            };
-
-            std::uint32_t nftSeq = 33;
-
-            // Pay minter almost enough to make the reserve for an NFT page.
-            env(pay(env.master, minter, XRP(50) - drops(1)));
-            env.close();
-            checkMintersOwnerMintedBurned(0, 33, nftSeq, 0, 0, 0, __LINE__);
-
-            // minter still does not have enough XRP for the reserve of an NFT
-            // page. Just for grins (and code coverage), minter mints NFTs that
-            // include a URI.
             env(token::mint(minter),
                 token::issuer(alice),
-                token::uri("uri"),
-                ter(tecINSUFFICIENT_RESERVE));
-            env.close();
-            checkMintersOwnerMintedBurned(0, 33, nftSeq, 0, 0, 0, __LINE__);
-
-            // Pay minter enough to make the reserve for an NFT page.
-            env(pay(env.master, minter, drops(11)));
-            env.close();
-
-            // Now minter can mint an NFT for alice.
-            env(token::mint(minter), token::issuer(alice), token::uri("uri"));
-            env.close();
-            checkMintersOwnerMintedBurned(0, 34, nftSeq, 1, 0, 0, __LINE__);
-
-            // Minter should be able to mint an additional 31 NFTs for alice
-            // without any additional reserve requirements.
-            for (int i = 1; i < 32; ++i)
-            {
-                env(token::mint(minter),
-                    token::issuer(alice),
-                    token::uri("uri"));
-                checkMintersOwnerMintedBurned(
-                    0, i + 34, nftSeq, 1, 0, 0, __LINE__);
-            }
-
-            // Pay minter almost enough for the reserve of an additional NFT
-            // page.
-            env(pay(env.master, minter, XRP(50) + drops(319)));
-            env.close();
-
-            // That NFT page is full.  Creating an additional NFT page requires
-            // additional reserve.
-            env(token::mint(minter),
-                token::issuer(alice),
-                token::uri("uri"),
-                ter(tecINSUFFICIENT_RESERVE));
-            env.close();
-            checkMintersOwnerMintedBurned(0, 65, nftSeq, 1, 0, 0, __LINE__);
-
-            // Pay minter enough for the reserve of an additional NFT page.
-            env(pay(env.master, minter, drops(11)));
-            env.close();
-
-            // Now minter can mint an NFT.
-            env(token::mint(minter), token::issuer(alice), token::uri("uri"));
-            env.close();
-            checkMintersOwnerMintedBurned(0, 66, nftSeq, 2, 0, 0, __LINE__);
-
-            // minter burns the NFTs she created.
-            while (nftSeq < 65)
-            {
-                env(token::burn(
-                    minter,
-                    token::getID(
-                        alice,
-                        0,
-                        (*env.le(alice))[sfFirstNFTokenSequence] + nftSeq++)));
-                env.close();
-                checkMintersOwnerMintedBurned(
-                    0, 66, nftSeq, (65 - seq) ? 1 : 0, 0, 0, __LINE__);
-            }
-
-            // minter has one more NFT to burn.  Should take her owner count to
-            // 0. Must add FirstNFTokenSequence to correctly offset the starting
-            // NFT sequence number
-            env(token::burn(
-                minter,
-                token::getID(
-                    alice,
-                    0,
-                    (*env.le(alice))[sfFirstNFTokenSequence] + nftSeq++)));
-            env.close();
-            checkMintersOwnerMintedBurned(0, 66, nftSeq, 0, 0, 0, __LINE__);
-
-            // minter burns a non-existent NFT.
-            env(token::burn(minter, token::getID(alice, 2009, 3)),
-                ter(tecNO_ENTRY));
-            env.close();
-            checkMintersOwnerMintedBurned(0, 66, nftSeq, 0, 0, 0, __LINE__);
+                token::uri("uri"));
+            checkMintersOwnerMintedBurned(
+                0, i + 34, nftSeq, 1, 0, 0, __LINE__);
         }
+
+        // Pay minter almost enough for the reserve of an additional NFT
+        // page.
+        env(pay(env.master, minter, XRP(50) + drops(319)));
+        env.close();
+
+        // That NFT page is full.  Creating an additional NFT page requires
+        // additional reserve.
+        env(token::mint(minter),
+            token::issuer(alice),
+            token::uri("uri"),
+            ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        checkMintersOwnerMintedBurned(0, 65, nftSeq, 1, 0, 0, __LINE__);
+
+        // Pay minter enough for the reserve of an additional NFT page.
+        env(pay(env.master, minter, drops(11)));
+        env.close();
+
+        // Now minter can mint an NFT.
+        env(token::mint(minter), token::issuer(alice), token::uri("uri"));
+        env.close();
+        checkMintersOwnerMintedBurned(0, 66, nftSeq, 2, 0, 0, __LINE__);
+
+        // minter burns the NFTs she created.
+        while (nftSeq < 65)
+        {
+            if(features[fixNFTokenRemint])
+                // If fixNFTokenRemint is enabled, we must add FirstNFTokenSequence to offset the starting
+                // NFT sequence number
+                env(token::burn(minter, token::getID(alice, 0,(*env.le(alice))[sfFirstNFTokenSequence] + nftSeq++)));
+            else
+                env(token::burn(minter, token::getID(alice, 0, nftSeq++)));
+
+            env.close();
+            checkMintersOwnerMintedBurned(
+                0, 66, nftSeq, (65 - seq) ? 1 : 0, 0, 0, __LINE__);
+        }
+
+        // minter has one more NFT to burn.  Should take her owner count to
+        // 0.
+        if(features[fixNFTokenRemint])
+            // If fixNFTokenRemint is enabled, we must add FirstNFTokenSequence to offset the starting
+            // NFT sequence number
+            env(token::burn(minter, token::getID(alice, 0,(*env.le(alice))[sfFirstNFTokenSequence] + nftSeq++)));
+        else
+            env(token::burn(minter, token::getID(alice, 0, nftSeq++)));
+        env.close();
+        checkMintersOwnerMintedBurned(0, 66, nftSeq, 0, 0, 0, __LINE__);
+
+        // minter burns a non-existent NFT.
+        env(token::burn(minter, token::getID(alice, 2009, 3)),
+            ter(tecNO_ENTRY));
+        env.close();
+        checkMintersOwnerMintedBurned(0, 66, nftSeq, 0, 0, 0, __LINE__);
     }
 
     void
@@ -752,105 +492,62 @@ class NFToken_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        if (!features[fixNFTokenRemint])
+        Account const alice{"alice"};
+        Env env{*this, features};
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        // We're going to hack the ledger in order to avoid generating
+        // 4 billion or so NFTs.  Because we're hacking the ledger we
+        // need alice's account to have non-zero sfMintedNFTokens and
+        // sfBurnedNFTokens fields.  This prevents an exception when the
+        // AccountRoot template is applied.
         {
-            Account const alice{"alice"};
-            Env env{*this, features};
-            env.fund(XRP(1000), alice);
+            uint256 const nftId0{token::getNextID(env, alice, 0u)};
+            env(token::mint(alice, 0u));
             env.close();
 
-            // We're going to hack the ledger in order to avoid generating
-            // 4 billion or so NFTs.  Because we're hacking the ledger we
-            // need alice's account to have non-zero sfMintedNFTokens and
-            // sfBurnedNFTokens fields.  This prevents an exception when the
-            // AccountRoot template is applied.
-            {
-                uint256 const nftId0{token::getNextID(env, alice, 0u)};
-                env(token::mint(alice, 0u));
-                env.close();
+            env(token::burn(alice, nftId0));
+            env.close();
+        }
 
-                env(token::burn(alice, nftId0));
-                env.close();
-            }
+        // Note that we're bypassing almost all of the ledger's safety
+        // checks with this modify() call.  If you call close() between
+        // here and the end of the test all the effort will be lost.
+        env.app().openLedger().modify(
+            [&alice, &env](OpenView& view, beast::Journal j) {
+                // Get the account root we want to hijack.
+                auto const sle = view.read(keylet::account(alice.id()));
+                if (!sle)
+                    return false;  // This would be really surprising!
 
-            // Note that we're bypassing almost all of the ledger's safety
-            // checks with this modify() call.  If you call close() between
-            // here and the end of the test all the effort will be lost.
-            env.app().openLedger().modify(
-                [&alice](OpenView& view, beast::Journal j) {
-                    // Get the account root we want to hijack.
-                    auto const sle = view.read(keylet::account(alice.id()));
-                    if (!sle)
-                        return false;  // This would be really surprising!
-
-                    // Just for sanity's sake we'll check that the current value
-                    // of sfMintedNFTokens matches what we expect.
-                    auto replacement = std::make_shared<SLE>(*sle, sle->key());
-                    if (replacement->getFieldU32(sfMintedNFTokens) != 1)
-                        return false;  // Unexpected test conditions.
-
+                // Just for sanity's sake we'll check that the current value
+                // of sfMintedNFTokens matches what we expect.
+                auto replacement = std::make_shared<SLE>(*sle, sle->key());
+                if (replacement->getFieldU32(sfMintedNFTokens) != 1)
+                    return false;  // Unexpected test conditions.
+                
+                if(env.current()->rules().enabled(fixNFTokenRemint)){
+                    // If fixNFTokenRemint is enabled, sequence number is generated by
+                    // sfFirstNFTokenSequence + sfMintedNFTokens. We can replace the two fields 
+                    // with any numbers as long as they add up to the largest valid number.
+                    // In our case, sfFirstNFTokenSequence is set to the largest valid number,
+                    // and sfMintedNFTokens is set to zero.
+                    (*replacement)[sfFirstNFTokenSequence] = 0xFFFF'FFFE;
+                    (*replacement)[sfMintedNFTokens] = 0x0000'0000;
+                }else{
                     // Now replace sfMintedNFTokens with the largest valid
                     // value.
                     (*replacement)[sfMintedNFTokens] = 0xFFFF'FFFE;
-                    view.rawReplace(replacement);
-                    return true;
-                });
+                }
+                view.rawReplace(replacement);
+                return true;
+            });
 
-            // See whether alice is at the boundary that causes an error.
-            env(token::mint(alice, 0u), ter(tesSUCCESS));
-            env(token::mint(alice, 0u), ter(tecMAX_SEQUENCE_REACHED));
-        }
-
-        if (features[fixNFTokenRemint])
-        {
-            Account const alice{"alice"};
-            Env env{*this, features};
-            env.fund(XRP(1000), alice);
-            env.close();
-
-            // We're going to hack the ledger in order to avoid generating
-            // 4 billion or so NFTs.  Because we're hacking the ledger we
-            // need alice's account to have non-zero sfMintedNFTokens and
-            // sfBurnedNFTokens fields.  This prevents an exception when the
-            // AccountRoot template is applied.
-            {
-                uint256 const nftId0{token::getNextID(env, alice, 0u)};
-                env(token::mint(alice, 0u));
-                env.close();
-
-                env(token::burn(alice, nftId0));
-                env.close();
-            }
-
-            // Note that we're bypassing almost all of the ledger's safety
-            // checks with this modify() call.  If you call close() between
-            // here and the end of the test all the effort will be lost.
-            env.app().openLedger().modify(
-                [&alice](OpenView& view, beast::Journal j) {
-                    // Get the account root we want to hijack.
-                    auto const sle = view.read(keylet::account(alice.id()));
-                    if (!sle)
-                        return false;  // This would be really surprising!
-
-                    // Just for sanity's sake we'll check that the current value
-                    // of sfMintedNFTokens matches what we expect.
-                    auto replacement = std::make_shared<SLE>(*sle, sle->key());
-                    if (replacement->getFieldU32(sfMintedNFTokens) != 1)
-                        return false;  // Unexpected test conditions.
-
-                    // Now replace sfMintedNFTokens with the largest valid
-                    // value.
-                    (*replacement)[sfFirstNFTokenSequence] = 0xFFFF'FFFE;
-                    (*replacement)[sfMintedNFTokens] = 0x0000'0000;
-                    view.rawReplace(replacement);
-                    return true;
-                });
-
-            // See whether alice is at the boundary that causes an error.
-            env(token::mint(alice, 0u), ter(tesSUCCESS));
-            env(token::mint(alice, 0u), ter(tecMAX_SEQUENCE_REACHED));
-        }
-    }
+        // See whether alice is at the boundary that causes an error.
+        env(token::mint(alice, 0u), ter(tesSUCCESS));
+        env(token::mint(alice, 0u), ter(tecMAX_SEQUENCE_REACHED));
+ }
 
     void
     testMintInvalid(FeatureBitset features)
