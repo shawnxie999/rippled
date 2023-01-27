@@ -647,12 +647,25 @@ class NFTokenDir_test : public beast::unit_test::suite
         // Create accounts for all of the seeds and fund those accounts.
         std::vector<Account> accounts;
         accounts.reserve(seeds.size());
-        for (std::string_view const& seed : seeds)
-        {
-            Account const& account =
-                accounts.emplace_back(Account::base58Seed, std::string(seed));
-            env.fund(XRP(10000), account);
-            env.close();
+        if(!features[fixNFTokenRemint]){
+            // If fixNFTokenRemint is not enabled, accounts can be created in different ledgers
+            for (std::string_view const& seed : seeds)
+            {
+                Account const& account =
+                    accounts.emplace_back(Account::base58Seed, std::string(seed));
+                env.fund(XRP(10000), account);
+                env.close();
+            }
+        }
+        else{
+            // If fixNFTokenRemint is enabled, accounts must be created in the same ledger
+            // in order to initialize all accounts with the same account sequence
+            for (std::string_view const& seed : seeds)
+            {
+                Account const& account =
+                    accounts.emplace_back(Account::base58Seed, std::string(seed));
+                env.fund(XRP(10000), account);
+            }
         }
 
         // All of the accounts create one NFT and and offer that NFT to buyer.
@@ -822,13 +835,26 @@ class NFTokenDir_test : public beast::unit_test::suite
         // Create accounts for all of the seeds and fund those accounts.
         std::vector<Account> accounts;
         accounts.reserve(seeds.size());
-        for (std::string_view const& seed : seeds)
-        {
-            Account const& account =
-                accounts.emplace_back(Account::base58Seed, std::string(seed));
-            env.fund(XRP(10000), account);
+        if(!features[fixNFTokenRemint]){
+            // If fixNFTokenRemint is not enabled, accounts can be created in different ledgers
+            for (std::string_view const& seed : seeds)
+            {
+                Account const& account =
+                    accounts.emplace_back(Account::base58Seed, std::string(seed));
+                env.fund(XRP(10000), account);
+                env.close();
+            }
+        }else{
+            // If fixNFTokenRemint is enabled, accounts must be created in the same ledger
+            // in order to initialize all accounts with the same account sequence
+            for (std::string_view const& seed : seeds)
+            {
+                Account const& account =
+                    accounts.emplace_back(Account::base58Seed, std::string(seed));
+                env.fund(XRP(10000), account);
+            }
             env.close();
-        }
+        } 
 
         // All of the accounts create seven consecutive NFTs and and offer
         // those NFTs to buyer.
@@ -1078,7 +1104,8 @@ public:
         FeatureBitset const fixNFTDir{
             fixNFTokenDirV1, featureNonFungibleTokensV1_1};
 
-        testWithFeats(all - fixNFTDir);
+        testWithFeats(all - fixNFTDir - fixNFTokenRemint);
+        testWithFeats(all - fixNFTokenRemint);
         testWithFeats(all);
     }
 };
