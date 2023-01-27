@@ -169,8 +169,8 @@ NFTokenMint::doApply()
             // initialize sfFirstNFTokenSequence to equal to the current account
             // sequence. In general, we must subtract account sequence by
             // one, since it is incremented by the transactor beforehand. In
-            // scenarios where there is AuthorizedMinter or Tickets, we use the
-            // account sequence directly because it is not incremented
+            // scenarios of AuthorizedMinting or Tickets, we use the
+            // account sequence as it is because it has not been incremented
             std::uint32_t const firstNFTokenSeq =
                 (*root)[~sfFirstNFTokenSequence].value_or(
                     (*root)[~sfNFTokenMinter] == ctx_.tx[sfAccount] ||
