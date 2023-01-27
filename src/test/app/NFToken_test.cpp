@@ -210,7 +210,6 @@ class NFToken_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-
         Env env{*this, features};
         Account const alice{"alice"};
         Account const minter{"minter"};
@@ -240,24 +239,23 @@ class NFToken_test : public beast::unit_test::suite
         // A lambda that checks alice's ownerCount, mintedCount, and
         // burnedCount all in one fell swoop.
         auto checkAliceOwnerMintedBurned = [&env, this, &alice](
-                                                std::uint32_t owners,
-                                                std::uint32_t minted,
-                                                std::uint32_t burned,
-                                                int line) {
-            auto oneCheck = [line, this](
-                                char const* type,
-                                std::uint32_t found,
-                                std::uint32_t exp) {
-                if (found == exp)
-                    pass();
-                else
-                {
-                    std::stringstream ss;
-                    ss << "Wrong " << type << " count.  Found: " << found
-                        << "; Expected: " << exp;
-                    fail(ss.str(), __FILE__, line);
-                }
-            };
+                                               std::uint32_t owners,
+                                               std::uint32_t minted,
+                                               std::uint32_t burned,
+                                               int line) {
+            auto oneCheck =
+                [line, this](
+                    char const* type, std::uint32_t found, std::uint32_t exp) {
+                    if (found == exp)
+                        pass();
+                    else
+                    {
+                        std::stringstream ss;
+                        ss << "Wrong " << type << " count.  Found: " << found
+                           << "; Expected: " << exp;
+                        fail(ss.str(), __FILE__, line);
+                    }
+                };
             oneCheck("owner", ownerCount(env, alice), owners);
             oneCheck("minted", mintedCount(env, alice), minted);
             oneCheck("burned", burnedCount(env, alice), burned);
@@ -316,21 +314,25 @@ class NFToken_test : public beast::unit_test::suite
 
         while (seq < 33)
         {
-            if(features[fixNFTokenRemint])
-                // If fixNFTokenRemint is enabled, we must add FirstNFTokenSequence to offset the starting
-                // NFT sequence number
-                env(token::burn(alice, token::getID(alice, 0, (*env.le(alice))[sfFirstNFTokenSequence] + seq++)));  
+            if (features[fixNFTokenRemint])
+                // If fixNFTokenRemint is enabled, we must add
+                // FirstNFTokenSequence to offset the starting NFT sequence
+                // number
+                env(token::burn(
+                    alice,
+                    token::getID(
+                        alice,
+                        0,
+                        (*env.le(alice))[sfFirstNFTokenSequence] + seq++)));
             else
                 env(token::burn(alice, token::getID(alice, 0, seq++)));
 
             env.close();
-            checkAliceOwnerMintedBurned(
-                (33 - seq) ? 1 : 0, 33, seq, __LINE__);
+            checkAliceOwnerMintedBurned((33 - seq) ? 1 : 0, 33, seq, __LINE__);
         }
 
         // alice burns a non-existent NFT.
-        env(token::burn(alice, token::getID(alice, 197, 5)),
-            ter(tecNO_ENTRY));
+        env(token::burn(alice, token::getID(alice, 197, 5)), ter(tecNO_ENTRY));
         env.close();
         checkAliceOwnerMintedBurned(0, 33, 33, __LINE__);
 
@@ -345,13 +347,13 @@ class NFToken_test : public beast::unit_test::suite
         // A lambda that checks minter's and alice's ownerCount,
         // mintedCount, and burnedCount all in one fell swoop.
         auto checkMintersOwnerMintedBurned = [&env, this, &alice, &minter](
-                                                    std::uint32_t aliceOwners,
-                                                    std::uint32_t aliceMinted,
-                                                    std::uint32_t aliceBurned,
-                                                    std::uint32_t minterOwners,
-                                                    std::uint32_t minterMinted,
-                                                    std::uint32_t minterBurned,
-                                                    int line) {
+                                                 std::uint32_t aliceOwners,
+                                                 std::uint32_t aliceMinted,
+                                                 std::uint32_t aliceBurned,
+                                                 std::uint32_t minterOwners,
+                                                 std::uint32_t minterMinted,
+                                                 std::uint32_t minterBurned,
+                                                 int line) {
             auto oneCheck = [this](
                                 char const* type,
                                 std::uint32_t found,
@@ -363,31 +365,21 @@ class NFToken_test : public beast::unit_test::suite
                 {
                     std::stringstream ss;
                     ss << "Wrong " << type << " count.  Found: " << found
-                        << "; Expected: " << exp;
+                       << "; Expected: " << exp;
                     fail(ss.str(), __FILE__, line);
                 }
             };
-            oneCheck(
-                "alice owner", ownerCount(env, alice), aliceOwners, line);
+            oneCheck("alice owner", ownerCount(env, alice), aliceOwners, line);
             oneCheck(
                 "alice minted", mintedCount(env, alice), aliceMinted, line);
             oneCheck(
                 "alice burned", burnedCount(env, alice), aliceBurned, line);
             oneCheck(
-                "minter owner",
-                ownerCount(env, minter),
-                minterOwners,
-                line);
+                "minter owner", ownerCount(env, minter), minterOwners, line);
             oneCheck(
-                "minter minted",
-                mintedCount(env, minter),
-                minterMinted,
-                line);
+                "minter minted", mintedCount(env, minter), minterMinted, line);
             oneCheck(
-                "minter burned",
-                burnedCount(env, minter),
-                minterBurned,
-                line);
+                "minter burned", burnedCount(env, minter), minterBurned, line);
         };
 
         std::uint32_t nftSeq = 33;
@@ -420,11 +412,8 @@ class NFToken_test : public beast::unit_test::suite
         // without any additional reserve requirements.
         for (int i = 1; i < 32; ++i)
         {
-            env(token::mint(minter),
-                token::issuer(alice),
-                token::uri("uri"));
-            checkMintersOwnerMintedBurned(
-                0, i + 34, nftSeq, 1, 0, 0, __LINE__);
+            env(token::mint(minter), token::issuer(alice), token::uri("uri"));
+            checkMintersOwnerMintedBurned(0, i + 34, nftSeq, 1, 0, 0, __LINE__);
         }
 
         // Pay minter almost enough for the reserve of an additional NFT
@@ -453,10 +442,16 @@ class NFToken_test : public beast::unit_test::suite
         // minter burns the NFTs she created.
         while (nftSeq < 65)
         {
-            if(features[fixNFTokenRemint])
-                // If fixNFTokenRemint is enabled, we must add FirstNFTokenSequence to offset the starting
-                // NFT sequence number
-                env(token::burn(minter, token::getID(alice, 0,(*env.le(alice))[sfFirstNFTokenSequence] + nftSeq++)));
+            if (features[fixNFTokenRemint])
+                // If fixNFTokenRemint is enabled, we must add
+                // FirstNFTokenSequence to offset the starting NFT sequence
+                // number
+                env(token::burn(
+                    minter,
+                    token::getID(
+                        alice,
+                        0,
+                        (*env.le(alice))[sfFirstNFTokenSequence] + nftSeq++)));
             else
                 env(token::burn(minter, token::getID(alice, 0, nftSeq++)));
 
@@ -467,10 +462,15 @@ class NFToken_test : public beast::unit_test::suite
 
         // minter has one more NFT to burn.  Should take her owner count to
         // 0.
-        if(features[fixNFTokenRemint])
-            // If fixNFTokenRemint is enabled, we must add FirstNFTokenSequence to offset the starting
-            // NFT sequence number
-            env(token::burn(minter, token::getID(alice, 0,(*env.le(alice))[sfFirstNFTokenSequence] + nftSeq++)));
+        if (features[fixNFTokenRemint])
+            // If fixNFTokenRemint is enabled, we must add FirstNFTokenSequence
+            // to offset the starting NFT sequence number
+            env(token::burn(
+                minter,
+                token::getID(
+                    alice,
+                    0,
+                    (*env.le(alice))[sfFirstNFTokenSequence] + nftSeq++)));
         else
             env(token::burn(minter, token::getID(alice, 0, nftSeq++)));
         env.close();
@@ -526,16 +526,20 @@ class NFToken_test : public beast::unit_test::suite
                 auto replacement = std::make_shared<SLE>(*sle, sle->key());
                 if (replacement->getFieldU32(sfMintedNFTokens) != 1)
                     return false;  // Unexpected test conditions.
-                
-                if(env.current()->rules().enabled(fixNFTokenRemint)){
-                    // If fixNFTokenRemint is enabled, sequence number is generated by
-                    // sfFirstNFTokenSequence + sfMintedNFTokens. We can replace the two fields 
-                    // with any numbers as long as they add up to the largest valid number.
-                    // In our case, sfFirstNFTokenSequence is set to the largest valid number,
-                    // and sfMintedNFTokens is set to zero.
+
+                if (env.current()->rules().enabled(fixNFTokenRemint))
+                {
+                    // If fixNFTokenRemint is enabled, sequence number is
+                    // generated by sfFirstNFTokenSequence + sfMintedNFTokens.
+                    // We can replace the two fields with any numbers as long as
+                    // they add up to the largest valid number. In our case,
+                    // sfFirstNFTokenSequence is set to the largest valid
+                    // number, and sfMintedNFTokens is set to zero.
                     (*replacement)[sfFirstNFTokenSequence] = 0xFFFF'FFFE;
                     (*replacement)[sfMintedNFTokens] = 0x0000'0000;
-                }else{
+                }
+                else
+                {
                     // Now replace sfMintedNFTokens with the largest valid
                     // value.
                     (*replacement)[sfMintedNFTokens] = 0xFFFF'FFFE;
@@ -547,7 +551,7 @@ class NFToken_test : public beast::unit_test::suite
         // See whether alice is at the boundary that causes an error.
         env(token::mint(alice, 0u), ter(tesSUCCESS));
         env(token::mint(alice, 0u), ter(tecMAX_SEQUENCE_REACHED));
- }
+    }
 
     void
     testMintInvalid(FeatureBitset features)
