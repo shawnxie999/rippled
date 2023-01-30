@@ -5204,7 +5204,8 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(openLedgerSeq(env) == deletableLgrSeq);
         };
 
-        // Close more ledgers to be able to delete alice's account
+        // Close more ledgers until it is no longer within <FirstNFTokenSequence +
+        // MintedNFTokens + 256> to be able to delete alice's account
         incLgrSeqForNFTokenAccDel(alice);
 
         // alice's account is deleted
