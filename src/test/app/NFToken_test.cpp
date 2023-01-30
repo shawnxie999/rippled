@@ -5366,7 +5366,6 @@ class NFToken_test : public beast::unit_test::suite
         testNFTokenDeleteAccount(features);
         testNftXxxOffers(features);
         testFixNFTokenNegOffer(features);
-        testFixNFTokenNegOffer(features);
         testfixNFTokenRemint(features);
     }
 
