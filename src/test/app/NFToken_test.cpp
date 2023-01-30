@@ -5151,7 +5151,6 @@ class NFToken_test : public beast::unit_test::suite
         {
             env(token::burn(minter, nftokenID));
         }
-
         env.close();
 
         // Increment ledger sequence to the number that is
@@ -5165,8 +5164,8 @@ class NFToken_test : public beast::unit_test::suite
 
         auto const acctDelFee1{drops(env.current()->fees().increment)};
 
-        // If fixNFTokenRemint is not enabled, then we can sucessfully
-        // delete alice's account.
+        // If fixNFTokenRemint is not enabled, then alice's account
+        // can be successfully deleted.
         if (!features[fixNFTokenRemint])
         {
             env(acctdelete(alice, becky), fee(acctDelFee1));
@@ -5217,40 +5216,39 @@ class NFToken_test : public beast::unit_test::suite
         BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
 
         // Verify that alice's account root is gone from the current ledger
-        // and becky has alice's XRP.
         BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
     }
 
     void
     testWithFeats(FeatureBitset features)
     {
-        // testEnabled(features);
-        // testMintReserve(features);
-        // testMintMaxTokens(features);
-        // testMintInvalid(features);
-        // testBurnInvalid(features);
-        // testCreateOfferInvalid(features);
-        // testCancelOfferInvalid(features);
-        // testAcceptOfferInvalid(features);
-        // testMintFlagBurnable(features);
-        // testMintFlagOnlyXRP(features);
-        // testMintFlagCreateTrustLine(features);
-        // testMintFlagTransferable(features);
-        // testMintTransferFee(features);
-        // testMintTaxon(features);
-        // testMintURI(features);
-        // testCreateOfferDestination(features);
-        // testCreateOfferDestinationDisallowIncoming(features);
-        // testCreateOfferExpiration(features);
-        // testCancelOffers(features);
-        // testCancelTooManyOffers(features);
-        // testBrokeredAccept(features);
-        // testNFTokenOfferOwner(features);
-        // testNFTokenWithTickets(features);
-        // testNFTokenDeleteAccount(features);
-        // testNftXxxOffers(features);
-        // testFixNFTokenNegOffer(features);
-        // testFixNFTokenNegOffer(features);
+        testEnabled(features);
+        testMintReserve(features);
+        testMintMaxTokens(features);
+        testMintInvalid(features);
+        testBurnInvalid(features);
+        testCreateOfferInvalid(features);
+        testCancelOfferInvalid(features);
+        testAcceptOfferInvalid(features);
+        testMintFlagBurnable(features);
+        testMintFlagOnlyXRP(features);
+        testMintFlagCreateTrustLine(features);
+        testMintFlagTransferable(features);
+        testMintTransferFee(features);
+        testMintTaxon(features);
+        testMintURI(features);
+        testCreateOfferDestination(features);
+        testCreateOfferDestinationDisallowIncoming(features);
+        testCreateOfferExpiration(features);
+        testCancelOffers(features);
+        testCancelTooManyOffers(features);
+        testBrokeredAccept(features);
+        testNFTokenOfferOwner(features);
+        testNFTokenWithTickets(features);
+        testNFTokenDeleteAccount(features);
+        testNftXxxOffers(features);
+        testFixNFTokenNegOffer(features);
+        testFixNFTokenNegOffer(features);
         testAcctDelAuthorizedMinting(features);
     }
 
@@ -5262,8 +5260,8 @@ public:
         FeatureBitset const all{supported_amendments()};
         FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
-        // testWithFeats(all - fixNFTDir);
-        // testWithFeats(all - disallowIncoming);
+        testWithFeats(all - fixNFTDir);
+        testWithFeats(all - disallowIncoming);
         testWithFeats(all - fixNFTokenRemint);
         testWithFeats(all);
     }

@@ -670,6 +670,7 @@ class NFTokenDir_test : public beast::unit_test::suite
                     Account::base58Seed, std::string(seed));
                 env.fund(XRP(10000), account);
             }
+            env.close();
         }
 
         // All of the accounts create one NFT and and offer that NFT to buyer.
