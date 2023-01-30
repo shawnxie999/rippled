@@ -655,10 +655,10 @@ class NFTokenDir_test : public beast::unit_test::suite
         // account sequence.
         for (std::string_view const& seed : seeds)
         {
-            Account const& account = accounts.emplace_back(
-                Account::base58Seed, std::string(seed));
+            Account const& account =
+                accounts.emplace_back(Account::base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
-            
+
             // Only advance the ledger if fixNFTokenRemint is disabled
             if (!features[fixNFTokenRemint])
                 env.close();
@@ -840,8 +840,8 @@ class NFTokenDir_test : public beast::unit_test::suite
         // account sequence.
         for (std::string_view const& seed : seeds)
         {
-            Account const& account = accounts.emplace_back(
-                Account::base58Seed, std::string(seed));
+            Account const& account =
+                accounts.emplace_back(Account::base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
 
             // Only advance the ledger if fixNFTokenRemint is disabled
