@@ -5177,7 +5177,7 @@ class NFToken_test : public beast::unit_test::suite
         // If fixNFTokenRemint is enabled,
         // due to authorized minting, alice's account sequence does not
         // advance while minter mints NFTokens for her.
-        // The new accout deletion retriction <FirstNFTokenSequence +
+        // The new account deletion retriction <FirstNFTokenSequence +
         // MintedNFTokens + 256> enabled by this amendment will enforce alice to
         // wait for more ledgers to close before she can delete her account, to
         // prevent duplicate NFTokenIDs
