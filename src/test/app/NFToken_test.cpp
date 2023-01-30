@@ -5095,12 +5095,13 @@ class NFToken_test : public beast::unit_test::suite
             env.close();
         }
     }
+
     void
-    testAcctDelAuthorizedMinting(FeatureBitset features)
+    testfixNFTokenRemint(FeatureBitset features)
     {
         using namespace test::jtx;
 
-        testcase("testAcctDelAuthorizedMinting");
+        testcase("testfixNFTokenRemint");
 
         // Returns the current ledger sequence
         auto openLedgerSeq = [](Env& env) { return env.current()->seq(); };
@@ -5120,104 +5121,147 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(openLedgerSeq(env) == env.seq(acc) + 255);
         };
 
-        // We test if the issuer account can be deleted after an authorized
-        // minter mints and burns a batch of NFTokens. The behavior changes
-        // depending on whether fixNFTokenRemint is enabled
-        Env env{*this, features};
-        Account const alice("alice");
-        Account const becky("becky");
-        Account const minter{"minter"};
+        // If fixNFTokenRemint is not enabled, we test if the issuer account can be deleted 
+        // after an authorized minter mints and burns a batch of NFTokens.
+        if (!features[fixNFTokenRemint]) {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const becky("becky");
+            Account const minter{"minter"};
 
-        env.fund(XRP(10000), alice, becky, minter);
-        env.close();
+            env.fund(XRP(10000), alice, becky, minter);
+            env.close();
 
-        // alice sets minter as her authorized minter
-        env(token::setMinter(alice, minter));
-        env.close();
+            // alice sets minter as her authorized minter
+            env(token::setMinter(alice, minter));
+            env.close();
 
-        // minter mints 500 NFTs for alice
-        std::vector<uint256> nftIDs;
-        nftIDs.reserve(500);
-        for (int i = 0; i < 500; i++)
-        {
-            uint256 const nftokenID = token::getNextID(env, alice, 0u);
-            nftIDs.push_back(nftokenID);
-            env(token::mint(minter), token::issuer(alice));
-        }
-        env.close();
+            // minter mints 500 NFTs for alice
+            std::vector<uint256> nftIDs;
+            nftIDs.reserve(500);
+            for (int i = 0; i < 500; i++)
+            {
+                uint256 const nftokenID = token::getNextID(env, alice, 0u);
+                nftIDs.push_back(nftokenID);
+                env(token::mint(minter), token::issuer(alice));
+            }
+            env.close();
 
-        // minter burns 500 NFTs
-        for (auto const nftokenID : nftIDs)
-        {
-            env(token::burn(minter, nftokenID));
-        }
-        env.close();
+            // minter burns 500 NFTs
+            for (auto const nftokenID : nftIDs)
+            {
+                env(token::burn(minter, nftokenID));
+            }
+            env.close();
 
-        // Increment ledger sequence to the number that is
-        // enforced by the featureDeletableAccounts amendment
-        incLgrSeqForAccDel(env, alice);
+            // Increment ledger sequence to the number that is
+            // enforced by the featureDeletableAccounts amendment
+            incLgrSeqForAccDel(env, alice);
 
-        // Verify that alice's account root is present.
-        Keylet const aliceAcctKey{keylet::account(alice.id())};
-        BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-        BEAST_EXPECT(env.current()->exists(aliceAcctKey));
+            // Verify that alice's account root is present.
+            Keylet const aliceAcctKey{keylet::account(alice.id())};
+            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
+            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
 
-        auto const acctDelFee1{drops(env.current()->fees().increment)};
+            auto const acctDelFee1{drops(env.current()->fees().increment)};
 
-        // If fixNFTokenRemint is not enabled, then alice's account
-        // can be successfully deleted.
-        if (!features[fixNFTokenRemint])
-        {
+            // alice's account can be successfully deleted.
             env(acctdelete(alice, becky), fee(acctDelFee1));
             env.close();
             BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
-            return;
         }
 
-        // If fixNFTokenRemint is enabled,
-        // due to authorized minting, alice's account sequence does not
-        // advance while minter mints NFTokens for her.
-        // The new account deletion retriction <FirstNFTokenSequence +
-        // MintedNFTokens + 256> enabled by this amendment will enforce alice to
-        // wait for more ledgers to close before she can delete her account, to
-        // prevent duplicate NFTokenIDs
-        env(acctdelete(alice, becky), fee(acctDelFee1), ter(tecTOO_SOON));
-        env.close();
+        // If fixNFTokenRemint is enabled, 
+        // when an authorized minter mints and burns a batch of NFTokens, issuer's account 
+        // needs to wait a longer time before it can deleted   
+        if (features[fixNFTokenRemint]) {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const becky("becky");
+            Account const minter{"minter"};
 
-        // alice's account is still present
-        BEAST_EXPECT(env.current()->exists(aliceAcctKey));
+            env.fund(XRP(10000), alice, becky, minter);
+            env.close();
 
-        // Close the ledger until the ledger sequence is large enough to
-        // close the account, which has minted NFTokens
-        auto incLgrSeqForNFTokenAccDel = [&](Account const& acc) {
-            int delta = 0;
-            auto const deletableLgrSeq =
-                (*env.le(acc))[sfFirstNFTokenSequence] +
-                (*env.le(acc))[sfMintedNFTokens] + 255;
+            // alice sets minter as her authorized minter
+            env(token::setMinter(alice, minter));
+            env.close();
 
-            if (deletableLgrSeq > openLedgerSeq(env))
-                delta = deletableLgrSeq - openLedgerSeq(env);
+            // minter mints 500 NFTs for alice
+            std::vector<uint256> nftIDs;
+            nftIDs.reserve(500);
+            for (int i = 0; i < 500; i++)
+            {
+                uint256 const nftokenID = token::getNextID(env, alice, 0u);
+                nftIDs.push_back(nftokenID);
+                env(token::mint(minter), token::issuer(alice));
+            }
+            env.close();
 
-            BEAST_EXPECT(delta >= 0);
-            for (int i = 0; i < delta; ++i)
-                env.close();
-            BEAST_EXPECT(openLedgerSeq(env) == deletableLgrSeq);
-        };
+            // minter burns 500 NFTs
+            for (auto const nftokenID : nftIDs)
+            {
+                env(token::burn(minter, nftokenID));
+            }
+            env.close();
 
-        // Close more ledgers until it is no longer within <FirstNFTokenSequence
-        // + MintedNFTokens + 256> to be able to delete alice's account
-        incLgrSeqForNFTokenAccDel(alice);
+            // Increment ledger sequence to the number that is
+            // enforced by the featureDeletableAccounts amendment
+            incLgrSeqForAccDel(env, alice);
 
-        // alice's account is deleted
-        auto const acctDelFee2{drops(env.current()->fees().increment)};
-        env(acctdelete(alice, becky), fee(acctDelFee2));
-        env.close();
+            // Verify that alice's account root is present.
+            Keylet const aliceAcctKey{keylet::account(alice.id())};
+            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
+            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
 
-        // alice's account is still in the most recently closed ledger.
-        BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
+            auto const acctDelFee1{drops(env.current()->fees().increment)};
 
-        // Verify that alice's account root is gone from the current ledger
-        BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
+            // alice tries to delete her account.
+            // Due to authorized minting, alice's account sequence does not
+            // advance while minter mints NFTokens for her.
+            // The new account deletion retriction <FirstNFTokenSequence +
+            // MintedNFTokens + 256> enabled by this amendment will enforce alice to
+            // wait for more ledgers to close before she can delete her account, to
+            // prevent duplicate NFTokenIDs
+            env(acctdelete(alice, becky), fee(acctDelFee1), ter(tecTOO_SOON));
+            env.close();
+
+            // alice's account is still present
+            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
+
+            // Close the ledger until the ledger sequence is large enough to
+            // close the account, which has minted NFTokens
+            auto incLgrSeqForNFTokenAccDel = [&](Account const& acc) {
+                int delta = 0;
+                auto const deletableLgrSeq =
+                    (*env.le(acc))[sfFirstNFTokenSequence] +
+                    (*env.le(acc))[sfMintedNFTokens] + 255;
+
+                if (deletableLgrSeq > openLedgerSeq(env))
+                    delta = deletableLgrSeq - openLedgerSeq(env);
+
+                BEAST_EXPECT(delta >= 0);
+                for (int i = 0; i < delta; ++i)
+                    env.close();
+                BEAST_EXPECT(openLedgerSeq(env) == deletableLgrSeq);
+            };
+
+            // Close more ledgers until it is no longer within <FirstNFTokenSequence
+            // + MintedNFTokens + 256> to be able to delete alice's account
+            incLgrSeqForNFTokenAccDel(alice);
+
+            // alice's account is deleted
+            auto const acctDelFee2{drops(env.current()->fees().increment)};
+            env(acctdelete(alice, becky), fee(acctDelFee2));
+            env.close();
+
+            // alice's account is still in the most recently closed ledger.
+            BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
+
+            // Verify that alice's account root is gone from the current ledger
+            BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
+        }
+
     }
 
     void
@@ -5250,7 +5294,7 @@ class NFToken_test : public beast::unit_test::suite
         testNftXxxOffers(features);
         testFixNFTokenNegOffer(features);
         testFixNFTokenNegOffer(features);
-        testAcctDelAuthorizedMinting(features);
+        testfixNFTokenRemint(features);
     }
 
 public:
