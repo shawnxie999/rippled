@@ -16,7 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/app/tx/impl/details/NFTokenUtils.h>
+
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
@@ -101,16 +101,6 @@ private:
             env.close();
         BEAST_EXPECT(openLedgerSeq(env) == env.seq(acc) + 255 - margin);
     }
-    // Helper function that returns the number of nfts owned by an account.
-    static std::uint32_t
-    nftCount(test::jtx::Env& env, test::jtx::Account const& acct)
-    {
-        Json::Value params;
-        params[jss::account] = acct.human();
-        params[jss::type] = "state";
-        Json::Value nfts = env.rpc("json", "account_nfts", to_string(params));
-        return nfts[jss::result][jss::account_nfts].size();
-    };
 
 public:
     void
