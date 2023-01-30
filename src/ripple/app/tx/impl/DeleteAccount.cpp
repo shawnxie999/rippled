@@ -223,11 +223,9 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
         return tecTOO_SOON;
 
-    if (ctx.view.rules().enabled(fixNFTokenRemint))
+    if (ctx.view.rules().enabled(fixNFTokenRemint) && ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
+                (*sleAccount)[sfMintedNFTokens] + seqDelta > ctx.view.seq()) )
     {
-        if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
-                (*sleAccount)[sfMintedNFTokens] + seqDelta >
-            ctx.view.seq())
             return tecTOO_SOON;
     }
 
