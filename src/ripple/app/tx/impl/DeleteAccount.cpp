@@ -223,10 +223,12 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
         return tecTOO_SOON;
 
-    if (ctx.view.rules().enabled(fixNFTokenRemint) && ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
-                (*sleAccount)[sfMintedNFTokens] + seqDelta > ctx.view.seq()) )
+    if (ctx.view.rules().enabled(fixNFTokenRemint) &&
+        ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
+             (*sleAccount)[sfMintedNFTokens] + seqDelta >
+         ctx.view.seq()))
     {
-            return tecTOO_SOON;
+        return tecTOO_SOON;
     }
 
     // Verify that the account does not own any objects that would prevent
