@@ -5282,13 +5282,13 @@ class NFToken_test : public beast::unit_test::suite
 
             // Close enough ledgers to delete alice's account
             incLgrSeqForAccDel(env, alice);
-            
+
             // alice's account is deleted
             Keylet const aliceAcctKey{keylet::account(alice.id())};
             auto const acctDelFee{drops(env.current()->fees().increment)};
             env(acctdelete(alice, becky), fee(acctDelFee));
             env.close();
-            
+
             // alice's account account root is gone from the most recently
             // closed ledger and the current ledger.
             BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
@@ -5306,8 +5306,8 @@ class NFToken_test : public beast::unit_test::suite
             // alice mints a NFT with same params as prevNftokenID
             uint256 const remintNftokenID = token::getNextID(env, alice, 0u);
             env(token::mint(alice));
-            env.close();    
-            
+            env.close();
+
             // burn the NFT to make sure alice owns remintNftokenID
             env(token::burn(alice, remintNftokenID));
             env.close();
@@ -5564,7 +5564,7 @@ class NFToken_test : public beast::unit_test::suite
         }
 
         // If fixNFTokenRemint is disabled,
-        // Alice creates unique NFTokenIDs before and after 
+        // Alice creates unique NFTokenIDs before and after
         // account re-creation.
         if (features[fixNFTokenRemint])
         {
@@ -5587,13 +5587,13 @@ class NFToken_test : public beast::unit_test::suite
 
             // Close enough ledgers to delete alice's account
             incLgrSeqForAccDel(env, alice);
-            
+
             // alice's account is deleted
             Keylet const aliceAcctKey{keylet::account(alice.id())};
             auto const acctDelFee{drops(env.current()->fees().increment)};
             env(acctdelete(alice, becky), fee(acctDelFee));
             env.close();
-            
+
             // alice's account account root is gone from the most recently
             // closed ledger and the current ledger.
             BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
@@ -5611,8 +5611,8 @@ class NFToken_test : public beast::unit_test::suite
             // alice mints a NFT with same params as prevNftokenID
             uint256 const remintNftokenID = token::getNextID(env, alice, 0u);
             env(token::mint(alice));
-            env.close();    
-            
+            env.close();
+
             // burn the NFT to make sure alice owns remintNftokenID
             env(token::burn(alice, remintNftokenID));
             env.close();
