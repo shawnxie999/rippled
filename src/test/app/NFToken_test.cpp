@@ -5234,6 +5234,8 @@ class NFToken_test : public beast::unit_test::suite
             }
             env.close();
 
+            BEAST_EXPECT(ticketCount(env, alice) == 0);
+
             // Increment ledger sequence to the number that is
             // enforced by the featureDeletableAccounts amendment
             incLgrSeqForAccDel(env, alice);
@@ -5375,6 +5377,8 @@ class NFToken_test : public beast::unit_test::suite
             }
             env.close();
 
+            BEAST_EXPECT(ticketCount(env, alice) == 0);
+
             // Increment ledger sequence to the number that is
             // enforced by the featureDeletableAccounts amendment
             incLgrSeqForAccDel(env, alice);
@@ -5457,6 +5461,8 @@ class NFToken_test : public beast::unit_test::suite
                     ticket::use(minterTicketSeq++));
             }
             env.close();
+
+            BEAST_EXPECT(ticketCount(env, minter) == 0);
 
             // Increment ledger sequence to the number that is
             // enforced by the featureDeletableAccounts amendment
