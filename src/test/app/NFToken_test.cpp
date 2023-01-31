@@ -5394,7 +5394,7 @@ class NFToken_test : public beast::unit_test::suite
             env.close();
 
             // Close more ledgers until it is no longer within
-            // <FirstNFTokenSequence + MintedNFTokens + 256> 
+            // <FirstNFTokenSequence + MintedNFTokens + 256>
             // to be able to delete alice's account
             incLgrSeqForNFTokenAccDel(env, alice);
 
@@ -5482,7 +5482,7 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.current()->exists(aliceAcctKey));
 
             // Close more ledgers until it is no longer within
-            // <FirstNFTokenSequence + MintedNFTokens + 256> 
+            // <FirstNFTokenSequence + MintedNFTokens + 256>
             // to be able to delete alice's account
             incLgrSeqForNFTokenAccDel(env, alice);
 
