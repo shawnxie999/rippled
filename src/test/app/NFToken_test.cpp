@@ -5262,6 +5262,67 @@ class NFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
         }
 
+        // If fixNFTokenRemint is not enabled, 
+        // when an account mints and burns a batch of NFTokens using tickets, the account 
+        // should be able to be deleted.
+        if (!features[fixNFTokenRemint]) {
+            Env env{*this, features};
+
+            Account const alice{"alice"};
+            Account const becky{"becky"};
+            env.fund(XRP(10000), alice, becky);
+            env.close();
+
+            // alice grab enough tickets for all of the following
+            // transactions.  Note that once the tickets are acquired alice's
+            // account sequence number should not advance.
+            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            env(ticket::create(alice, 100));
+            env.close();
+
+            BEAST_EXPECT(ticketCount(env, alice) == 100);
+            BEAST_EXPECT(ownerCount(env, alice) == 100);
+
+            // alice mints 50 NFTs using tickets
+            std::vector<uint256> nftIDs;
+            nftIDs.reserve(50);
+            for (int i = 0; i < 50; i++){
+                nftIDs.push_back(token::getNextID(env, alice, 0u, tfTransferable));
+                env(token::mint(alice, 0u),
+                    txflags(tfTransferable),
+                    ticket::use(aliceTicketSeq++));
+                env.close();                
+            }
+
+            // alice burns 50 NFTs using tickets
+            for (auto const nftokenID : nftIDs)
+            {
+                env(token::burn(alice, nftokenID), ticket::use(aliceTicketSeq++));
+            }
+            env.close();
+            
+            // Increment ledger sequence to the number that is
+            // enforced by the featureDeletableAccounts amendment
+            incLgrSeqForAccDel(env, alice);
+
+            // Verify that alice's account root is present.
+            Keylet const aliceAcctKey{keylet::account(alice.id())};
+            BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
+            BEAST_EXPECT(env.current()->exists(aliceAcctKey));
+
+            // alice tries to delete her account, and is successful.
+            auto const acctDelFee1{drops(env.current()->fees().increment)};
+            env(acctdelete(alice, becky), fee(acctDelFee1));
+            env.close();
+
+            // alice's account account root is gone from the most recently closed ledger.
+            BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
+
+            // Verify that alice's account root is gone from the current ledger
+            BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
+
+        }
+
         // If fixNFTokenRemint is enabled, 
         // when an account mints and burns a batch of NFTokens using tickets, the account 
         // needs to wait a longer time before it can deleted 
