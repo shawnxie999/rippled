@@ -5308,7 +5308,7 @@ class NFToken_test : public beast::unit_test::suite
             env(token::mint(alice));
             env.close();    
             
-            // burn the NFT to make sure alice owns prevNftokenID
+            // burn the NFT to make sure alice owns remintNftokenID
             env(token::burn(alice, remintNftokenID));
             env.close();
 
@@ -5613,7 +5613,7 @@ class NFToken_test : public beast::unit_test::suite
             env(token::mint(alice));
             env.close();    
             
-            // burn the NFT to make sure alice owns prevNftokenID
+            // burn the NFT to make sure alice owns remintNftokenID
             env(token::burn(alice, remintNftokenID));
             env.close();
 
