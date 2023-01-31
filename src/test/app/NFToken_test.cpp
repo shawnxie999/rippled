@@ -5345,7 +5345,7 @@ class NFToken_test : public beast::unit_test::suite
             env.close();
 
             // alice grab enough tickets for all of the following
-            // transactions.  Note that once the tickets are acquired alice's
+            // transactions. Note that once the tickets are acquired alice's
             // account sequence number should not advance.
             std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
             env(ticket::create(alice, 100));
