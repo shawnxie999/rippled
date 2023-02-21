@@ -407,7 +407,8 @@ JSS(needed_transaction_hashes);  // out: InboundLedger
 JSS(network_id);                 // out: NetworkOPs
 JSS(network_ledger);             // out: NetworkOPs
 JSS(next_refresh_time);          // out: ValidatorSite
-JSS(nft_id);                     // in: nft_sell_offers, nft_buy_offers
+JSS(nft_id);                     // out: Tx
+JSS(nft_ids);                    // out: Tx
 JSS(nft_offer);                  // in: LedgerEntry
 JSS(nft_offer_index);            // out nft_buy_offers, nft_sell_offers
 JSS(nft_page);                   // in: LedgerEntry
@@ -432,6 +433,7 @@ JSS(node_writes_delayed);        // out::GetCounts
 JSS(obligations);                // out: GatewayBalances
 JSS(offer);                      // in: LedgerEntry
 JSS(offers);                     // out: NetworkOPs, AccountOffers, Subscribe
+JSS(offer_id);
 JSS(offline);                    // in: TransactionSign
 JSS(offset);                     // in/out: AccountTxOld
 JSS(open);                       // out: handlers/Ledger

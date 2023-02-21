@@ -34,7 +34,10 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
+#include <ripple/rpc/NFTokenID.h>
+#include <ripple/rpc/NFTokenOfferID.h>
 #include <ripple/rpc/Role.h>
+#include <ripple/rpc/TxMetaSerializer.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
 #include <grpcpp/grpcpp.h>
@@ -302,11 +305,23 @@ populateJsonResponse(
                     jvObj[jss::tx] = txn->getJson(JsonOptions::include_date);
                     if (txnMeta)
                     {
-                        jvObj[jss::meta] =
-                            txnMeta->getJson(JsonOptions::include_date);
-                        jvObj[jss::validated] = true;
-                        insertDeliveredAmount(
-                            jvObj[jss::meta], context, txn, *txnMeta);
+                        serializeTxMetaAsJSON(
+                            jvObj,
+                            context,
+                            txn->getSTransaction(),
+                            *txnMeta,
+                            JsonOptions::include_date);
+                        // jvObj[jss::meta] =
+                        //     txnMeta->getJson(JsonOptions::include_date);
+                        // jvObj[jss::validated] = true;
+                        // insertDeliveredAmount(
+                        //     jvObj[jss::meta], context, txn, *txnMeta);
+                        // insertNFTokenID(
+                        //     jvObj[jss::tx], context, txn->getSTransaction(),
+                        //     *txnMeta);
+                        // insertNFTokenOfferID(
+                        //     jvObj[jss::tx], context, txn->getSTransaction(),
+                        //     *txnMeta);
                     }
                 }
             }

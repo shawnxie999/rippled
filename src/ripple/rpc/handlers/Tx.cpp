@@ -28,8 +28,10 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/GRPCHandlers.h>
+#include <ripple/rpc/NFTokenID.h>
+#include <ripple/rpc/NFTokenOfferID.h>
+#include <ripple/rpc/TxMetaSerializer.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
-
 namespace ripple {
 
 // {
@@ -290,11 +292,22 @@ populateJsonResponse(
         else if (auto m = std::get_if<std::shared_ptr<TxMeta>>(&result.meta))
         {
             auto& meta = *m;
+
             if (meta)
             {
-                response[jss::meta] = meta->getJson(JsonOptions::none);
-                insertDeliveredAmount(
-                    response[jss::meta], context, result.txn, *meta);
+                serializeTxMetaAsJSON(
+                    response,
+                    context,
+                    result.txn->getSTransaction(),
+                    *meta,
+                    JsonOptions::none);
+                // response[jss::meta] = meta->getJson(JsonOptions::none);
+                // insertDeliveredAmount(
+                //     response[jss::meta], context, result.txn, *meta);
+                // insertNFTokenID(
+                //     response, context, result.txn->getSTransaction(), *meta);
+                // insertNFTokenOfferID(
+                //     response, context, result.txn->getSTransaction(), *meta);
             }
         }
         response[jss::validated] = result.validated;
