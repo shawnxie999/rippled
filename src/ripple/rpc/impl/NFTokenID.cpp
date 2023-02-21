@@ -67,57 +67,94 @@ insertNFTokenID(
     auto affectedNodes = transactionMeta.getAsObject().getFieldArray(sfAffectedNodes);
 
     std::optional<uint256> newNFTokenID;
-    for(auto & node: affectedNodes){    
-        if(node.getFieldU16(sfLedgerEntryType) == ltNFTOKEN_PAGE && node.isFieldPresent(sfPreviousFields)){
-            auto const& previousFields = node.getFieldObject(sfPreviousFields);
-            auto const& finalFields = node.getFieldObject(sfFinalFields);
+    std::vector<uint256> prevIDs;
+    std::vector<uint256> finalIDs;
 
-            if(!previousFields.isFieldPresent(sfNFTokens) || !finalFields.isFieldPresent(sfNFTokens))
-                continue;
-            
-            auto const& prevTokens = previousFields.getFieldArray(sfNFTokens);
-            std::vector<uint256> prevIDs;
+    // The owner is not necessarily the issuer, if using authorized minter
+    // flow. Determine owner from the ledger object ID of the NFTokenPages
+    // that were changed.
+    std::optional<AccountID> owner;
 
-            for(auto const& nftoken: prevTokens)
-                prevIDs.emplace_back(nftoken.getFieldH256(sfNFTokenID));
-            
-            auto const& finalTokens = finalFields.getFieldArray(sfNFTokens);
-            std::vector<uint256> finalIDs;
+    for (STObject const& node : transactionMeta.getNodes())
+    {
+        if (node.getFieldU16(sfLedgerEntryType) !=
+            ltNFTOKEN_PAGE)
+            continue;
 
-            for(auto const& nftoken: finalTokens)
-                finalIDs.emplace_back(nftoken.getFieldH256(sfNFTokenID));
+        if (!owner)
+            owner = AccountID::fromVoid(
+                node.getFieldH256(sfLedgerIndex).data());
 
-            std::vector<uint256> diff;
-            std::sort(prevIDs.begin(), prevIDs.end());
-            std::sort(finalIDs.begin(), finalIDs.end());
-            
-            std::set_difference(prevIDs.begin(), prevIDs.end(), finalIDs.begin(), finalIDs.end(), std::back_inserter(diff));
-            if(diff.size() <= 0)
-                continue;
-
-            newNFTokenID = diff[0];
-            break;
-
+        if (node.getFName() == sfCreatedNode)
+        {
+            STArray const& toAddNFTs =
+                node.peekAtField(sfNewFields)
+                    .downcast<STObject>()
+                    .getFieldArray(sfNFTokens);
+            std::transform(
+                toAddNFTs.begin(),
+                toAddNFTs.end(),
+                std::back_inserter(finalIDs),
+                [](STObject const& nft) {
+                    return nft.getFieldH256(sfNFTokenID);
+                });
         }
-        else if( node.getFieldU16(sfLedgerEntryType) == ltNFTOKEN_PAGE && node.isFieldPresent(sfNewFields) ){
-            auto const& newFields = node.getFieldObject(sfNewFields);
-
-            if(!newFields.isFieldPresent(sfNFTokens))
+        // Else it's modified, as there should never be a deleted NFToken page
+        // as a result of a mint.
+        else
+        {
+            // When a mint results in splitting an existing page,
+            // it results in a created page and a modified node. Sometimes,
+            // the created node needs to be linked to a third page, resulting
+            // in modifying that third page's PreviousPageMin or NextPageMin
+            // field changing, but no NFTs within that page changing. In this
+            // case, there will be no previous NFTs and we need to skip.
+            // However, there will always be NFTs listed in the final fields,
+            // as rippled outputs all fields in final fields even if they were
+            // not changed.
+            STObject const& previousFields =
+                node.peekAtField(sfPreviousFields)
+                    .downcast<STObject>();
+            if (!previousFields.isFieldPresent(sfNFTokens))
                 continue;
-        
-            auto const& nftokens = newFields.getFieldArray(sfNFTokens);
 
-            if(nftokens.size() <= 0)
-                continue;
-        
-            newNFTokenID = nftokens[0].getFieldH256(sfNFTokenID);
-            break;   
-            
+            STArray const& toAddNFTs =
+                previousFields.getFieldArray(sfNFTokens);
+            std::transform(
+                toAddNFTs.begin(),
+                toAddNFTs.end(),
+                std::back_inserter(prevIDs),
+                [](STObject const& nft) {
+                    return nft.getFieldH256(sfNFTokenID);
+                });
+
+            STArray const& toAddFinalNFTs =
+                node.peekAtField(sfFinalFields)
+                    .downcast<STObject>()
+                    .getFieldArray(sfNFTokens);
+            std::transform(
+                toAddFinalNFTs.begin(),
+                toAddFinalNFTs.end(),
+                std::back_inserter(finalIDs),
+                [](STObject const& nft) {
+                    return nft.getFieldH256(sfNFTokenID);
+                });
         }
     }
 
-    if(newNFTokenID)
-        response[jss::nft_id] = to_string(newNFTokenID.value());
+    std::sort(finalIDs.begin(), finalIDs.end());
+    std::sort(prevIDs.begin(), prevIDs.end());
+    std::vector<uint256> tokenIDResult;
+    std::set_difference(
+        finalIDs.begin(),
+        finalIDs.end(),
+        prevIDs.begin(),
+        prevIDs.end(),
+        std::inserter(tokenIDResult, tokenIDResult.begin()));
+    if (tokenIDResult.size() == 1 && owner)
+    {
+        response[jss::nft_id] = to_string(tokenIDResult.front());
+    }
 
 }
 
