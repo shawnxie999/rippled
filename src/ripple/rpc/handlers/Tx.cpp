@@ -301,13 +301,6 @@ populateJsonResponse(
                     result.txn->getSTransaction(),
                     *meta,
                     JsonOptions::none);
-                // response[jss::meta] = meta->getJson(JsonOptions::none);
-                // insertDeliveredAmount(
-                //     response[jss::meta], context, result.txn, *meta);
-                // insertNFTokenID(
-                //     response, context, result.txn->getSTransaction(), *meta);
-                // insertNFTokenOfferID(
-                //     response, context, result.txn->getSTransaction(), *meta);
             }
         }
         response[jss::validated] = result.validated;

@@ -311,17 +311,6 @@ populateJsonResponse(
                             txn->getSTransaction(),
                             *txnMeta,
                             JsonOptions::include_date);
-                        // jvObj[jss::meta] =
-                        //     txnMeta->getJson(JsonOptions::include_date);
-                        // jvObj[jss::validated] = true;
-                        // insertDeliveredAmount(
-                        //     jvObj[jss::meta], context, txn, *txnMeta);
-                        // insertNFTokenID(
-                        //     jvObj[jss::tx], context, txn->getSTransaction(),
-                        //     *txnMeta);
-                        // insertNFTokenOfferID(
-                        //     jvObj[jss::tx], context, txn->getSTransaction(),
-                        //     *txnMeta);
                     }
                 }
             }
