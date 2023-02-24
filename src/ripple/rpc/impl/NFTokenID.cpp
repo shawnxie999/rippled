@@ -61,19 +61,10 @@ getNFTokenIDFromPage(
     std::vector<uint256> prevIDs;
     std::vector<uint256> finalIDs;
 
-    // The owner is not necessarily the issuer, if using authorized minter
-    // flow. Determine owner from the ledger object ID of the NFTokenPages
-    // that were changed.
-    std::optional<AccountID> owner;
-
     for (STObject const& node : transactionMeta.getNodes())
     {
         if (node.getFieldU16(sfLedgerEntryType) != ltNFTOKEN_PAGE)
             continue;
-
-        if (!owner)
-            owner =
-                AccountID::fromVoid(node.getFieldH256(sfLedgerIndex).data());
 
         if (node.getFName() == sfCreatedNode)
         {
@@ -180,15 +171,9 @@ insertNFTokenID(
     else if (type == ttNFTOKEN_CANCEL_OFFER || type == ttNFTOKEN_ACCEPT_OFFER)
         getNFTokenIDFromDeletedOffer(transactionMeta, tokenIDResult);
 
-    if (tokenIDResult.size() == 1)
-        response[jss::nft_id] = to_string(tokenIDResult.front());
-    else
-    {
-        response[jss::nft_ids] = Json::Value(Json::arrayValue);
-
-        for (auto const& nftID : tokenIDResult)
-            response[jss::nft_ids].append(to_string(nftID));
-    }
+    response[jss::nftoken_ids] = Json::Value(Json::arrayValue);
+    for (auto const& nftID : tokenIDResult)
+        response[jss::nftoken_ids].append(to_string(nftID));
 }
 
 }  // namespace RPC

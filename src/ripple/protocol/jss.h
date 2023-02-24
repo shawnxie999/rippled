@@ -408,11 +408,11 @@ JSS(network_id);                 // out: NetworkOPs
 JSS(network_ledger);             // out: NetworkOPs
 JSS(next_refresh_time);          // out: ValidatorSite
 JSS(nft_id);                     // out: Tx
-JSS(nft_ids);                    // out: Tx
 JSS(nft_offer);                  // in: LedgerEntry
 JSS(nft_offer_index);            // out nft_buy_offers, nft_sell_offers
 JSS(nft_page);                   // in: LedgerEntry
 JSS(nft_serial);                 // out: account_nfts
+JSS(nftoken_ids);                // in: nft_sell_offers, nft_buy_offers
 JSS(no_ripple);                  // out: AccountLines
 JSS(no_ripple_peer);             // out: AccountLines
 JSS(node);                       // out: LedgerEntry
