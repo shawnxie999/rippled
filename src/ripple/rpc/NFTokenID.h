@@ -41,9 +41,9 @@ struct JsonContext;
 struct Context;
 
 /**
-   Add a `nft_id` or `nft_ids` field to the `meta` output parameter.
+   Add a `nftoken_ids` field to the `meta` output parameter.
    The field is only added to successful NFTokenMint, NFTokenAcceptOffer,
-   NFTokenCreateOffer and NFTokenCancelOffer transactions.
+   and NFTokenCancelOffer transactions.
 
    @{
  */
