@@ -305,6 +305,7 @@ populateJsonResponse(
                     jvObj[jss::tx] = txn->getJson(JsonOptions::include_date);
                     if (txnMeta)
                     {
+                        jvObj[jss::validated] = true;
                         serializeTxMetaAsJSON(
                             jvObj,
                             context,
