@@ -79,9 +79,6 @@ insertNFTokenOfferID(
     if (!canHaveNFTokenOfferID(transaction, transactionMeta))
         return;
 
-    auto affectedNodes =
-        transactionMeta.getAsObject().getFieldArray(sfAffectedNodes);
-
     std::vector<uint256> offerIDResult;
     getOfferIDFromCreatedOffer(transactionMeta, offerIDResult);
 

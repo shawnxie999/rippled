@@ -159,9 +159,6 @@ insertNFTokenID(
     if (!canHaveNFTokenID(transaction, transactionMeta))
         return;
 
-    auto affectedNodes =
-        transactionMeta.getAsObject().getFieldArray(sfAffectedNodes);
-
     std::vector<uint256> tokenIDResult;
 
     // We extract the NFTokenID from metadata by comparing affected nodes
