@@ -59,7 +59,6 @@ getNFTokenIDFromDeletedOffer(TxMeta const&, std::vector<uint256>&);
 void
 insertNFTokenID(
     Json::Value&,
-    RPC::JsonContext const&,
     std::shared_ptr<STTx const> const&,
     TxMeta const&);
 /** @} */

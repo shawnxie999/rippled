@@ -6053,14 +6053,15 @@ class NFToken_test : public beast::unit_test::suite
 
         Account const alice{"alice"};
         Account const bob{"bob"};
+        Account const broker{"broker"};
 
         Env env{*this, features};
-        env.fund(XRP(10000), alice, bob);
+        env.fund(XRP(10000), alice, bob, broker);
         env.close();
 
         // Verify `nftoken_ids` value equals to the NFTokenIDs that were
         // changed in the most recent transaction
-        auto verifyNFTokenIDs = [&](std::vector<uint256> const& nftIDs) {
+        auto verifyNFTokenIDs = [&](std::vector<uint256> actualNftIDs) {
             // Get the hash for the most recent transaction.
             std::string const txHash{
                 env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
@@ -6073,21 +6074,27 @@ class NFToken_test : public beast::unit_test::suite
             if (!BEAST_EXPECT(meta.isMember(jss::nftoken_ids)))
                 return;
 
-            // Convert values to strings for doing the comparison
-            std::vector<std::string> stringIDs;
+            // Convert NFT IDs from Json::Value to uint256
+            std::vector<uint256> metaIDs;
             std::transform(
-                nftIDs.begin(),
-                nftIDs.end(),
-                std::back_inserter(stringIDs),
-                [](uint256 const& id) { return to_string(id); });
+                meta[jss::nftoken_ids].begin(),
+                meta[jss::nftoken_ids].end(),
+                std::back_inserter(metaIDs),
+                [this](Json::Value id) { 
+                    uint256 nftID ;
+                    BEAST_EXPECT(nftID.parseHex(id.asString()));
+                    return nftID; });    
+        
+            std::sort(metaIDs.begin(), metaIDs.end());
+            std::sort(actualNftIDs.begin(), actualNftIDs.end());
 
-            for (auto const& id : meta[jss::nftoken_ids])
-            {
-                std::string idStr = id.asString();
-                BEAST_EXPECT(
-                    std::find(stringIDs.begin(), stringIDs.end(), idStr) !=
-                    stringIDs.end());
-            }
+            // Make sure the expect number of NFTs is correct
+            BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
+
+            // Check the value of NFT ID in the meta with the
+            // actual values 
+            for(size_t i = 0; i < metaIDs.size(); ++i)
+                BEAST_EXPECT(metaIDs[i] == actualNftIDs[i]);
         };
 
         // Verify `offer_id` value equals to the offerID that was
@@ -6105,56 +6112,90 @@ class NFToken_test : public beast::unit_test::suite
             if (!BEAST_EXPECT(meta.isMember(jss::offer_id)))
                 return;
 
-            BEAST_EXPECT(meta[jss::offer_id].asString() == to_string(offerID));
+            uint256 metaOfferID;
+            BEAST_EXPECT(metaOfferID.parseHex(meta[jss::offer_id].asString()));
+            BEAST_EXPECT(metaOfferID == offerID);
         };
 
-        // Alice mints 2 NFTs
-        // Verify the NFTokenIDs are correct in the NFTokenMint tx meta
-        uint256 const nftId1{token::getNextID(env, alice, 0u, tfTransferable)};
-        env(token::mint(alice, 0u), txflags(tfTransferable));
-        env.close();
-        verifyNFTokenIDs({nftId1});
+        // Check `nftoken_ids and `offer_id` in tx meta when for all NFT transactions
+        {
+            // Alice mints 2 NFTs
+            // Verify the NFTokenIDs are correct in the NFTokenMint tx meta
+            uint256 const nftId1{token::getNextID(env, alice, 0u, tfTransferable)};
+            env(token::mint(alice, 0u), txflags(tfTransferable));
+            env.close();
+            verifyNFTokenIDs({nftId1});
 
-        uint256 const nftId2{token::getNextID(env, alice, 0u, tfTransferable)};
-        env(token::mint(alice, 0u), txflags(tfTransferable));
-        env.close();
-        verifyNFTokenIDs({nftId2});
+            uint256 const nftId2{token::getNextID(env, alice, 0u, tfTransferable)};
+            env(token::mint(alice, 0u), txflags(tfTransferable));
+            env.close();
+            verifyNFTokenIDs({nftId2});
 
-        // Alice creates one sell offer for each NFT
-        // Verify the offer indexes are correct in the NFTokenCreateOffer tx
-        // meta
-        uint256 const aliceOfferIndex1 =
-            keylet::nftoffer(alice, env.seq(alice)).key;
-        env(token::createOffer(alice, nftId1, drops(1)),
-            txflags(tfSellNFToken));
-        env.close();
-        verifyNFTokenOfferID(aliceOfferIndex1);
+            // Alice creates one sell offer for each NFT
+            // Verify the offer indexes are correct in the NFTokenCreateOffer tx
+            // meta
+            uint256 const aliceOfferIndex1 =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId1, drops(1)),
+                txflags(tfSellNFToken));
+            env.close();
+            verifyNFTokenOfferID(aliceOfferIndex1);
 
-        uint256 const aliceOfferIndex2 =
-            keylet::nftoffer(alice, env.seq(alice)).key;
-        env(token::createOffer(alice, nftId2, drops(1)),
-            txflags(tfSellNFToken));
-        env.close();
-        verifyNFTokenOfferID(aliceOfferIndex2);
+            uint256 const aliceOfferIndex2 =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId2, drops(1)),
+                txflags(tfSellNFToken));
+            env.close();
+            verifyNFTokenOfferID(aliceOfferIndex2);
 
-        // Alice cancels two offers she created
-        // Verify the NFTokenIDs are correct in the NFTokenCancelOffer tx meta
-        env(token::cancelOffer(alice, {aliceOfferIndex1, aliceOfferIndex2}));
-        env.close();
-        verifyNFTokenIDs({nftId1, nftId2});
+            // Alice cancels two offers she created
+            // Verify the NFTokenIDs are correct in the NFTokenCancelOffer tx meta
+            env(token::cancelOffer(alice, {aliceOfferIndex1, aliceOfferIndex2}));
+            env.close();
+            verifyNFTokenIDs({nftId1, nftId2});
 
-        // Bobs creates a buy offer for nftId1
-        // Verify the offer id is correct in the NFTokenCreateOffer tx meta
-        auto const bobBuyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
-        env(token::createOffer(bob, nftId1, drops(1)), token::owner(alice));
-        env.close();
-        verifyNFTokenOfferID(bobBuyOfferIndex);
+            // Bobs creates a buy offer for nftId1
+            // Verify the offer id is correct in the NFTokenCreateOffer tx meta
+            auto const bobBuyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
+            env(token::createOffer(bob, nftId1, drops(1)), token::owner(alice));
+            env.close();
+            verifyNFTokenOfferID(bobBuyOfferIndex);
 
-        // Alice accepts bob's buy offer
-        // Verify the NFTokenID is correct in the NFTokenAcceptOffer tx meta
-        env(token::acceptBuyOffer(alice, bobBuyOfferIndex));
-        env.close();
-        verifyNFTokenIDs({nftId1});
+            // Alice accepts bob's buy offer
+            // Verify the NFTokenID is correct in the NFTokenAcceptOffer tx meta
+            env(token::acceptBuyOffer(alice, bobBuyOfferIndex));
+            env.close();
+            verifyNFTokenIDs({nftId1});
+        }
+
+        // Check `nftoken_ids` in brokered mode
+        {
+            //Alice mints a NFT
+            uint256 const nftId{token::getNextID(env, alice, 0u, tfTransferable)};
+            env(token::mint(alice, 0u), txflags(tfTransferable));
+            env.close();
+            verifyNFTokenIDs({nftId});
+
+            // Alice creates sell offer and set broker as destination
+            uint256 const offerAliceToBroker =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId, drops(1)),
+                token::destination(broker),
+                txflags(tfSellNFToken));
+
+            // Bob creates buy offer
+            uint256 const offerBobToBroker =
+                keylet::nftoffer(bob, env.seq(bob)).key;
+            env(token::createOffer(bob, nftId, drops(1)),
+                token::owner(alice));
+            env.close();
+
+            // Check NFTokenID meta for NFTokenAcceptOffer in brokered mode
+            env(token::brokerOffers(
+                    broker, offerBobToBroker, offerAliceToBroker));
+            env.close();
+            verifyNFTokenIDs({nftId});
+        }
     }
 
     void

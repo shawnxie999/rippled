@@ -73,7 +73,6 @@ getOfferIDFromCreatedOffer(
 void
 insertNFTokenOfferID(
     Json::Value& response,
-    RPC::JsonContext const& context,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {

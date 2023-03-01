@@ -153,7 +153,6 @@ getNFTokenIDFromDeletedOffer(
 void
 insertNFTokenID(
     Json::Value& response,
-    RPC::JsonContext const& context,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
@@ -168,8 +167,19 @@ insertNFTokenID(
     // We extract the NFTokenID from metadata by comparing affected nodes
     if (auto const type = transaction->getTxnType(); type == ttNFTOKEN_MINT)
         getNFTokenIDFromPage(transactionMeta, tokenIDResult);
-    else if (type == ttNFTOKEN_CANCEL_OFFER || type == ttNFTOKEN_ACCEPT_OFFER)
+    else if (type == ttNFTOKEN_CANCEL_OFFER)
         getNFTokenIDFromDeletedOffer(transactionMeta, tokenIDResult);
+    else if(type == ttNFTOKEN_ACCEPT_OFFER){
+        getNFTokenIDFromDeletedOffer(transactionMeta, tokenIDResult);
+
+        // The tx might be in brokered mode, where there are two deleted ltNFTOKEN_OFFER
+        // nodes, and hence there is a duplicate NFTokenID in the vector
+        // Operation here is cheap because there are at most two elements in the vector 
+        if(tokenIDResult.size() > 1){
+            sort(tokenIDResult.begin(), tokenIDResult.end());
+            tokenIDResult.erase( unique( tokenIDResult.begin(), tokenIDResult.end() ), tokenIDResult.end() );           
+        } 
+    }
 
     response[jss::nftoken_ids] = Json::Value(Json::arrayValue);
     for (auto const& nftID : tokenIDResult)

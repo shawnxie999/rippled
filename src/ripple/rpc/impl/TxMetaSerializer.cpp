@@ -49,9 +49,9 @@ serializeTxMetaAsJSON(
 
     insertDeliveredAmount(
         response[jss::meta], context, transaction, transactionMeta);
-    insertNFTokenID(response[jss::meta], context, transaction, transactionMeta);
+    insertNFTokenID(response[jss::meta], transaction, transactionMeta);
     insertNFTokenOfferID(
-        response[jss::meta], context, transaction, transactionMeta);
+        response[jss::meta], transaction, transactionMeta);
 }
 
 }  // namespace RPC
