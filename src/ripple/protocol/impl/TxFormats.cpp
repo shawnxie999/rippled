@@ -336,7 +336,6 @@ TxFormats::TxFormats()
             {sfTicketSequence, soeOPTIONAL},
         },
         commonFields);
-          
 }
 
 TxFormats const&

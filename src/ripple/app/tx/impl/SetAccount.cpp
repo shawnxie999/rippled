@@ -218,6 +218,18 @@ SetAccount::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    //
+    // Clawback
+    //
+    if (ctx_.view().rules().enabled(featureClawback) && (uSetFlag == asfAllowClawback))
+    {
+        if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
+        {
+            JLOG(ctx.j.trace()) << "Owner directory not empty.";
+            return tecOWNERS;
+        }
+    }
+    
     return tesSUCCESS;
 }
 
