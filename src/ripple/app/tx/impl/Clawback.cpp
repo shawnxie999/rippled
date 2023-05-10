@@ -70,10 +70,9 @@ Clawback::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     
     auto const sleRippleState = view.read(keylet::line(sleHolder, sleIssuer, clawAmount.getCurrency()));
-    auto const balance = sleRippleState->getFieldAmount(sfBalance)
 
     // Trustline must exist and balance is non-zero
-    if (!sleRippleState || balance == beast::zero)
+    if (!sleRippleState || !(sleRippleState->getFieldAmount(sfBalance)))
         return tecNO_LINE;
 
     return tesSUCCESS;
