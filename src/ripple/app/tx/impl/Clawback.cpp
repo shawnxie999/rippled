@@ -35,8 +35,8 @@ Clawback::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureClawback))
         return temDISABLED;
 
-    AccountID const issuer = tx.getAccountID(sfAccount);
-    STAmount const clawAmount(tx.getFieldAmount(sfAmount));
+    AccountID const issuer = ctx.tx.getAccountID(sfAccount);
+    STAmount const clawAmount(ctx.tx.getFieldAmount(sfAmount));
 
     // The issuer field is used for the token holder instead
     AccountID const holder = clawAmount.getIssuer();
@@ -54,8 +54,8 @@ TER
 Clawback::preclaim(PreclaimContext const& ctx)
 {
     std::uint32_t const uTxFlags = ctx.tx.getFlags();
-    AccountID const issuer = tx.getAccountID(sfAccount);
-    STAmount const clawAmount(tx.getFieldAmount(sfAmount));
+    AccountID const issuer = ctx.tx.getAccountID(sfAccount);
+    STAmount const clawAmount(ctx.tx.getFieldAmount(sfAmount));
     AccountID const holder = clawAmount.getIssuer();
 
     auto const sleIssuer = ctx.view.read(keylet::account(issuer));
@@ -69,11 +69,21 @@ Clawback::preclaim(PreclaimContext const& ctx)
     if (!(issuerFlagsIn & asfAllowClawback) || (issuerFlagsIn & lsfNoFreeze))
         return tecNO_PERMISSION;
     
-    auto const sleRippleState = view.read(keylet::line(sleHolder, sleIssuer, clawAmount.getCurrency()));
+    auto const sleRippleState = ctx.view.read(keylet::line(sleHolder, sleIssuer, clawAmount.getCurrency()));
 
     // Trustline must exist and balance is non-zero
     if (!sleRippleState || !(sleRippleState->getFieldAmount(sfBalance)))
         return tecNO_LINE;
+
+    // The account of the tx must be the issuer of the currecy
+    bool const bHigh = issuer > holder;
+    auto const& uLowAccountID = !bHigh ? issuer : holder;
+    auto const& highAccountID = bHigh ? issuer : holder;
+    STAmount const balance = sleRippleState->getFieldAmount(sfBalance);
+    if (balance > beast::zero && highAccountID != issuer)
+        return tecNO_PERMISSION;
+    if (balance < beast::zero && uLowAccountID != issuer)
+        return tecNO_PERMISSION;
 
     return tesSUCCESS;
 }
@@ -134,8 +144,8 @@ Clawback::changeRippleStateFreeze(AccountID const account, AccountID const uDstA
 TER
 Clawback::doApply()
 {
-    AccountID const issuer = tx.getAccountID(sfAccount);
-    STAmount const clawAmount(tx.getFieldAmount(sfAmount));
+    AccountID const issuer = ctx_.tx.getAccountID(sfAccount);
+    STAmount const clawAmount(ctx_.tx.getFieldAmount(sfAmount));
     AccountID const holder = clawAmount.getIssuer();
 
     // issuer field was holder's address in request, needs to change 
@@ -146,12 +156,12 @@ Clawback::doApply()
 
     // Get the amount of spendable IOU that the holder has
     STAmount const spendableAmount = accountHolds(
-                                            ctx.view,
+                                            view(),
                                             holder,
                                             clawAmount.getCurrency(),
                                             clawAmount.getIssuer(),
                                             fhIGNORE_FREEZE,
-                                            ctx.j);
+                                            j_);
 
     if (spendableAmount > clawAmount)
         return clawback(issuer, holder, clawAmount);
