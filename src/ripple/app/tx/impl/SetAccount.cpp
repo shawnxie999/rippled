@@ -361,6 +361,13 @@ SetAccount::doApply()
             return tecNEED_MASTER_KEY;
         }
 
+        // Cannot set NoFreeze if clawback is enabled
+        if (ctx_.view().rules().enabled(featureClawback) &&  (uFlagsIn & lsfAllowClawback))
+        {
+            JLOG(j_.trace()) << "Can't set NoFreeze if clawback is enabled";
+            return tecNO_PERMISSION;
+        }
+
         JLOG(j_.trace()) << "Set NoFreeze flag";
         uFlagsOut |= lsfNoFreeze;
     }
@@ -560,6 +567,19 @@ SetAccount::doApply()
             uFlagsOut |= lsfDisallowIncomingTrustline;
         else if (uClearFlag == asfDisallowIncomingTrustline)
             uFlagsOut &= ~lsfDisallowIncomingTrustline;
+    }
+
+    // Set flag for clawback
+    if (ctx_.view().rules().enabled(featureClawback))
+    {
+        if (uFlagsIn & lsfNoFreeze)
+        {
+            JLOG(j_.trace()) << "Can't set Clawback if NoFreeze is set";
+            return tecNO_PERMISSION;
+        }
+
+        if (uSetFlag == asfAllowClawback)
+            uFlagsOut |= lsfAllowClawback;
     }
 
     if (uFlagsIn != uFlagsOut)
