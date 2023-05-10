@@ -103,6 +103,7 @@ Clawback::clawback(
 
     auto const result = accountSend(view(), holder, issuer, amount, j_);
 
+    //todo check balance sign
     return tesSUCCESS;
 }
 
