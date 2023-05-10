@@ -77,8 +77,8 @@ Clawback::preclaim(PreclaimContext const& ctx)
 
     // The account of the tx must be the issuer of the currecy
     bool const bHigh = issuer > holder;
-    auto const& uLowAccountID = !bHigh ? issuer : holder;
-    auto const& highAccountID = bHigh ? issuer : holder;
+    AccountID const& uLowAccountID = !bHigh ? issuer : holder;
+    AccountID const& highAccountID = bHigh ? issuer : holder;
     STAmount const balance = sleRippleState->getFieldAmount(sfBalance);
     if (balance > beast::zero && highAccountID != issuer)
         return tecNO_PERMISSION;

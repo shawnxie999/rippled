@@ -229,7 +229,7 @@ SetAccount::preclaim(PreclaimContext const& ctx)
             return tecOWNERS;
         }
     }
-    
+
     return tesSUCCESS;
 }
 
@@ -582,7 +582,7 @@ SetAccount::doApply()
     }
 
     // Set flag for clawback
-    if (ctx_.view().rules().enabled(featureClawback))
+    if (ctx_.view().rules().enabled(featureClawback) && uSetFlag == asfAllowClawback)
     {
         if (uFlagsIn & lsfNoFreeze)
         {
@@ -590,8 +590,7 @@ SetAccount::doApply()
             return tecNO_PERMISSION;
         }
 
-        if (uSetFlag == asfAllowClawback)
-            uFlagsOut |= lsfAllowClawback;
+        uFlagsOut |= lsfAllowClawback;
     }
 
     if (uFlagsIn != uFlagsOut)
