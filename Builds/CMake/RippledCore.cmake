@@ -690,6 +690,7 @@ if (tests)
     src/test/app/AccountTxPaging_test.cpp
     src/test/app/AmendmentTable_test.cpp
     src/test/app/Check_test.cpp
+    src/test/app/Clawback_test.cpp
     src/test/app/CrossingLimits_test.cpp
     src/test/app/DeliverMin_test.cpp
     src/test/app/DepositAuth_test.cpp

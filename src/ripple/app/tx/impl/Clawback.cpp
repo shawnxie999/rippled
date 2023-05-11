@@ -125,7 +125,7 @@ Clawback::changeRippleStateFreeze(AccountID const& issuer, AccountID const& hold
     bool const bSetFreeze = (uTxFlags & tfSetFreeze);
     bool const bClearFreeze = (uTxFlags & tfClearFreeze);
     bool const bHigh = issuer > holder;
-    
+
     // same logic as SetTrust transactor
     if (bSetFreeze && !bClearFreeze && !sleAcct->isFlag(lsfNoFreeze))
     {
