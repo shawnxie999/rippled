@@ -49,7 +49,7 @@ class Clawback_test : public beast::unit_test::suite
 
     void
     testAllowClawbackFlag(FeatureBitset features){
-        testcase("Enable clawback flag");
+        testcase("Enable AllowClawback flag");
         using namespace test::jtx;
 
         // Test if one can successfully set asfAllowClawback flag.
@@ -151,9 +151,13 @@ class Clawback_test : public beast::unit_test::suite
         testcase("Enable clawback");
         using namespace test::jtx;
 
-        // Test when alice tries to claw back without setting asfAllowClawback flag
+        // Test for following errors:
+        // 1. when amendment is disbabled
+        // 2. when asfAllowClawback flag has not been set
+        // 3. negative STAmount
+        // 4. `account` and `issuer` fields are same account
         {
-            Env env(*this, features);
+            Env env(*this, features - featureClawback);
             
             Account alice{"alice"};
             Account bob{"bob"};
@@ -172,16 +176,34 @@ class Clawback_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 to_string(env.balance(alice, bob["USD"])) == "-10/USD(bob)");
 
-            //clawback fails
+            //clawback fails because amendment is disabled
+            env(claw(alice, bob["USD"](5), 0), ter(temDISABLED));
+            env.close();
+
+            // now enable clawback amendment
+            env.enableFeature(featureClawback);
+            env.close();
+
+            //clawback fails because asfAllowClawback has not been set
             env(claw(alice, bob["USD"](5), 0), ter(tecNO_PERMISSION));
+            env.close();
+
+            // fails due to negative amount 
+            env(claw(alice, bob["USD"](-5), 0), ter(temBAD_AMOUNT));
+            env.close();
+
+            // fails when `issuer` field in `amount` is not token holder
+            // NOTE: we are using the `issuer` field for the token holder
+            env(claw(alice, alice["USD"](5), 0), ter(temBAD_AMOUNT));
             env.close();
 
             // alice and bob's balances remain the same
             BEAST_EXPECT(to_string(env.balance("bob", USD)) == "10/USD(alice)");
             BEAST_EXPECT(
                 to_string(env.balance(alice, bob["USD"])) == "-10/USD(bob)");
-
         }
+
+        // Test that alice is able to successfully clawback tokens from bob
         {
             Env env(*this, features);
             
@@ -205,15 +227,6 @@ class Clawback_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 to_string(env.balance(alice, bob["USD"])) == "-10/USD(bob)");
 
-            // fails due to negative amount 
-            env(claw(alice, bob["USD"](-5), 0), ter(temBAD_AMOUNT));
-            env.close();
-
-            // fails when `issuer` field in `amount` is not token holder
-            // NOTE: we are using the `issuer` field for the token holder
-            env(claw(alice, alice["USD"](5), 0), ter(temBAD_AMOUNT));
-            env.close();
-
             //clawback is a success
             env(claw(alice, bob["USD"](5), 0));
             env.close();
@@ -223,10 +236,7 @@ class Clawback_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 to_string(env.balance(alice, bob["USD"])) == "-5/USD(bob)");
             env.close();
-            
         }
-
-        
     }
 
     void
