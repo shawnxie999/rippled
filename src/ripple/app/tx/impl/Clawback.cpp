@@ -41,7 +41,7 @@ Clawback::preflight(PreflightContext const& ctx)
     // The issuer field is used for the token holder instead
     AccountID const holder = clawAmount.getIssuer();
 
-    if(issuer == holder)
+    if(issuer == holder || isXRP(clawAmount) || clawAmount.negative())
         return temBAD_AMOUNT;             
 
     return preflight2(ctx);
@@ -62,7 +62,7 @@ Clawback::preclaim(PreclaimContext const& ctx)
     std::uint32_t const issuerFlagsIn = sleIssuer->getFieldU32(sfFlags);
 
     // If AllowClawback is not set or NoFreeze is set, return no permission
-    if (!(issuerFlagsIn & asfAllowClawback) || (issuerFlagsIn & lsfNoFreeze))
+    if (!(issuerFlagsIn & lsfAllowClawback) || (issuerFlagsIn & lsfNoFreeze))
         return tecNO_PERMISSION;
     
     // Trustline must exist and balance is non-zero
