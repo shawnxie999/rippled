@@ -30,49 +30,118 @@ namespace ripple {
 
 class Clawback_test : public beast::unit_test::suite
 {
-        template <class T>
-        static std::string
+    template <class T>
+    static std::string
     to_string(T const& t)
     {
         return boost::lexical_cast<std::string>(t);
     }
+
+    // Helper function that returns the owner count of an account root.
+    static std::uint32_t
+    ownerCount(test::jtx::Env const& env, test::jtx::Account const& acct)
+    {
+        std::uint32_t ret{0};
+        if (auto const sleAcct = env.le(acct))
+            ret = sleAcct->at(sfOwnerCount);
+        return ret;
+    }
+
     void
     testAllowClawbackFlag(FeatureBitset features){
         testcase("Enable clawback flag");
-
         using namespace test::jtx;
 
+        // Test if one can successfully set asfAllowClawback flag.
+        // If successful, asfNoFreeze can no longer be set.
+        // Also, asfAllowClawback cannot be cleared.
         {
             Env env(*this, features);
             Account alice{"alice"};
 
-
             env.fund(XRP(1000), alice);
             env.close();
 
+            // set asfAllowClawback
             env(fset(alice, asfAllowClawback));
+            env.close();
 
             // verify flag is still set (clear does not clear in this case)
             env.require(flags(alice, asfAllowClawback));
+
+            // clear asfAllowClawback does nothing
             env(fclear(alice, asfAllowClawback));
+            env.close();
             env.require(flags(alice, asfAllowClawback));
 
+            // NoFreeze cannot be set when asfAllowClawback is set
             env.require(nflags(alice, asfNoFreeze));
             env(fset(alice, asfNoFreeze) , ter(tecNO_PERMISSION));
+            env.close();
         }
-         {
+
+        // Test that asfAllowClawback cannot be set when 
+        // asfNoFreeze has been set
+        {
             Env env(*this, features);
             Account alice{"alice"};
-
 
             env.fund(XRP(1000), alice);
             env.close();
 
             env.require(nflags(alice, asfNoFreeze));
+
+            // set asfNoFreeze
             env(fset(alice, asfNoFreeze));
+            env.close();
+
+            // NoFreeze is set
             env.require(flags(alice, asfNoFreeze));
+
+            // asfAllowClawback cannot be set if asfNoFreeze is set
             env(fset(alice, asfAllowClawback), ter(tecNO_PERMISSION));
+            env.close();
+
             env.require(nflags(alice, asfAllowClawback));
+        }
+
+        // Test that asfAllowClawback is not allowed when owner dir is non-empty
+        {
+            Env env(*this, features);
+            
+            Account alice{"alice"};
+            Account bob{"bob"};
+
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const USD = alice["USD"];
+            env.require(nflags(alice, asfAllowClawback));
+
+            // Bob creates a trustline with alice
+            env.trust(USD(1000), bob);
+            env(pay(alice, bob, USD(10)));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+
+            // alice fails to enable clawback because she has trustline with bob
+            env(fset(alice, asfAllowClawback), ter(tecOWNERS));
+            env.close();
+
+            // bob sets trustline to default limit and pays alice back to delete
+            // the trustline
+            env(trust(bob, USD(0), 0));
+            env(pay(bob, alice, USD(10)));
+
+            // alice now is able to to enable clawback
+            env(fset(alice, asfAllowClawback));
+            env.require(flags(alice, asfAllowClawback));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, bob) == 0);
         }
 
     }
@@ -191,6 +260,7 @@ class Clawback_test : public beast::unit_test::suite
         testEnable(features);
 
         testNoTrustline(features);
+        //todo: test delete default trustline
     }
 
 public:
