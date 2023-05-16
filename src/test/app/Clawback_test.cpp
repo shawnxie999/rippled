@@ -146,6 +146,75 @@ class Clawback_test : public beast::unit_test::suite
 
     }
 
+    // When a trustline is created between issuer and holder, 
+    // we must make sure the holder is unable to claw back from
+    // the issuer by impersonating the issuer account.
+    //
+    // This must be tested for bidirectionally for both accounts because the issuer
+    // could be the low or high account in the trustline object
+    void
+    testNonIssuer(FeatureBitset features){
+        testcase("Non issuer claws");
+        using namespace test::jtx;
+
+        Env env(*this, features);
+        
+        Account alice{"alice"};
+        Account bob{"bob"};
+
+        env.fund(XRP(1000), alice, bob);
+        env.close();
+
+        auto const USD = alice["USD"];
+        auto const CAD = bob["CAD"];
+
+        // alice enables clawback
+        env(fset(alice, asfAllowClawback));
+        env.require(flags(alice, asfAllowClawback));
+        env.close();
+
+        // bob enables clawback 
+        env(fset(bob, asfAllowClawback));
+        env.require(flags(bob, asfAllowClawback));
+        env.close();
+
+        // alice issues 10 USD to bob.
+        // bob then attempts to submit a clawback tx to claw USD from alice.
+        // this must FAIL, because bob is not the issuer for this trustline!!!
+        {
+            // bob creates a trustline with alice, and alice sends 10 USD to bob
+            env.trust(USD(1000), bob);
+            env(pay(alice, bob, USD(10)));
+            env.close();
+
+            BEAST_EXPECT(to_string(env.balance("bob", USD)) == "10/USD(alice)");
+            BEAST_EXPECT(
+                to_string(env.balance(alice, bob["USD"])) == "-10/USD(bob)");
+
+            // bob cannot claw back USD from alice because he's not the issuer
+            env(claw(bob, alice["USD"](5), 0), ter(tecNO_PERMISSION));
+            env.close();
+        }
+
+        // bob issues 10 CAD to alice.
+        // alice then attempts to submit a clawback tx to claw CAD from bob.
+        // this must FAIL, because alice is not the issuer for this trustline!!!
+        {
+            // alice creates a trustline with bob, and bob sends 10 CAD to alice
+            env.trust(CAD(1000), alice);
+            env(pay(bob, alice, CAD(10)));
+            env.close();
+
+            BEAST_EXPECT(to_string(env.balance("alice", CAD)) == "10/CAD(bob)");
+            BEAST_EXPECT(
+                to_string(env.balance(bob, alice["CAD"])) == "-10/CAD(alice)");
+
+            // alice cannot claw back CAD from bob because she's not the issuer
+            env(claw(alice, bob["CAD"](5), 0), ter(tecNO_PERMISSION));
+            env.close();
+        }
+    }
+        
     void
     testEnable(FeatureBitset features){
         testcase("Enable clawback");
@@ -189,8 +258,6 @@ class Clawback_test : public beast::unit_test::suite
             BEAST_EXPECT(to_string(env.balance("bob", USD)) == "10/USD(alice)");
             BEAST_EXPECT(
                 to_string(env.balance(alice, bob["USD"])) == "-10/USD(bob)");
-
-
         }
 
         // Testing Clawback tx fails for the following:
@@ -243,7 +310,7 @@ class Clawback_test : public beast::unit_test::suite
             env(claw(alice, bob["USD"](0), 0), ter(tecNO_LINE));
             env.close();
 
-            // set the limit to limit, which should delete the trustline
+            // set the limit to default, which should delete the trustline
             env(trust(bob, USD(0), 0));
             BEAST_EXPECT(ownerCount(env, bob) == 0);
 
@@ -251,7 +318,7 @@ class Clawback_test : public beast::unit_test::suite
             env(claw(alice, bob["USD"](0), 0), ter(tecNO_LINE));
             env.close();
         }
-        
+
         // Test that alice is able to successfully clawback tokens from bob
         {
             Env env(*this, features);
@@ -316,6 +383,7 @@ class Clawback_test : public beast::unit_test::suite
     testWithFeats(FeatureBitset features)
     {
         testAllowClawbackFlag(features);
+        testNonIssuer(features);
         testEnable(features);
 
         testNoTrustline(features);
