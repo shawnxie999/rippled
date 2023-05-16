@@ -76,13 +76,14 @@ Clawback::preclaim(PreclaimContext const& ctx)
 
     // The account of the tx must be the issuer of the currecy
     auto sleRippleState = ctx.view.read(keylet::line(holder, issuer, clawAmount.getCurrency()));
-    bool const bHigh = issuer > holder;
-    AccountID const& uLowAccountID = !bHigh ? issuer : holder;
-    AccountID const& highAccountID = bHigh ? issuer : holder;
     STAmount const balance = sleRippleState->getFieldAmount(sfBalance);
-    if (balance > beast::zero && highAccountID != issuer)
+
+    // if balance is positive, issuer must have higher address than holder
+    if (balance > beast::zero && issuer < holder)
         return tecNO_PERMISSION;
-    if (balance < beast::zero && uLowAccountID != issuer)
+
+    // if balance is negative, issuer must have lower address than holder
+    if (balance < beast::zero && issuer > holder)
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
