@@ -35,6 +35,12 @@ Clawback::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureClawback))
         return temDISABLED;
 
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+        return ret;
+        
+    if (ctx.tx.getFlags() & tfClawbackMask)
+        return temINVALID_FLAG;
+
     AccountID const issuer = ctx.tx.getAccountID(sfAccount);
     STAmount const clawAmount(ctx.tx.getFieldAmount(sfAmount));
 
@@ -74,7 +80,7 @@ Clawback::preclaim(PreclaimContext const& ctx)
                     ctx.j))
         return tecNO_LINE;
 
-    // The account of the tx must be the issuer of the currecy
+    // The account of the tx must be the issuer of the token
     auto sleRippleState = ctx.view.read(keylet::line(holder, issuer, clawAmount.getCurrency()));
     STAmount const balance = sleRippleState->getFieldAmount(sfBalance);
 

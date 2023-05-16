@@ -60,7 +60,7 @@ trust(
 }
 
 Json::Value
-claw(Account const& account, STAmount const& amount, std::uint32_t flags)
+claw(Account const& account, STAmount const& amount)
 {
     if (isXRP(amount))
         Throw<std::runtime_error>("claw() requires IOU");
@@ -68,8 +68,7 @@ claw(Account const& account, STAmount const& amount, std::uint32_t flags)
     jv[jss::Account] = account.human();
     jv[jss::Amount] = amount.getJson(JsonOptions::none);
     jv[jss::TransactionType] = jss::Clawback;
-    if(flags)
-        jv[jss::Flags] = flags;
+
     return jv;
 }
 

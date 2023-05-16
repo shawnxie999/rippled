@@ -160,6 +160,9 @@ constexpr std::uint32_t const tfNFTokenCancelOfferMask     = ~(tfUniversal);
 // NFTokenAcceptOffer flags:
 constexpr std::uint32_t const tfNFTokenAcceptOfferMask     = ~tfUniversal;
 
+// Clawback flags:
+constexpr std::uint32_t const tfClawbackMask     = ~tfUniversal;
+
 // clang-format on
 
 }  // namespace ripple

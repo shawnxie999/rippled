@@ -41,7 +41,7 @@ trust(
     std::uint32_t flags);
 
 Json::Value
-claw(Account const& account, STAmount const& amount, std::uint32_t flags);
+claw(Account const& account, STAmount const& amount);
 
 }  // namespace jtx
 }  // namespace test
