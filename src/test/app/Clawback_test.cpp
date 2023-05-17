@@ -150,10 +150,10 @@ class Clawback_test : public beast::unit_test::suite
     // we must make sure the holder is unable to claw back from
     // the issuer by impersonating the issuer account.
     //
-    // This must be tested for bidirectionally for both accounts because the issuer
-    // could be the low or high account in the trustline object
+    // This must be tested bidirectionally for both accounts because the issuer
+    // could be either the low or high account in the trustline object
     void
-    testNonIssuer(FeatureBitset features){
+    testNonIssuerClaw(FeatureBitset features){
         testcase("Non issuer claws");
         using namespace test::jtx;
 
@@ -364,7 +364,7 @@ class Clawback_test : public beast::unit_test::suite
     testWithFeats(FeatureBitset features)
     {
         testAllowClawbackFlag(features);
-        testNonIssuer(features);
+        testNonIssuerClaw(features);
         testEnable(features);
 
         //todo: test delete default trustline

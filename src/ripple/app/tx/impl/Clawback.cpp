@@ -37,7 +37,7 @@ Clawback::preflight(PreflightContext const& ctx)
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
-        
+
     if (ctx.tx.getFlags() & tfClawbackMask)
         return temINVALID_FLAG;
 
@@ -82,6 +82,11 @@ Clawback::preclaim(PreclaimContext const& ctx)
 
     // The account of the tx must be the issuer of the token
     auto sleRippleState = ctx.view.read(keylet::line(holder, issuer, clawAmount.getCurrency()));
+
+    // shouldn't happen since accountHolds already checked it
+    if (!sleRippleState)
+        return tecNO_LINE;
+
     STAmount const balance = sleRippleState->getFieldAmount(sfBalance);
 
     // if balance is positive, issuer must have higher address than holder
