@@ -221,7 +221,8 @@ SetAccount::preclaim(PreclaimContext const& ctx)
     //
     // Clawback
     //
-    if (ctx.view.rules().enabled(featureClawback) && (uSetFlag == asfAllowClawback))
+    if (ctx.view.rules().enabled(featureClawback) &&
+        (uSetFlag == asfAllowClawback))
     {
         if (uFlagsIn & lsfNoFreeze)
         {
@@ -380,7 +381,8 @@ SetAccount::doApply()
         }
 
         // Cannot set NoFreeze if clawback is enabled
-        if (ctx_.view().rules().enabled(featureClawback) &&  (uFlagsIn & lsfAllowClawback))
+        if (ctx_.view().rules().enabled(featureClawback) &&
+            (uFlagsIn & lsfAllowClawback))
         {
             JLOG(j_.trace()) << "Can't set NoFreeze if clawback is enabled";
             return tecNO_PERMISSION;
@@ -588,7 +590,8 @@ SetAccount::doApply()
     }
 
     // Set flag for clawback
-    if (ctx_.view().rules().enabled(featureClawback) && uSetFlag == asfAllowClawback)
+    if (ctx_.view().rules().enabled(featureClawback) &&
+        uSetFlag == asfAllowClawback)
     {
         JLOG(j_.trace()) << "set allow clawback";
         uFlagsOut |= lsfAllowClawback;

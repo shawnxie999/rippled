@@ -47,8 +47,8 @@ Clawback::preflight(PreflightContext const& ctx)
     // The issuer field is used for the token holder instead
     AccountID const holder = clawAmount.getIssuer();
 
-    if(issuer == holder || isXRP(clawAmount) || clawAmount <= beast::zero)
-        return temBAD_AMOUNT;             
+    if (issuer == holder || isXRP(clawAmount) || clawAmount <= beast::zero)
+        return temBAD_AMOUNT;
 
     return preflight2(ctx);
 }
@@ -70,8 +70,9 @@ Clawback::preclaim(PreclaimContext const& ctx)
     // If AllowClawback is not set or NoFreeze is set, return no permission
     if (!(issuerFlagsIn & lsfAllowClawback) || (issuerFlagsIn & lsfNoFreeze))
         return tecNO_PERMISSION;
-        
-    auto sleRippleState = ctx.view.read(keylet::line(holder, issuer, clawAmount.getCurrency()));
+
+    auto sleRippleState =
+        ctx.view.read(keylet::line(holder, issuer, clawAmount.getCurrency()));
     if (!sleRippleState)
         return tecNO_LINE;
 
@@ -89,17 +90,18 @@ Clawback::preclaim(PreclaimContext const& ctx)
     // are correct and a trustline exists between them.
     //
     // Must now explicitly check the balance to make sure
-    // available balance is non-zero. 
+    // available balance is non-zero.
     //
     // We can't directly check the balance of trustline because
     // the available balance of a trustline prone to new changes (eg. XLS-34).
     // So we must use `accountHolds`.
-    if (!accountHolds(ctx.view,
-                    holder,
-                    clawAmount.getCurrency(),
-                    issuer,
-                    fhIGNORE_FREEZE,
-                    ctx.j))
+    if (!accountHolds(
+            ctx.view,
+            holder,
+            clawAmount.getCurrency(),
+            issuer,
+            fhIGNORE_FREEZE,
+            ctx.j))
         return tecNO_LINE;
 
     return tesSUCCESS;
@@ -119,7 +121,15 @@ Clawback::clawback(
 
     if (!isTesSuccess(result))
         return result;
-    else if (accountHolds(view(), holder, amount.getCurrency(), amount.getIssuer(), fhIGNORE_FREEZE, j_).signum() < 0)
+    else if (
+        accountHolds(
+            view(),
+            holder,
+            amount.getCurrency(),
+            amount.getIssuer(),
+            fhIGNORE_FREEZE,
+            j_)
+            .signum() < 0)
         return tecINTERNAL;
     return tesSUCCESS;
 }
@@ -136,12 +146,12 @@ Clawback::doApply()
 
     // Get the amount of spendable token that the holder has
     STAmount const spendableAmount = accountHolds(
-                                            view(),
-                                            holder,
-                                            clawAmount.getCurrency(),
-                                            clawAmount.getIssuer(),
-                                            fhIGNORE_FREEZE,
-                                            j_);
+        view(),
+        holder,
+        clawAmount.getCurrency(),
+        clawAmount.getIssuer(),
+        fhIGNORE_FREEZE,
+        j_);
 
     if (spendableAmount > clawAmount)
         return clawback(issuer, holder, clawAmount);
