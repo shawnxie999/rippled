@@ -146,6 +146,8 @@ class Clawback_test : public beast::unit_test::suite
             env(trust(bob, USD(0), 0));
             env(pay(bob, alice, USD(10)));
 
+            BEAST_EXPECT(ownerCount(env, bob) == 0);
+
             // alice now is able to set asfAllowClawback
             env(fset(alice, asfAllowClawback));
             env.require(flags(alice, asfAllowClawback));
@@ -233,7 +235,7 @@ class Clawback_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         // Testing Clawback tx fails for the following:
-        // 1. when amendment is disbabled
+        // 1. when amendment is disabled
         // 2. when asfAllowClawback flag has not been set
         {
             Env env(*this, features - featureClawback);
