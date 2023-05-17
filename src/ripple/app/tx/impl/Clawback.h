@@ -30,9 +30,6 @@ class Clawback : public Transactor
 
 private:
     TER
-    changeRippleStateFreeze(AccountID const& issuer, AccountID const& holder, Currency const& currency);
-    
-    TER
     clawback(
         AccountID const& issuer,
         AccountID const& holder,
