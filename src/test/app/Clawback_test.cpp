@@ -47,6 +47,16 @@ class Clawback_test : public beast::unit_test::suite
         return ret;
     }
 
+    // Helper function that returns the number of tickets held by an account.
+    static std::uint32_t
+    ticketCount(test::jtx::Env const& env, test::jtx::Account const& acct)
+    {
+        std::uint32_t ret{0};
+        if (auto const sleAcct = env.le(acct))
+            ret = sleAcct->at(~sfTicketCount).value_or(0);
+        return ret;
+    }
+
     void
     testAllowClawbackFlag(FeatureBitset features){
         testcase("Enable AllowClawback flag");
@@ -118,7 +128,7 @@ class Clawback_test : public beast::unit_test::suite
             auto const USD = alice["USD"];
             env.require(nflags(alice, asfAllowClawback));
 
-            // Bob creates a trustline with alice
+            // alice issues 10 USD to bob
             env.trust(USD(1000), bob);
             env(pay(alice, bob, USD(10)));
             env.close();
@@ -135,7 +145,7 @@ class Clawback_test : public beast::unit_test::suite
             env(trust(bob, USD(0), 0));
             env(pay(bob, alice, USD(10)));
 
-            // alice now is able to to enable clawback
+            // alice now is able to set asfAllowClawback
             env(fset(alice, asfAllowClawback));
             env.require(flags(alice, asfAllowClawback));
             env.close();
@@ -153,8 +163,8 @@ class Clawback_test : public beast::unit_test::suite
     // This must be tested bidirectionally for both accounts because the issuer
     // could be either the low or high account in the trustline object
     void
-    testNonIssuerClaw(FeatureBitset features){
-        testcase("Non issuer claws");
+    testHolderAttemptsClaw(FeatureBitset features){
+        testcase("Holder attempts to claw");
         using namespace test::jtx;
 
         Env env(*this, features);
@@ -168,7 +178,7 @@ class Clawback_test : public beast::unit_test::suite
         auto const USD = alice["USD"];
         auto const CAD = bob["CAD"];
 
-        // alice enables clawback
+        // alice sets asfAllowClawback
         env(fset(alice, asfAllowClawback));
         env.require(flags(alice, asfAllowClawback));
         env.close();
@@ -216,7 +226,7 @@ class Clawback_test : public beast::unit_test::suite
     }
         
     void
-    testEnable(FeatureBitset features){
+    testEnabled(FeatureBitset features){
         testcase("Enable clawback");
         using namespace test::jtx;
 
@@ -235,6 +245,8 @@ class Clawback_test : public beast::unit_test::suite
             env.require(nflags(bob, asfAllowClawback));
 
             auto const USD = alice["USD"];
+
+            // alice issues 10 USD to bob
             env.trust(USD(1000), bob);
             env(pay(alice, bob, USD(10)));
             env.close();
@@ -276,12 +288,14 @@ class Clawback_test : public beast::unit_test::suite
             env.fund(XRP(1000), alice, bob);
             env.close();
 
-            // alice now is able to to enable clawback
+            // alice sets asfAllowClawback
             env(fset(alice, asfAllowClawback));
             env.close();
             env.require(flags(alice, asfAllowClawback));
 
             auto const USD = alice["USD"];
+
+            // alice issues 10 USD to bob
             env.trust(USD(1000), bob);
             env(pay(alice, bob, USD(10)));
             env.close();
@@ -344,10 +358,12 @@ class Clawback_test : public beast::unit_test::suite
 
             auto const USD = alice["USD"];
 
+            // alice sets asfAllowClawback
             env(fset(alice, asfAllowClawback));
             env.require(flags(alice, asfAllowClawback));
             env.close();
 
+            // alice issues 10 USD to bob   
             env.trust(USD(1000), bob);
             env(pay(alice, bob, USD(10)));
             env.close();
@@ -383,10 +399,12 @@ class Clawback_test : public beast::unit_test::suite
 
         auto const USD = alice["USD"];
 
+        // alice sets asfAllowClawback
         env(fset(alice, asfAllowClawback));
         env.require(flags(alice, asfAllowClawback));
         env.close();
 
+        // alice issues 10 USD to bob
         env.trust(USD(1000), bob);
         env(pay(alice, bob, USD(10)));
         env.close();
@@ -427,10 +445,12 @@ class Clawback_test : public beast::unit_test::suite
 
         auto const USD = alice["USD"];
 
+        // alice sets asfAllowClawback
         env(fset(alice, asfAllowClawback));
         env.require(flags(alice, asfAllowClawback));
         env.close();
 
+        // alice issues 10 USD to bob
         env.trust(USD(1000), bob);
         env(pay(alice, bob, USD(10)));
         env.close();
@@ -453,7 +473,6 @@ class Clawback_test : public beast::unit_test::suite
             to_string(env.balance(alice, bob["USD"])) == "-5/USD(bob)");
     }
 
-
     void
     testAmountExceedsAvailable(FeatureBitset features){
         testcase("Amount exceeds Available");
@@ -470,10 +489,12 @@ class Clawback_test : public beast::unit_test::suite
 
         auto const USD = alice["USD"];
 
+        // alice sets asfAllowClawback
         env(fset(alice, asfAllowClawback));
         env.require(flags(alice, asfAllowClawback));
         env.close();
 
+        // alice issues 10 USD to bob
         env.trust(USD(1000), bob);
         env(pay(alice, bob, USD(10)));
         env.close();
@@ -482,26 +503,84 @@ class Clawback_test : public beast::unit_test::suite
         BEAST_EXPECT(
             to_string(env.balance(alice, bob["USD"])) == "-10/USD(bob)");
 
-        // tries to claw back 15 USD
+        // alice tries to claw back 15 USD
         env(claw(alice, bob["USD"](15)));
         env.close();
 
         // check alice and bob's balance.
-        // 10 USD is clawed back at maximum
+        // alice was only able to claw back 10 USD at maximum
         BEAST_EXPECT(to_string(env.balance("bob", USD)) == "0/USD(alice)");
         BEAST_EXPECT(
             to_string(env.balance(alice, bob["USD"])) == "0/USD(bob)");
     }
 
     void
+    testClawWithTickets(FeatureBitset features){
+        testcase("Claw with tickets");
+        using namespace test::jtx;
+
+        // Tests clawback with tickets
+        Env env(*this, features);
+        Account alice{"alice"};
+        Account bob{"bob"};
+
+        env.fund(XRP(1000), alice, bob);
+        env.close();
+
+        auto const USD = alice["USD"];
+
+        // alice sets asfAllowClawback
+        env(fset(alice, asfAllowClawback));
+        env.require(flags(alice, asfAllowClawback));
+        env.close();
+
+        // alice issues 100 USD to bob
+        env.trust(USD(1000), bob);
+        env(pay(alice, bob, USD(100)));
+        env.close();
+
+        BEAST_EXPECT(to_string(env.balance("bob", USD)) == "100/USD(alice)");
+        BEAST_EXPECT(
+            to_string(env.balance(alice, bob["USD"])) == "-100/USD(bob)");
+
+        // alice creates 10 tickets
+        std::uint32_t ticketCnt = 10;
+        std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+        env(ticket::create(alice, ticketCnt));
+        env.close();
+        std::uint32_t const aliceSeq{env.seq(alice)};
+        BEAST_EXPECT(ticketCount(env, alice) == ticketCnt);
+        BEAST_EXPECT(ownerCount(env, alice) == ticketCnt);
+
+        while (ticketCnt > 0){
+            // alice claws back 5 USD using a ticket
+            env(claw(alice, bob["USD"](5)), ticket::use(aliceTicketSeq++));
+            env.close();
+
+            ticketCnt--;
+            BEAST_EXPECT(ticketCount(env, alice) == ticketCnt);
+            BEAST_EXPECT(ownerCount(env, alice) == ticketCnt);
+        }
+
+        BEAST_EXPECT(to_string(env.balance("bob", USD)) == "50/USD(alice)");
+        BEAST_EXPECT(
+            to_string(env.balance(alice, bob["USD"])) == "-50/USD(bob)");
+
+        // Verify that the account sequence numbers did not advance.
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testAllowClawbackFlag(features);
-        testNonIssuerClaw(features);
-        testEnable(features);
+        testHolderAttemptsClaw(features);
+        testEnabled(features);
         testDeleteDefaultLine(features);
         testFrozenLine(features);
         testAmountExceedsAvailable(features);
+        testClawWithTickets(features);
     }
 
 public:

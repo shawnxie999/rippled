@@ -71,7 +71,6 @@ Clawback::preclaim(PreclaimContext const& ctx)
     if (!(issuerFlagsIn & lsfAllowClawback) || (issuerFlagsIn & lsfNoFreeze))
         return tecNO_PERMISSION;
         
-    // The account of the tx must be the issuer of the token
     auto sleRippleState = ctx.view.read(keylet::line(holder, issuer, clawAmount.getCurrency()));
     if (!sleRippleState)
         return tecNO_LINE;
@@ -122,44 +121,6 @@ Clawback::clawback(
         return result;
     else if (accountHolds(view(), holder, amount.getCurrency(), amount.getIssuer(), fhIGNORE_FREEZE, j_).signum() < 0)
         return tecINTERNAL;
-
-    //todo check balance sign
-    return tesSUCCESS;
-}
-
-TER
-Clawback::changeRippleStateFreeze(AccountID const& issuer, AccountID const& holder, Currency const& currency){
-    std::uint32_t const uTxFlags = ctx_.tx.getFlags();
-
-    auto const sleAcct = view().peek(keylet::account(issuer));
-
-    auto sleRippleState =
-        view().peek(keylet::line(issuer, holder, currency));
-
-    if (!sleAcct || !sleRippleState)
-        return tecINTERNAL;
-
-    std::uint32_t const uFlagsIn(sleRippleState->getFieldU32(sfFlags));
-    std::uint32_t uFlagsOut(uFlagsIn);
-        
-    bool const bSetFreeze = (uTxFlags & tfSetFreeze);
-    bool const bClearFreeze = (uTxFlags & tfClearFreeze);
-    bool const bHigh = issuer > holder;
-
-    // same logic as SetTrust transactor
-    if (bSetFreeze && !bClearFreeze && !sleAcct->isFlag(lsfNoFreeze))
-    {
-        uFlagsOut |= (bHigh ? lsfHighFreeze : lsfLowFreeze);
-    }
-    else if (bClearFreeze && !bSetFreeze)
-    {
-        uFlagsOut &= ~(bHigh ? lsfHighFreeze : lsfLowFreeze);
-    }
-
-    if (uFlagsIn != uFlagsOut)
-        sleRippleState->setFieldU32(sfFlags, uFlagsOut);
-        view().update(sleRippleState);
-
     return tesSUCCESS;
 }
 
@@ -170,13 +131,10 @@ Clawback::doApply()
     STAmount clawAmount(ctx_.tx.getFieldAmount(sfAmount));
     AccountID const holder = clawAmount.getIssuer();
 
-    // issuer field was holder's address in request, needs to change 
+    // issuer field was holder's address in the request
     clawAmount.setIssuer(issuer);
- 
-    if( auto const ret = changeRippleStateFreeze( issuer, holder, clawAmount.getCurrency()); !isTesSuccess(ret))
-        return ret;
 
-    // Get the amount of spendable IOU that the holder has
+    // Get the amount of spendable token that the holder has
     STAmount const spendableAmount = accountHolds(
                                             view(),
                                             holder,
