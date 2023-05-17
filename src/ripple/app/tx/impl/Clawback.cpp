@@ -47,7 +47,7 @@ Clawback::preflight(PreflightContext const& ctx)
     // The issuer field is used for the token holder instead
     AccountID const holder = clawAmount.getIssuer();
 
-    if(issuer == holder || isXRP(clawAmount) || clawAmount.negative())
+    if(issuer == holder || isXRP(clawAmount) || clawAmount <= beast::zero)
         return temBAD_AMOUNT;             
 
     return preflight2(ctx);
@@ -70,20 +70,9 @@ Clawback::preclaim(PreclaimContext const& ctx)
     // If AllowClawback is not set or NoFreeze is set, return no permission
     if (!(issuerFlagsIn & lsfAllowClawback) || (issuerFlagsIn & lsfNoFreeze))
         return tecNO_PERMISSION;
-    
-    // Trustline must exist and balance is non-zero
-    if (!accountHolds(ctx.view,
-                    holder,
-                    clawAmount.getCurrency(),
-                    issuer,
-                    fhIGNORE_FREEZE,
-                    ctx.j))
-        return tecNO_LINE;
-
+        
     // The account of the tx must be the issuer of the token
     auto sleRippleState = ctx.view.read(keylet::line(holder, issuer, clawAmount.getCurrency()));
-
-    // shouldn't happen since accountHolds already checked it
     if (!sleRippleState)
         return tecNO_LINE;
 
@@ -97,6 +86,23 @@ Clawback::preclaim(PreclaimContext const& ctx)
     if (balance < beast::zero && issuer > holder)
         return tecNO_PERMISSION;
 
+    // At this point, we know that issuer and holder accounts
+    // are correct and a trustline exists between them.
+    //
+    // Must now explicitly check the balance to make sure
+    // available balance is non-zero. 
+    //
+    // We can't directly check the balance of trustline because
+    // the available balance of a trustline prone to new changes (eg. XLS-34).
+    // So we must use `accountHolds`.
+    if (!accountHolds(ctx.view,
+                    holder,
+                    clawAmount.getCurrency(),
+                    issuer,
+                    fhIGNORE_FREEZE,
+                    ctx.j))
+        return tecNO_LINE;
+
     return tesSUCCESS;
 }
 
@@ -106,14 +112,16 @@ Clawback::clawback(
     AccountID const& holder,
     STAmount const& amount)
 {
-    // This should never happen, but it's easy and quick to check.
-    if (amount < beast::zero)
+    // This should never happen
+    if (amount <= beast::zero || issuer != amount.getIssuer())
         return tecINTERNAL;
 
-    if (amount == beast::zero)
-        return tesSUCCESS;
-
     auto const result = accountSend(view(), holder, issuer, amount, j_);
+
+    if (!isTesSuccess(result))
+        return result;
+    else if (accountHolds(view(), holder, amount.getCurrency(), amount.getIssuer(), fhIGNORE_FREEZE, j_).signum() < 0)
+        return tecINTERNAL;
 
     //todo check balance sign
     return tesSUCCESS;
