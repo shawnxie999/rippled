@@ -144,7 +144,7 @@ Clawback::doApply()
     // issuer field was holder's address in the request
     clawAmount.setIssuer(issuer);
 
-    // Get the amount of spendable token that the holder has
+    // Get the spendable balance. Must use `accountHolds`.
     STAmount const spendableAmount = accountHolds(
         view(),
         holder,

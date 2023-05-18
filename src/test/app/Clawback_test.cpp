@@ -280,9 +280,10 @@ class Clawback_test : public beast::unit_test::suite
         // 1. invalid flag
         // 2. negative STAmount
         // 3. zero STAmount
-        // 4. `account` and `issuer` fields are same account
-        // 5. trustline has a balance of 0
-        // 6. trustline does not exist
+        // 4. XRP amount
+        // 5. `account` and `issuer` fields are same account
+        // 6. trustline has a balance of 0
+        // 7. trustline does not exist
         {
             Env env(*this, features);
 
@@ -320,6 +321,10 @@ class Clawback_test : public beast::unit_test::suite
 
             // fails due to zero amount
             env(claw(alice, bob["USD"](0)), ter(temBAD_AMOUNT));
+            env.close();
+
+            // fails because amount is in XRP
+            env(claw(alice, XRP(10)), ter(temBAD_AMOUNT));
             env.close();
 
             // fails when `issuer` field in `amount` is not token holder
