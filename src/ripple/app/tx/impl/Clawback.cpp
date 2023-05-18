@@ -137,7 +137,7 @@ Clawback::clawback(
 TER
 Clawback::doApply()
 {
-    AccountID const issuer = ctx_.tx.getAccountID(sfAccount);
+    AccountID const issuer = account_;
     STAmount clawAmount(ctx_.tx.getFieldAmount(sfAmount));
     AccountID const holder = clawAmount.getIssuer();
 

@@ -234,7 +234,8 @@ class Clawback_test : public beast::unit_test::suite
         testcase("Enable clawback");
         using namespace test::jtx;
 
-        // Testing Clawback tx fails for the following:
+        // Tests enabling asfAllowClawback when amendment is disabled, and
+        // tests Clawback tx fails for the following:
         // 1. when amendment is disabled
         // 2. when asfAllowClawback flag has not been set
         {
@@ -247,6 +248,12 @@ class Clawback_test : public beast::unit_test::suite
             env.close();
 
             env.require(nflags(bob, asfAllowClawback));
+
+            // alice attempts to set asfAllowClawback flag while amendment is disabled.
+            // no error is returned, but the flag remains to be unset.
+            env(fset(alice, asfAllowClawback));
+            env.require(nflags(alice, asfAllowClawback));
+            env.close();
 
             auto const USD = alice["USD"];
 
