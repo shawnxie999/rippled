@@ -69,7 +69,7 @@ class Clawback_test : public beast::unit_test::suite
             auto const useHigh = src.id() > dst.id();
             return sle->isFlag(useHigh ? lsfHighFreeze: lsfLowFreeze);
         }
-        Throw<std::runtime_error>("No line in getTrustFlag");
+        Throw<std::runtime_error>("No line in getLineFreezeFlag");
         return false;  // silence warning
     }
 
