@@ -57,6 +57,22 @@ class Clawback_test : public beast::unit_test::suite
         return ret;
     }
 
+    bool
+    getLineFreezeFlag(
+        test::jtx::Env const& env,
+        test::jtx::Account const& src,
+        test::jtx::Account const& dst,
+        Currency const& cur)
+    {
+        if (auto sle = env.le(keylet::line(src, dst, cur)))
+        {
+            auto const useHigh = src.id() > dst.id();
+            return sle->isFlag(useHigh ? lsfHighFreeze: lsfLowFreeze);
+        }
+        Throw<std::runtime_error>("No line in getTrustFlag");
+        return false;  // silence warning
+    }
+
     void
     testAllowClawbackFlag(FeatureBitset features)
     {
@@ -491,6 +507,9 @@ class Clawback_test : public beast::unit_test::suite
         BEAST_EXPECT(to_string(env.balance("bob", USD)) == "5/USD(alice)");
         BEAST_EXPECT(
             to_string(env.balance(alice, bob["USD"])) == "-5/USD(bob)");
+
+        // trustline remains frozen
+        BEAST_EXPECT(getLineFreezeFlag(env, alice, bob, USD.currency));
     }
 
     void
