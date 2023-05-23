@@ -57,6 +57,7 @@ class Clawback_test : public beast::unit_test::suite
         return ret;
     }
 
+    // Helper function that returns the freeze status of a trustline
     static bool
     getLineFreezeFlag(
         test::jtx::Env const& env,
@@ -174,18 +175,18 @@ class Clawback_test : public beast::unit_test::suite
         }
     }
 
-    // When a trustline is created between issuer and holder,
-    // we must make sure the holder is unable to claw back from
-    // the issuer by impersonating the issuer account.
-    //
-    // This must be tested bidirectionally for both accounts because the issuer
-    // could be either the low or high account in the trustline object
     void
     testHolderAttemptsClaw(FeatureBitset features)
     {
         testcase("Holder attempts to claw");
         using namespace test::jtx;
 
+        // When a trustline is created between issuer and holder,
+        // we must make sure the holder is unable to claw back from
+        // the issuer by impersonating the issuer account.
+        //
+        // This must be tested bidirectionally for both accounts because the issuer
+        // could be either the low or high account in the trustline object
         Env env(*this, features);
 
         Account alice{"alice"};
@@ -397,23 +398,32 @@ class Clawback_test : public beast::unit_test::suite
             env.require(flags(alice, asfAllowClawback));
             env.close();
 
-            // alice issues 10 USD to bob
+            // alice issues 1000 USD to bob
             env.trust(USD(1000), bob);
-            env(pay(alice, bob, USD(10)));
+            env(pay(alice, bob, USD(1000)));
             env.close();
 
-            BEAST_EXPECT(to_string(env.balance("bob", USD)) == "10/USD(alice)");
+            BEAST_EXPECT(to_string(env.balance("bob", USD)) == "1000/USD(alice)");
             BEAST_EXPECT(
-                to_string(env.balance(alice, bob["USD"])) == "-10/USD(bob)");
+                to_string(env.balance(alice, bob["USD"])) == "-1000/USD(bob)");
 
-            // clawback is a success
-            env(claw(alice, bob["USD"](5)));
+            // alice claws back 200 USD from bob
+            env(claw(alice, bob["USD"](200)));
             env.close();
 
-            // check alice and bob's balance
-            BEAST_EXPECT(to_string(env.balance("bob", USD)) == "5/USD(alice)");
+            // bob should have 800 USD left
+            BEAST_EXPECT(to_string(env.balance("bob", USD)) == "800/USD(alice)");
             BEAST_EXPECT(
-                to_string(env.balance(alice, bob["USD"])) == "-5/USD(bob)");
+                to_string(env.balance(alice, bob["USD"])) == "-800/USD(bob)");
+
+            // bob pays alice back with all the USD
+            env(pay(bob, alice, USD(800)));
+            env.close();
+
+            // trustline has a balance of 0
+            BEAST_EXPECT(to_string(env.balance("bob", USD)) == "0/USD(alice)");
+            BEAST_EXPECT(
+                to_string(env.balance(alice, bob["USD"])) == "0/USD(bob)");
         }
     }
 
@@ -439,16 +449,16 @@ class Clawback_test : public beast::unit_test::suite
         env.require(flags(alice, asfAllowClawback));
         env.close();
 
-        // alice issues 10 USD to bob
+        // alice issues 1000 USD to bob
         env.trust(USD(1000), bob);
-        env(pay(alice, bob, USD(10)));
+        env(pay(alice, bob, USD(1000)));
         env.close();
 
         BEAST_EXPECT(ownerCount(env, bob) == 1);
 
-        BEAST_EXPECT(to_string(env.balance("bob", USD)) == "10/USD(alice)");
+        BEAST_EXPECT(to_string(env.balance("bob", USD)) == "1000/USD(alice)");
         BEAST_EXPECT(
-            to_string(env.balance(alice, bob["USD"])) == "-10/USD(bob)");
+            to_string(env.balance(alice, bob["USD"])) == "-1000/USD(bob)");
 
         // set limit to default,
         env(trust(bob, USD(0), 0));
@@ -456,8 +466,8 @@ class Clawback_test : public beast::unit_test::suite
 
         BEAST_EXPECT(ownerCount(env, bob) == 1);
 
-        // clawback is a success, and should also delete trustline
-        env(claw(alice, bob["USD"](10)));
+        // alice claws back full amount from bob, and should also delete trustline
+        env(claw(alice, bob["USD"](1000)));
         env.close();
 
         // bob no longer owns the trustline because it was deleted
@@ -486,27 +496,27 @@ class Clawback_test : public beast::unit_test::suite
         env.require(flags(alice, asfAllowClawback));
         env.close();
 
-        // alice issues 10 USD to bob
+        // alice issues 1000 USD to bob
         env.trust(USD(1000), bob);
-        env(pay(alice, bob, USD(10)));
+        env(pay(alice, bob, USD(1000)));
         env.close();
 
-        BEAST_EXPECT(to_string(env.balance("bob", USD)) == "10/USD(alice)");
+        BEAST_EXPECT(to_string(env.balance("bob", USD)) == "1000/USD(alice)");
         BEAST_EXPECT(
-            to_string(env.balance(alice, bob["USD"])) == "-10/USD(bob)");
+            to_string(env.balance(alice, bob["USD"])) == "-1000/USD(bob)");
 
         // freeze trustline
         env(trust(alice, bob["USD"](0), tfSetFreeze));
         env.close();
 
-        // clawback is a success
-        env(claw(alice, bob["USD"](5)));
+        // alice claws back 200 USD from bob
+        env(claw(alice, bob["USD"](200)));
         env.close();
 
-        // check alice and bob's balance
-        BEAST_EXPECT(to_string(env.balance("bob", USD)) == "5/USD(alice)");
+        // bob should have 800 USD left
+        BEAST_EXPECT(to_string(env.balance("bob", USD)) == "800/USD(alice)");
         BEAST_EXPECT(
-            to_string(env.balance(alice, bob["USD"])) == "-5/USD(bob)");
+            to_string(env.balance(alice, bob["USD"])) == "-800/USD(bob)");
 
         // trustline remains frozen
         BEAST_EXPECT(getLineFreezeFlag(env, alice, bob, USD.currency));
@@ -534,23 +544,33 @@ class Clawback_test : public beast::unit_test::suite
         env.require(flags(alice, asfAllowClawback));
         env.close();
 
-        // alice issues 10 USD to bob
+        // alice issues 1000 USD to bob
         env.trust(USD(1000), bob);
-        env(pay(alice, bob, USD(10)));
+        env(pay(alice, bob, USD(1000)));
         env.close();
 
-        BEAST_EXPECT(to_string(env.balance("bob", USD)) == "10/USD(alice)");
+        BEAST_EXPECT(to_string(env.balance("bob", USD)) == "1000/USD(alice)");
         BEAST_EXPECT(
-            to_string(env.balance(alice, bob["USD"])) == "-10/USD(bob)");
+            to_string(env.balance(alice, bob["USD"])) == "-1000/USD(bob)");
 
-        // alice tries to claw back 15 USD
-        env(claw(alice, bob["USD"](15)));
+        // alice tries to claw back 2000 USD
+        env(claw(alice, bob["USD"](2000)));
         env.close();
 
         // check alice and bob's balance.
-        // alice was only able to claw back 10 USD at maximum
+        // alice was only able to claw back 1000 USD at maximum
         BEAST_EXPECT(to_string(env.balance("bob", USD)) == "0/USD(alice)");
         BEAST_EXPECT(to_string(env.balance(alice, bob["USD"])) == "0/USD(bob)");
+
+        // bob still owns the trustline because trustline is not in default state
+        BEAST_EXPECT(ownerCount(env, bob) == 1);
+
+        // set limit to default,
+        env(trust(bob, USD(0), 0));
+        env.close();
+
+        // bob now deletes his trustline
+        BEAST_EXPECT(ownerCount(env, bob) == 0);
     }
 
     void
@@ -603,6 +623,7 @@ class Clawback_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, alice) == ticketCnt);
         }
 
+        // alice clawed back 50 USD total, trustline has 50 USD remaining
         BEAST_EXPECT(to_string(env.balance("bob", USD)) == "50/USD(alice)");
         BEAST_EXPECT(
             to_string(env.balance(alice, bob["USD"])) == "-50/USD(bob)");
