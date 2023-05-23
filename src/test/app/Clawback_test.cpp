@@ -57,7 +57,7 @@ class Clawback_test : public beast::unit_test::suite
         return ret;
     }
 
-    bool
+    static bool
     getLineFreezeFlag(
         test::jtx::Env const& env,
         test::jtx::Account const& src,
@@ -515,7 +515,7 @@ class Clawback_test : public beast::unit_test::suite
     void
     testAmountExceedsAvailable(FeatureBitset features)
     {
-        testcase("Amount exceeds Available");
+        testcase("Amount exceeds available");
         using namespace test::jtx;
 
         // When alice tries to claw back an amount that is greater
