@@ -176,10 +176,48 @@ class Clawback_test : public beast::unit_test::suite
     }
 
     void
-    testHolderAttemptsClaw(FeatureBitset features)
+    testPermission(FeatureBitset features)
     {
-        testcase("Holder attempts to claw");
+        testcase("Permission");
         using namespace test::jtx;
+
+        // Test that trustline cannot be clawed by someone who is
+        // not the issuer of the currency
+        {
+            Env env(*this, features);
+
+            Account alice{"alice"};
+            Account bob{"bob"};
+            Account cindy{"cindy"};
+
+            env.fund(XRP(1000), alice, bob, cindy);
+            env.close();
+
+            auto const USD = alice["USD"];
+
+            // alice sets asfAllowClawback
+            env(fset(alice, asfAllowClawback));
+            env.require(flags(alice, asfAllowClawback));
+            env.close();
+
+            // cindy sets asfAllowClawback
+            env(fset(cindy, asfAllowClawback));
+            env.require(flags(cindy, asfAllowClawback));
+            env.close();
+
+            // alice issues 1000 USD to bob
+            env.trust(USD(1000), bob);
+            env(pay(alice, bob, USD(1000)));
+            env.close();
+
+            BEAST_EXPECT(to_string(env.balance("bob", USD)) == "1000/USD(alice)");
+            BEAST_EXPECT(
+                to_string(env.balance(alice, bob["USD"])) == "-1000/USD(bob)");
+
+            // cindy tries to claw from bob, and fails because trustline does not exist
+            env(claw(cindy, bob["USD"](200)), ter(tecNO_LINE));
+            env.close();
+        }
 
         // When a trustline is created between issuer and holder,
         // we must make sure the holder is unable to claw back from
@@ -187,61 +225,63 @@ class Clawback_test : public beast::unit_test::suite
         //
         // This must be tested bidirectionally for both accounts because the issuer
         // could be either the low or high account in the trustline object
-        Env env(*this, features);
-
-        Account alice{"alice"};
-        Account bob{"bob"};
-
-        env.fund(XRP(1000), alice, bob);
-        env.close();
-
-        auto const USD = alice["USD"];
-        auto const CAD = bob["CAD"];
-
-        // alice sets asfAllowClawback
-        env(fset(alice, asfAllowClawback));
-        env.require(flags(alice, asfAllowClawback));
-        env.close();
-
-        // bob enables clawback
-        env(fset(bob, asfAllowClawback));
-        env.require(flags(bob, asfAllowClawback));
-        env.close();
-
-        // alice issues 10 USD to bob.
-        // bob then attempts to submit a clawback tx to claw USD from alice.
-        // this must FAIL, because bob is not the issuer for this trustline!!!
         {
-            // bob creates a trustline with alice, and alice sends 10 USD to bob
-            env.trust(USD(1000), bob);
-            env(pay(alice, bob, USD(10)));
+            Env env(*this, features);
+
+            Account alice{"alice"};
+            Account bob{"bob"};
+
+            env.fund(XRP(1000), alice, bob);
             env.close();
 
-            BEAST_EXPECT(to_string(env.balance("bob", USD)) == "10/USD(alice)");
-            BEAST_EXPECT(
-                to_string(env.balance(alice, bob["USD"])) == "-10/USD(bob)");
+            auto const USD = alice["USD"];
+            auto const CAD = bob["CAD"];
 
-            // bob cannot claw back USD from alice because he's not the issuer
-            env(claw(bob, alice["USD"](5)), ter(tecNO_PERMISSION));
-            env.close();
-        }
-
-        // bob issues 10 CAD to alice.
-        // alice then attempts to submit a clawback tx to claw CAD from bob.
-        // this must FAIL, because alice is not the issuer for this trustline!!!
-        {
-            // alice creates a trustline with bob, and bob sends 10 CAD to alice
-            env.trust(CAD(1000), alice);
-            env(pay(bob, alice, CAD(10)));
+            // alice sets asfAllowClawback
+            env(fset(alice, asfAllowClawback));
+            env.require(flags(alice, asfAllowClawback));
             env.close();
 
-            BEAST_EXPECT(to_string(env.balance("alice", CAD)) == "10/CAD(bob)");
-            BEAST_EXPECT(
-                to_string(env.balance(bob, alice["CAD"])) == "-10/CAD(alice)");
-
-            // alice cannot claw back CAD from bob because she's not the issuer
-            env(claw(alice, bob["CAD"](5)), ter(tecNO_PERMISSION));
+            // bob sets asfAllowClawback
+            env(fset(bob, asfAllowClawback));
+            env.require(flags(bob, asfAllowClawback));
             env.close();
+
+            // alice issues 10 USD to bob.
+            // bob then attempts to submit a clawback tx to claw USD from alice.
+            // this must FAIL, because bob is not the issuer for this trustline!!!
+            {
+                // bob creates a trustline with alice, and alice sends 10 USD to bob
+                env.trust(USD(1000), bob);
+                env(pay(alice, bob, USD(10)));
+                env.close();
+
+                BEAST_EXPECT(to_string(env.balance("bob", USD)) == "10/USD(alice)");
+                BEAST_EXPECT(
+                    to_string(env.balance(alice, bob["USD"])) == "-10/USD(bob)");
+
+                // bob cannot claw back USD from alice because he's not the issuer
+                env(claw(bob, alice["USD"](5)), ter(tecNO_PERMISSION));
+                env.close();
+            }
+
+            // bob issues 10 CAD to alice.
+            // alice then attempts to submit a clawback tx to claw CAD from bob.
+            // this must FAIL, because alice is not the issuer for this trustline!!!
+            {
+                // alice creates a trustline with bob, and bob sends 10 CAD to alice
+                env.trust(CAD(1000), alice);
+                env(pay(bob, alice, CAD(10)));
+                env.close();
+
+                BEAST_EXPECT(to_string(env.balance("alice", CAD)) == "10/CAD(bob)");
+                BEAST_EXPECT(
+                    to_string(env.balance(bob, alice["CAD"])) == "-10/CAD(alice)");
+
+                // alice cannot claw back CAD from bob because she's not the issuer
+                env(claw(alice, bob["CAD"](5)), ter(tecNO_PERMISSION));
+                env.close();
+            }
         }
     }
 
@@ -425,6 +465,75 @@ class Clawback_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 to_string(env.balance(alice, bob["USD"])) == "0/USD(bob)");
         }
+    }
+
+    void
+    testClawMultiLine(FeatureBitset features){
+        testcase("Claw multi line");
+        using namespace test::jtx;
+
+        // Both alice and bob issues their own "USD" to cindy.
+        // When alice and bob tries to claw back, they will only
+        // claw back from their respective trustline.
+        Env env(*this, features);
+
+        Account alice{"alice"};
+        Account bob{"bob"};
+        Account cindy{"cindy"};
+
+        env.fund(XRP(1000), alice, bob, cindy);
+        env.close();
+
+        auto const USD_ALICE = alice["USD"];
+        auto const USD_BOB = bob["USD"];
+
+        // alice sets asfAllowClawback
+        env(fset(alice, asfAllowClawback));
+        env.require(flags(alice, asfAllowClawback));
+        env.close();
+
+        // bob sets asfAllowClawback
+        env(fset(bob, asfAllowClawback));
+        env.require(flags(bob, asfAllowClawback));
+        env.close();
+
+        // alice sends 1000 USD_ALICE to cindy
+        env.trust(USD_ALICE(1000), cindy);
+        env(pay(alice, cindy, USD_ALICE(1000)));
+        env.close();
+
+        // bob sends 1000 USD_BOB to cindy
+        env.trust(USD_BOB(1000), cindy);
+        env(pay(bob, cindy, USD_BOB(1000)));
+        env.close();
+
+        // alice claws back 200 USD_ALICE from cindy
+        env(claw(alice, cindy["USD"](200)));
+        env.close();
+
+        // cindy has 800 USD_ALICE left after clawed back
+        BEAST_EXPECT(to_string(env.balance("cindy", USD_ALICE)) == "800/USD(alice)");
+        BEAST_EXPECT(
+            to_string(env.balance(alice, cindy["USD"])) == "-800/USD(cindy)");
+
+        // cindy still has 1000 USD_BOB
+        BEAST_EXPECT(to_string(env.balance("cindy", USD_BOB)) == "1000/USD(bob)");
+        BEAST_EXPECT(
+            to_string(env.balance(bob, cindy["USD"])) == "-1000/USD(cindy)");
+
+        // alice claws back 600 USD_BOB from cindy
+        env(claw(bob, cindy["USD"](600)));
+        env.close();
+
+        // cindy has 400 USD_BOB left after clawed back
+        BEAST_EXPECT(to_string(env.balance("cindy", USD_BOB)) == "400/USD(bob)");
+        BEAST_EXPECT(
+            to_string(env.balance(bob, cindy["USD"])) == "-400/USD(cindy)");
+
+        // cindy still has 800 USD_ALICE
+        BEAST_EXPECT(to_string(env.balance("cindy", USD_ALICE)) == "800/USD(alice)");
+        BEAST_EXPECT(
+            to_string(env.balance(alice, cindy["USD"])) == "-800/USD(cindy)");
     }
 
     void
@@ -636,8 +745,9 @@ class Clawback_test : public beast::unit_test::suite
     testWithFeats(FeatureBitset features)
     {
         testAllowClawbackFlag(features);
-        testHolderAttemptsClaw(features);
+        testPermission(features);
         testEnabled(features);
+        testClawMultiLine(features);
         testDeleteDefaultLine(features);
         testFrozenLine(features);
         testAmountExceedsAvailable(features);
