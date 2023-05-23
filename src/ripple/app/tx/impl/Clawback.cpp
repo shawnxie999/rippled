@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
   This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2021 Ripple Labs Inc.
+  Copyright (c) 2023 Ripple Labs Inc.
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose  with  or without fee is hereby granted, provided that the above
@@ -93,7 +93,7 @@ Clawback::preclaim(PreclaimContext const& ctx)
     // available balance is non-zero.
     //
     // We can't directly check the balance of trustline because
-    // the available balance of a trustline prone to new changes (eg. XLS-34).
+    // the available balance of a trustline is prone to new changes (eg. XLS-34).
     // So we must use `accountHolds`.
     if (accountHolds(
             ctx.view,
