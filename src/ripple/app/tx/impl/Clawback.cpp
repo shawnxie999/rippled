@@ -77,6 +77,13 @@ Clawback::preclaim(PreclaimContext const& ctx)
         return tecNO_LINE;
 
     STAmount const balance = sleRippleState->getFieldAmount(sfBalance);
+    STAmount const lowLimit = sleRippleState->getFieldAmount(sfLowLimit);
+    STAmount const highLimit = sleRippleState->getFieldAmount(sfHighLimit);
+
+    // if each side of the trustline issued the same token,
+    // it doesn't make sense to claw back from each other
+    if (highLimit && lowLimit)
+        return tecNO_PERMISSION;
 
     // if balance is positive, issuer must have higher address than holder
     if (balance > beast::zero && issuer < holder)
