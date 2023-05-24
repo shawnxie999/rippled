@@ -648,7 +648,7 @@ class Clawback_test : public beast::unit_test::suite
     void
     testFrozenLine(FeatureBitset features)
     {
-        testcase("Claw frozen trustline");
+        testcase("Frozen trustline");
         using namespace test::jtx;
 
         // Claws back from frozen trustline
