@@ -80,16 +80,11 @@ Clawback::preclaim(PreclaimContext const& ctx)
     STAmount const lowLimit = sleRippleState->getFieldAmount(sfLowLimit);
     STAmount const highLimit = sleRippleState->getFieldAmount(sfHighLimit);
 
-    // if each side of the trustline issued the same token,
-    // it doesn't make sense to claw back from each other
-    if (highLimit && lowLimit)
-        return tecNO_PERMISSION;
-
-    // if balance is positive, issuer must have higher address than holder
+    // If balance is positive, issuer must have higher address than holder
     if (balance > beast::zero && issuer < holder)
         return tecNO_PERMISSION;
 
-    // if balance is negative, issuer must have lower address than holder
+    // If balance is negative, issuer must have lower address than holder
     if (balance < beast::zero && issuer > holder)
         return tecNO_PERMISSION;
 
@@ -148,7 +143,7 @@ Clawback::doApply()
     STAmount clawAmount(ctx_.tx.getFieldAmount(sfAmount));
     AccountID const holder = clawAmount.getIssuer();
 
-    // issuer field was holder's address in the request
+    // Replace the `issuer` field with holder's address
     clawAmount.setIssuer(issuer);
 
     // Get the spendable balance. Must use `accountHolds`.

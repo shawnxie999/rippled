@@ -280,57 +280,6 @@ class Clawback_test : public beast::unit_test::suite
                 env.close();
             }
         }
-
-        // Test when both alice and bob issues USD to each other.
-        // This scenario creates only one trustline,
-        // but both highLimit and lowLimit are non-zero. In this case,
-        // it doesn't make sense for either one of them to claw back from
-        // each other because both ends of the trustline are "issuer".
-        {
-            Env env(*this, features);
-
-            Account alice{"alice"};
-            Account bob{"bob"};
-
-            env.fund(XRP(1000), alice, bob);
-            env.close();
-
-            // alice sets asfAllowClawback
-            env(fset(alice, asfAllowClawback));
-            env.require(flags(alice, asfAllowClawback));
-            env.close();
-
-            // bob sets asfAllowClawback
-            env(fset(bob, asfAllowClawback));
-            env.require(flags(bob, asfAllowClawback));
-            env.close();
-
-            // alice issues 1000 USD to bob
-            env.trust(alice["USD"](1000), bob);
-            env(pay(alice, bob, alice["USD"](1000)));
-            env.close();
-
-            env.require(balance(bob, alice["USD"](1000)));
-            env.require(balance(alice, bob["USD"](-1000)));
-
-            // bob issues 1500 USD to alice
-            env.trust(bob["USD"](1500), alice);
-            env(pay(bob, alice, bob["USD"](1500)));
-            env.close();
-
-            // bob has negative 500 USD because bob issued 500 USD more than alice
-            env.require(balance(bob, alice["USD"](-500)));
-            env.require(balance(alice, bob["USD"](500)));
-
-            // it doesn't make sense for either side to clawback 
-            env(claw(alice, bob["USD"](500)), ter(tecNO_PERMISSION));
-            env.close();
-            env(claw(bob, alice["USD"](500)), ter(tecNO_PERMISSION));
-            env.close();
-
-            env.require(balance(bob, alice["USD"](-500)));
-            env.require(balance(alice, bob["USD"](500)));
-        } 
     }
 
     void 
@@ -575,6 +524,88 @@ class Clawback_test : public beast::unit_test::suite
         env.require(balance(alice, cindy["USD"](-800)));
     }
 
+    void testSingleLine(FeatureBitset features){
+        testcase("Single line");
+        using namespace test::jtx;
+
+        // Test when both alice and bob issues USD to each other.
+        // This scenario creates only one trustline,
+        // In this case, both alice and bob can be seen as the "issuer"
+        // and they can send however many USDs to each other.
+        Env env(*this, features);
+
+        Account alice{"alice"};
+        Account bob{"bob"};
+
+        env.fund(XRP(1000), alice, bob);
+        env.close();
+
+        // alice sets asfAllowClawback
+        env(fset(alice, asfAllowClawback));
+        env.require(flags(alice, asfAllowClawback));
+        env.close();
+
+        // bob sets asfAllowClawback
+        env(fset(bob, asfAllowClawback));
+        env.require(flags(bob, asfAllowClawback));
+        env.close();
+
+        // alice issues 1000 USD to bob
+        env.trust(alice["USD"](1000), bob);
+        env(pay(alice, bob, alice["USD"](1000)));
+        env.close();
+
+        // bob is the holder, and alice is the issuer
+        env.require(balance(bob, alice["USD"](1000)));
+        env.require(balance(alice, bob["USD"](-1000)));
+
+        // bob issues 1500 USD to alice
+        env.trust(bob["USD"](1500), alice);
+        env(pay(bob, alice, bob["USD"](1500)));
+        env.close();
+
+        // bob has negative 500 USD because bob issued 500 USD more than alice
+        // bob can now been seen as the issuer, while alice is the holder
+        env.require(balance(bob, alice["USD"](-500)));
+        env.require(balance(alice, bob["USD"](500)));
+
+        // At this point, both alice and bob are the issuers of USD
+        // and can send USD to each other through one trustline
+
+        // alice fails to clawback. Even though she is also an issuer,
+        // the trustline balance is positive from her perspective
+        env(claw(alice, bob["USD"](200)), ter(tecNO_PERMISSION));
+        env.close();
+
+        // bob is able to successfully clawback from alice because
+        // the trustline balance is negative from his perspective
+        env(claw(bob, alice["USD"](200)));
+        env.close();
+
+        env.require(balance(bob, alice["USD"](-300)));
+        env.require(balance(alice, bob["USD"](300)));
+
+        // alice pays bob 1000 USD
+        env(pay(alice, bob, alice["USD"](1000)));
+        env.close();
+
+        // bob's balance becomes positive from his perspective because
+        // alice issued more USD than the balance
+        env.require(balance(bob, alice["USD"](700)));
+        env.require(balance(alice, bob["USD"](-700)));
+
+        // bob is now the holder and fails to clawback
+        env(claw(bob, alice["USD"](200)), ter(tecNO_PERMISSION));
+        env.close();
+
+        // alice successfully claws back
+        env(claw(alice, bob["USD"](200)));
+        env.close();
+
+        env.require(balance(bob, alice["USD"](500)));
+        env.require(balance(alice, bob["USD"](-500)));
+    }
+
     void
     testDeleteDefaultLine(FeatureBitset features)
     {
@@ -782,6 +813,7 @@ class Clawback_test : public beast::unit_test::suite
         testValidation(features);
         testEnabled(features);
         testMultiLine(features);
+        testSingleLine(features);
         testDeleteDefaultLine(features);
         testFrozenLine(features);
         testAmountExceedsAvailable(features);
