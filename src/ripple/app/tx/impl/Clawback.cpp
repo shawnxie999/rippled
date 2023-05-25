@@ -77,8 +77,6 @@ Clawback::preclaim(PreclaimContext const& ctx)
         return tecNO_LINE;
 
     STAmount const balance = sleRippleState->getFieldAmount(sfBalance);
-    STAmount const lowLimit = sleRippleState->getFieldAmount(sfLowLimit);
-    STAmount const highLimit = sleRippleState->getFieldAmount(sfHighLimit);
 
     // If balance is positive, issuer must have higher address than holder
     if (balance > beast::zero && issuer < holder)
