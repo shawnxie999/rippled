@@ -102,7 +102,7 @@ class Clawback_test : public beast::unit_test::suite
             env.close();
             env.require(flags(alice, asfAllowClawback));
 
-            // NoFreeze cannot be set when asfAllowClawback is set
+            // asfNoFreeze cannot be set when asfAllowClawback is set
             env.require(nflags(alice, asfNoFreeze));
             env(fset(alice, asfNoFreeze), ter(tecNO_PERMISSION));
             env.close();
@@ -524,14 +524,16 @@ class Clawback_test : public beast::unit_test::suite
         env.require(balance(alice, cindy["USD"](-800)));
     }
 
-    void testSingleLine(FeatureBitset features){
-        testcase("Single line");
+    void testBidirectionalLine(FeatureBitset features){
+        testcase("Bidirectional line");
         using namespace test::jtx;
 
         // Test when both alice and bob issues USD to each other.
         // This scenario creates only one trustline,
         // In this case, both alice and bob can be seen as the "issuer"
         // and they can send however many USDs to each other.
+        // We test that only the person who has a negative balance from their
+        // perspective is allowed to clawback
         Env env(*this, features);
 
         Account alice{"alice"};
@@ -813,7 +815,7 @@ class Clawback_test : public beast::unit_test::suite
         testValidation(features);
         testEnabled(features);
         testMultiLine(features);
-        testSingleLine(features);
+        testBidirectionalLine(features);
         testDeleteDefaultLine(features);
         testFrozenLine(features);
         testAmountExceedsAvailable(features);
