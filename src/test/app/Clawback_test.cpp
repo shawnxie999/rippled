@@ -68,7 +68,7 @@ class Clawback_test : public beast::unit_test::suite
         if (auto sle = env.le(keylet::line(src, dst, cur)))
         {
             auto const useHigh = src.id() > dst.id();
-            return sle->isFlag(useHigh ? lsfHighFreeze: lsfLowFreeze);
+            return sle->isFlag(useHigh ? lsfHighFreeze : lsfLowFreeze);
         }
         Throw<std::runtime_error>("No line in getLineFreezeFlag");
         return false;  // silence warning
@@ -213,7 +213,8 @@ class Clawback_test : public beast::unit_test::suite
             env.require(balance(bob, alice["USD"](1000)));
             env.require(balance(alice, bob["USD"](-1000)));
 
-            // cindy tries to claw from bob, and fails because trustline does not exist
+            // cindy tries to claw from bob, and fails because trustline does
+            // not exist
             env(claw(cindy, bob["USD"](200)), ter(tecNO_LINE));
             env.close();
         }
@@ -222,8 +223,9 @@ class Clawback_test : public beast::unit_test::suite
         // we must make sure the holder is unable to claw back from
         // the issuer by impersonating the issuer account.
         //
-        // This must be tested bidirectionally for both accounts because the issuer
-        // could be either the low or high account in the trustline object
+        // This must be tested bidirectionally for both accounts because the
+        // issuer could be either the low or high account in the trustline
+        // object
         {
             Env env(*this, features);
 
@@ -248,9 +250,11 @@ class Clawback_test : public beast::unit_test::suite
 
             // alice issues 10 USD to bob.
             // bob then attempts to submit a clawback tx to claw USD from alice.
-            // this must FAIL, because bob is not the issuer for this trustline!!!
+            // this must FAIL, because bob is not the issuer for this
+            // trustline!!!
             {
-                // bob creates a trustline with alice, and alice sends 10 USD to bob
+                // bob creates a trustline with alice, and alice sends 10 USD to
+                // bob
                 env.trust(USD(1000), bob);
                 env(pay(alice, bob, USD(10)));
                 env.close();
@@ -258,16 +262,19 @@ class Clawback_test : public beast::unit_test::suite
                 env.require(balance(bob, alice["USD"](10)));
                 env.require(balance(alice, bob["USD"](-10)));
 
-                // bob cannot claw back USD from alice because he's not the issuer
+                // bob cannot claw back USD from alice because he's not the
+                // issuer
                 env(claw(bob, alice["USD"](5)), ter(tecNO_PERMISSION));
                 env.close();
             }
 
             // bob issues 10 CAD to alice.
             // alice then attempts to submit a clawback tx to claw CAD from bob.
-            // this must FAIL, because alice is not the issuer for this trustline!!!
+            // this must FAIL, because alice is not the issuer for this
+            // trustline!!!
             {
-                // alice creates a trustline with bob, and bob sends 10 CAD to alice
+                // alice creates a trustline with bob, and bob sends 10 CAD to
+                // alice
                 env.trust(CAD(1000), alice);
                 env(pay(bob, alice, CAD(10)));
                 env.close();
@@ -275,14 +282,15 @@ class Clawback_test : public beast::unit_test::suite
                 env.require(balance(bob, alice["CAD"](-10)));
                 env.require(balance(alice, bob["CAD"](10)));
 
-                // alice cannot claw back CAD from bob because she's not the issuer
+                // alice cannot claw back CAD from bob because she's not the
+                // issuer
                 env(claw(alice, bob["CAD"](5)), ter(tecNO_PERMISSION));
                 env.close();
             }
         }
     }
 
-    void 
+    void
     testValidation(FeatureBitset features)
     {
         testcase("Validation");
@@ -303,8 +311,8 @@ class Clawback_test : public beast::unit_test::suite
 
             env.require(nflags(bob, asfAllowClawback));
 
-            // alice attempts to set asfAllowClawback flag while amendment is disabled.
-            // no error is returned, but the flag remains to be unset.
+            // alice attempts to set asfAllowClawback flag while amendment is
+            // disabled. no error is returned, but the flag remains to be unset.
             env(fset(alice, asfAllowClawback));
             env.require(nflags(alice, asfAllowClawback));
             env.close();
@@ -463,7 +471,8 @@ class Clawback_test : public beast::unit_test::suite
     }
 
     void
-    testMultiLine(FeatureBitset features){
+    testMultiLine(FeatureBitset features)
+    {
         testcase("Multi line");
         using namespace test::jtx;
 
@@ -524,7 +533,9 @@ class Clawback_test : public beast::unit_test::suite
         env.require(balance(alice, cindy["USD"](-800)));
     }
 
-    void testBidirectionalLine(FeatureBitset features){
+    void
+    testBidirectionalLine(FeatureBitset features)
+    {
         testcase("Bidirectional line");
         using namespace test::jtx;
 
@@ -646,7 +657,8 @@ class Clawback_test : public beast::unit_test::suite
 
         BEAST_EXPECT(ownerCount(env, bob) == 1);
 
-        // alice claws back full amount from bob, and should also delete trustline
+        // alice claws back full amount from bob, and should also delete
+        // trustline
         env(claw(alice, bob["USD"](1000)));
         env.close();
 
@@ -739,7 +751,8 @@ class Clawback_test : public beast::unit_test::suite
         env.require(balance(bob, alice["USD"](0)));
         env.require(balance(alice, bob["USD"](0)));
 
-        // bob still owns the trustline because trustline is not in default state
+        // bob still owns the trustline because trustline is not in default
+        // state
         BEAST_EXPECT(ownerCount(env, bob) == 1);
 
         // set limit to default,

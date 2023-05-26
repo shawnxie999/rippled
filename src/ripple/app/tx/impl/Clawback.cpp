@@ -93,8 +93,8 @@ Clawback::preclaim(PreclaimContext const& ctx)
     // available balance is non-zero.
     //
     // We can't directly check the balance of trustline because
-    // the available balance of a trustline is prone to new changes (eg. XLS-34).
-    // So we must use `accountHolds`.
+    // the available balance of a trustline is prone to new changes (eg.
+    // XLS-34). So we must use `accountHolds`.
     if (accountHolds(
             ctx.view,
             holder,
