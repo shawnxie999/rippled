@@ -136,8 +136,26 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
         auto const root = ctx.view.read(keylet::account(issuer));
         assert(root);
 
-        if (auto minter = (*root)[~sfNFTokenMinter];
-            minter != ctx.tx[sfAccount])
+        bool const acctIsNotMinter = (*root)[~sfNFTokenMinter] != ctx.tx[sfAccount];
+
+        // This flag is always true if fixSellNFTokenToIssuer is disabled.
+        // This means that we ignore the destination field specified in the offer,
+        // under all circumstances.
+        bool cannotSellToDestination = true;
+
+        // If fixSellNFTokenToIssuer is enabled, 
+        // even if the NFT is not transferable, as long as the destination
+        // field specifies the issuer, an offer can be created.
+        //
+        // NOTE: We should always allow the owner to sell back to the issuer.
+        if (ctx.view.rules().enabled(fixSellNFTokenToIssuer)){
+            auto const destination = ctx.tx[~sfDestination];
+
+            if (isSellOffer && destination && destination == issuer)
+                cannotSellToDestination = false;
+        }
+
+        if (acctIsNotMinter && cannotSellToDestination)
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;
     }
 
