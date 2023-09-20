@@ -61,7 +61,7 @@ CFTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 TER
 CFTokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
 {
-    // if already a CFT with this asset code - error
+    // if a CFT issuance with this asset code already exists - error
     if (ctx.view.exists(
             keylet::cftIssuance(ctx.tx[sfAccount], ctx.tx[sfAssetCode])))
         return tecDUPLICATE;
@@ -72,8 +72,11 @@ CFTokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
 TER
 CFTokenIssuanceCreate::doApply()
 {
-    if (auto const acct = view().read(keylet::account(account_));
-        mPriorBalance < view().fees().accountReserve((*acct)[sfOwnerCount] + 1))
+    auto const acct = view().read(keylet::account(account_));
+    if (!acct)
+        return tecINTERNAL;
+
+    if (mPriorBalance < view().fees().accountReserve((*acct)[sfOwnerCount] + 1))
         return tecINSUFFICIENT_RESERVE;
 
     auto const cftID = keylet::cftIssuance(account_, ctx_.tx[sfAssetCode]);
@@ -87,7 +90,7 @@ CFTokenIssuanceCreate::doApply()
             return tecDIR_FULL;
 
         auto cft = std::make_shared<SLE>(cftID);
-        (*cft)[sfFlags] = ctx_.tx.getFlags();
+        (*cft)[sfFlags] = ctx_.tx.getFlags() & ~tfUniversalMask;
         (*cft)[sfIssuer] = account_;
         (*cft)[sfAssetCode] = ctx_.tx[sfAssetCode];
         (*cft)[sfOutstandingAmount] = 0;
@@ -110,7 +113,7 @@ CFTokenIssuanceCreate::doApply()
     }
 
     // Update owner count.
-    adjustOwnerCount(view(), view().peek(keylet::account(account_)), 1, j_);
+    adjustOwnerCount(view(), *acct, 1, j_);
 
     return tesSUCCESS;
 }
