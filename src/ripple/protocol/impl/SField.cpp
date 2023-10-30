@@ -201,7 +201,6 @@ CONSTRUCT_TYPED_SFIELD(sfTakerPaysCurrency,     "TakerPaysCurrency",    UINT160,
 CONSTRUCT_TYPED_SFIELD(sfTakerPaysIssuer,       "TakerPaysIssuer",      UINT160,    2);
 CONSTRUCT_TYPED_SFIELD(sfTakerGetsCurrency,     "TakerGetsCurrency",    UINT160,    3);
 CONSTRUCT_TYPED_SFIELD(sfTakerGetsIssuer,       "TakerGetsIssuer",      UINT160,    4);
-CONSTRUCT_TYPED_SFIELD(sfAssetCode,             "AssetCode",            UINT160,    5);
 
 // 256-bit (common)
 CONSTRUCT_TYPED_SFIELD(sfLedgerHash,            "LedgerHash",           UINT256,    1);

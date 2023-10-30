@@ -346,7 +346,6 @@ LedgerFormats::LedgerFormats()
             {sfIssuer,               soeREQUIRED},
             {sfTransferFee,          soeDEFAULT},
             {sfOwnerNode,            soeREQUIRED},
-            {sfAssetCode,            soeREQUIRED},
             {sfAssetScale,           soeDEFAULT},
             {sfMaximumAmount,        soeOPTIONAL},
             {sfOutstandingAmount,    soeREQUIRED},

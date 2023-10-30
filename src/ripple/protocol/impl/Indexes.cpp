@@ -446,11 +446,11 @@ did(AccountID const& account) noexcept
 }
 
 Keylet
-cftIssuance(AccountID const& issuer, uint160 const& asset) noexcept
+cftIssuance(AccountID const& issuer, std::uint32_t seq) noexcept
 {
     return {
         ltCFTOKEN_ISSUANCE,
-        indexHash(LedgerNameSpace::CFTOKEN_ISSUANCE, issuer, asset)};
+        indexHash(LedgerNameSpace::CFTOKEN_ISSUANCE, issuer, seq)};
 }
 
 }  // namespace keylet
