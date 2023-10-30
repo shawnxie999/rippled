@@ -847,7 +847,10 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
 }
 
 std::pair<PublicKey, SecretKey>
-keypairForSignature(Json::Value const& params, Json::Value& error)
+keypairForSignature(
+    Json::Value const& params,
+    Json::Value& error,
+    unsigned int apiVersion)
 {
     bool const has_key_type = params.isMember(jss::key_type);
 
@@ -901,7 +904,10 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
 
         if (!keyType)
         {
-            error = RPC::invalid_field_error(jss::key_type);
+            if (apiVersion > 1u)
+                error = RPC::make_error(rpcBAD_KEY_TYPE);
+            else
+                error = RPC::invalid_field_error(jss::key_type);
             return {};
         }
 
@@ -982,7 +988,7 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 19>
+        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 20>
             types{
                 {{jss::account, ltACCOUNT_ROOT},
                  {jss::amendments, ltAMENDMENTS},
@@ -1003,7 +1009,8 @@ chooseLedgerEntryType(Json::Value const& params)
                  {jss::bridge, ltBRIDGE},
                  {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
                  {jss::xchain_owned_create_account_claim_id,
-                  ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID}}};
+                  ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
+                 {jss::did, ltDID}}};
 
         auto const& p = params[jss::type];
         if (!p.isString())

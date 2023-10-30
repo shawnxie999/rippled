@@ -186,13 +186,18 @@ enum LedgerEntryType : std::uint16_t
     */
     ltAMM = 0x0079,
 
+    /** The ledger object which tracks the DID.
+
+       \sa keylet::did
+    */
+    ltDID = 0x0049,
+
     /** A ledger object representing an individual CFToken asset type, but not
      * any balances of that asset itself.
 
         \sa keylet::cftIssuance
      */
     ltCFTOKEN_ISSUANCE = 0x007e,
-
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 
