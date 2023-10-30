@@ -72,7 +72,7 @@ CFTokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
 TER
 CFTokenIssuanceCreate::doApply()
 {
-    auto const acct = view().read(keylet::account(account_));
+    auto const acct = view().peek(keylet::account(account_));
     if (!acct)
         return tecINTERNAL;
 
@@ -113,7 +113,7 @@ CFTokenIssuanceCreate::doApply()
     }
 
     // Update owner count.
-    adjustOwnerCount(view(), *acct, 1, j_);
+    adjustOwnerCount(view(), acct, 1, j_);
 
     return tesSUCCESS;
 }
