@@ -134,8 +134,8 @@ constexpr std::uint32_t const tfTransferable               = 0x00000008;
 
 // CFTokenIssuanceCreate flags:
 // NOTE - there is intentionally no flag here for 0x01 because that
-// corresponds to lsfCFTIsLocked, which this transaction cannot mutate. 
-constexpr std::uint32_t const tfCFTCannotLockBalances      = lsfCFTCannotLockBalances;
+// corresponds to lsfCFTLocked, which this transaction cannot mutate. 
+constexpr std::uint32_t const tfCFTCanLock                 = lsfCFTCanLock;
 constexpr std::uint32_t const tfCFTRequireAuth             = lsfCFTRequireAuth;
 constexpr std::uint32_t const tfCFTCanEscrow               = lsfCFTCanEscrow;
 constexpr std::uint32_t const tfCFTCanTrade                = lsfCFTCanTrade;
@@ -199,7 +199,7 @@ constexpr std::uint32_t tfBridgeModifyMask = ~(tfUniversal | tfClearAccountCreat
 
 // CFTokenIssuanceCreate flags:
 constexpr std::uint32_t const tfCFTokenIssuanceCreateMask  =
-  ~(tfCFTCannotLockBalances | tfCFTRequireAuth | tfCFTCanEscrow | tfCFTCanTrade | tfCFTCanTransfer | tfCFTCanClawback | tfUniversal);
+  ~(tfCFTCanLock | tfCFTRequireAuth | tfCFTCanEscrow | tfCFTCanTrade | tfCFTCanTransfer | tfCFTCanClawback | tfUniversal);
 
 // clang-format on
 
