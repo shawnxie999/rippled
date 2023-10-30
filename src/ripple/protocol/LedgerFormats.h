@@ -311,8 +311,8 @@ enum LedgerSpecificFlags {
     lsfSellNFToken = 0x00000001,
 
     // ltCFTOKEN_ISSUANCE
-    lsfCFTIsLocked = 0x00000001,
-    lsfCFTCannotLockBalances = 0x00000002,
+    lsfCFTLocked = 0x00000001,
+    lsfCFTCanLock = 0x00000002,
     lsfCFTRequireAuth = 0x00000004,
     lsfCFTCanEscrow = 0x00000008,
     lsfCFTCanTrade = 0x00000010,

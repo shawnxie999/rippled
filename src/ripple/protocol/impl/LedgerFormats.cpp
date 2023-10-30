@@ -349,7 +349,7 @@ LedgerFormats::LedgerFormats()
             {sfAssetScale,           soeDEFAULT},
             {sfMaximumAmount,        soeOPTIONAL},
             {sfOutstandingAmount,    soeREQUIRED},
-            {sfLockedAmount,         soeREQUIRED},
+            {sfLockedAmount,         soeDEFAULT},
             {sfCFTokenMetadata,      soeOPTIONAL},
         },
         commonFields);
