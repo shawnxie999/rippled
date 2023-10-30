@@ -39,7 +39,7 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(master) == 0);
 
-            env(cft::create(master, "0158415500000000C1F76FF6ECB0BAC600000000"),
+            env(cft::create(master),
                 ter(temDISABLED));
             env.close();
 
@@ -54,7 +54,7 @@ class CFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.ownerCount(master) == 0);
 
             env(cft::create(
-                master, "0158415500000000C1F76FF6ECB0BAC600000000"));
+                master));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(master) == 1);

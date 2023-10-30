@@ -487,7 +487,6 @@ TxFormats::TxFormats()
     add(jss::CFTokenIssuanceCreate,
         ttCFTOKEN_ISSUANCE_CREATE,
         {
-            {sfAssetCode, soeREQUIRED},
             {sfAssetScale, soeOPTIONAL},
             {sfTransferFee, soeOPTIONAL},
             {sfMaximumAmount, soeOPTIONAL},
