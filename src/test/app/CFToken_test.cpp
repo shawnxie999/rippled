@@ -39,8 +39,7 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(master) == 0);
 
-            env(cft::create(master),
-                ter(temDISABLED));
+            env(cft::create(master), ter(temDISABLED));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(master) == 0);
@@ -53,8 +52,7 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(master) == 0);
 
-            env(cft::create(
-                master));
+            env(cft::create(master));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(master) == 1);
