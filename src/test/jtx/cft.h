@@ -34,6 +34,9 @@ namespace cft {
 Json::Value
 create(jtx::Account const& account);
 
+/** Destroy a CFT. */
+Json::Value
+destroy(jtx::Account const& account, std::string const& id);
 }  // namespace cft
 
 }  // namespace jtx
