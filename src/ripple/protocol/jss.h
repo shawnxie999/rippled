@@ -65,6 +65,8 @@ JSS(AuthAccounts);         // in: AMM Auction Slot
 JSS(Bridge);               // ledger type.
 JSS(CFTokenIssuance);      // ledger type.
 JSS(CFTokenIssuanceCreate);  // transaction type.
+JSS(CFTokenIssuanceDestroy);  // transaction type.
+JSS(CFTokenIssuanceID);       // in: CFTokenIssuanceDestroy.
 JSS(Check);                // ledger type.
 JSS(CheckCancel);          // transaction type.
 JSS(CheckCash);            // transaction type.
