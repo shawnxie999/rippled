@@ -74,7 +74,8 @@ CFTokenIssuanceCreate::doApply()
     if (mPriorBalance < view().fees().accountReserve((*acct)[sfOwnerCount] + 1))
         return tecINSUFFICIENT_RESERVE;
 
-    auto const cftID = keylet::cftIssuance(account_, ctx_.tx.getSeqProxy().value());
+    auto const cftID =
+        keylet::cftIssuance(account_, ctx_.tx.getSeqProxy().value());
 
     // create the CFT
     {
