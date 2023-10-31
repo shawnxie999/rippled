@@ -72,6 +72,7 @@ enum class LedgerNameSpace : std::uint16_t {
     XCHAIN_CLAIM_ID = 'Q',
     XCHAIN_CREATE_ACCOUNT_CLAIM_ID = 'K',
     DID = 'I',
+    CFTOKEN_ISSUANCE = '~',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -442,6 +443,14 @@ Keylet
 did(AccountID const& account) noexcept
 {
     return {ltDID, indexHash(LedgerNameSpace::DID, account)};
+}
+
+Keylet
+cftIssuance(AccountID const& issuer, uint160 const& asset) noexcept
+{
+    return {
+        ltCFTOKEN_ISSUANCE,
+        indexHash(LedgerNameSpace::CFTOKEN_ISSUANCE, issuer, asset)};
 }
 
 }  // namespace keylet

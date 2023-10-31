@@ -483,6 +483,17 @@ TxFormats::TxFormats()
         commonFields);
 
     add(jss::DIDDelete, ttDID_DELETE, {}, commonFields);
+
+    add(jss::CFTokenIssuanceCreate,
+        ttCFTOKEN_ISSUANCE_CREATE,
+        {
+            {sfAssetCode, soeREQUIRED},
+            {sfAssetScale, soeOPTIONAL},
+            {sfTransferFee, soeOPTIONAL},
+            {sfMaximumAmount, soeOPTIONAL},
+            {sfCFTokenMetadata, soeOPTIONAL},
+        },
+        commonFields);
 }
 
 TxFormats const&

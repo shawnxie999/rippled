@@ -283,6 +283,8 @@ xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t seq);
 Keylet
 did(AccountID const& account) noexcept;
 
+Keylet
+cftIssuance(AccountID const& issuer, uint160 const& asset) noexcept;
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

@@ -369,6 +369,7 @@ extern SF_UINT8 const sfWasLockingChainSend;
 extern SF_UINT8 const sfTickSize;
 extern SF_UINT8 const sfUNLModifyDisabling;
 extern SF_UINT8 const sfHookResult;
+extern SF_UINT8 const sfAssetScale;
 
 // 16-bit integers (common)
 extern SF_UINT16 const sfLedgerEntryType;
@@ -459,6 +460,9 @@ extern SF_UINT64 const sfReferenceCount;
 extern SF_UINT64 const sfXChainClaimID;
 extern SF_UINT64 const sfXChainAccountCreateCount;
 extern SF_UINT64 const sfXChainAccountClaimCount;
+extern SF_UINT64 const sfMaximumAmount;
+extern SF_UINT64 const sfOutstandingAmount;
+extern SF_UINT64 const sfLockedAmount;
 
 // 128-bit
 extern SF_UINT128 const sfEmailHash;
@@ -468,6 +472,7 @@ extern SF_UINT160 const sfTakerPaysCurrency;
 extern SF_UINT160 const sfTakerPaysIssuer;
 extern SF_UINT160 const sfTakerGetsCurrency;
 extern SF_UINT160 const sfTakerGetsIssuer;
+extern SF_UINT160 const sfAssetCode;
 
 // 256-bit (common)
 extern SF_UINT256 const sfLedgerHash;
@@ -554,6 +559,7 @@ extern SF_VL const sfMemoData;
 extern SF_VL const sfMemoFormat;
 extern SF_VL const sfDIDDocument;
 extern SF_VL const sfData;
+extern SF_VL const sfCFTokenMetadata;
 
 // variable length (uncommon)
 extern SF_VL const sfFulfillment;

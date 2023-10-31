@@ -97,6 +97,7 @@ CONSTRUCT_TYPED_SFIELD(sfTickSize,              "TickSize",             UINT8,  
 CONSTRUCT_TYPED_SFIELD(sfUNLModifyDisabling,    "UNLModifyDisabling",   UINT8,     17);
 CONSTRUCT_TYPED_SFIELD(sfHookResult,            "HookResult",           UINT8,     18);
 CONSTRUCT_TYPED_SFIELD(sfWasLockingChainSend,   "WasLockingChainSend",  UINT8,     19);
+CONSTRUCT_TYPED_SFIELD(sfAssetScale,            "AssetScale",           UINT8,     20);
 
 // 16-bit integers
 CONSTRUCT_TYPED_SFIELD(sfLedgerEntryType,       "LedgerEntryType",      UINT16,     1, SField::sMD_Never);
@@ -188,6 +189,9 @@ CONSTRUCT_TYPED_SFIELD(sfReferenceCount,           "ReferenceCount",           U
 CONSTRUCT_TYPED_SFIELD(sfXChainClaimID,            "XChainClaimID",            UINT64, 20);
 CONSTRUCT_TYPED_SFIELD(sfXChainAccountCreateCount, "XChainAccountCreateCount", UINT64, 21);
 CONSTRUCT_TYPED_SFIELD(sfXChainAccountClaimCount,  "XChainAccountClaimCount",  UINT64, 22);
+CONSTRUCT_TYPED_SFIELD(sfMaximumAmount,             "MaximumAmount",           UINT64, 23);
+CONSTRUCT_TYPED_SFIELD(sfOutstandingAmount,         "OutstandingAmount",       UINT64, 24);
+CONSTRUCT_TYPED_SFIELD(sfLockedAmount,              "LockedAmount",            UINT64, 25);
 
 // 128-bit
 CONSTRUCT_TYPED_SFIELD(sfEmailHash,             "EmailHash",            UINT128,    1);
@@ -197,6 +201,7 @@ CONSTRUCT_TYPED_SFIELD(sfTakerPaysCurrency,     "TakerPaysCurrency",    UINT160,
 CONSTRUCT_TYPED_SFIELD(sfTakerPaysIssuer,       "TakerPaysIssuer",      UINT160,    2);
 CONSTRUCT_TYPED_SFIELD(sfTakerGetsCurrency,     "TakerGetsCurrency",    UINT160,    3);
 CONSTRUCT_TYPED_SFIELD(sfTakerGetsIssuer,       "TakerGetsIssuer",      UINT160,    4);
+CONSTRUCT_TYPED_SFIELD(sfAssetCode,             "AssetCode",            UINT160,    5);
 
 // 256-bit (common)
 CONSTRUCT_TYPED_SFIELD(sfLedgerHash,            "LedgerHash",           UINT256,    1);
@@ -300,6 +305,7 @@ CONSTRUCT_TYPED_SFIELD(sfHookParameterName,     "HookParameterName",    VL,     
 CONSTRUCT_TYPED_SFIELD(sfHookParameterValue,    "HookParameterValue",   VL,        25);
 CONSTRUCT_TYPED_SFIELD(sfDIDDocument,           "DIDDocument",          VL,        26);
 CONSTRUCT_TYPED_SFIELD(sfData,                  "Data",                 VL,        27);
+CONSTRUCT_TYPED_SFIELD(sfCFTokenMetadata,       "CFTokenMetadata",      VL,        28);
 
 // account
 CONSTRUCT_TYPED_SFIELD(sfAccount,               "Account",              ACCOUNT,    1);
