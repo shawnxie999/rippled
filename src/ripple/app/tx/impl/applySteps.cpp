@@ -163,7 +163,7 @@ with_txn_type(TxType txnType, F&& f)
         case ttCFTOKEN_ISSUANCE_CREATE:
             return f.template operator()<CFTokenIssuanceCreate>();
             case ttCFTOKEN_ISSUANCE_DESTORY:
-            return f.template operator()<CFTokenIssuanceDestory>();
+            return f.template operator()<CFTokenIssuanceDestroy>();
         default:
             throw UnknownTxnType(txnType);
     }

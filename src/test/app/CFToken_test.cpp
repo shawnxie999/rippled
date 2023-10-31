@@ -57,6 +57,39 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(master) == 1);
         }
+        {
+            // If the CFT amendment is not enabled, you should not be able to
+            // destroy CFTokenIssuances
+            Env env{*this, features - featureCFTokensV1};
+            Account const& master = env.master;
+
+            BEAST_EXPECT(env.ownerCount(master) == 0);
+
+            auto const id = keylet::cftIssuance(master.id(), env.seq(master));
+            env(cft::destroy(master, ripple::to_string(id.key)),
+                ter(temDISABLED));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(master) == 0);
+        }
+        {
+            // If the CFT amendment IS enabled, you should be able to destroy
+            // CFTokenIssuances
+            Env env{*this, features | featureCFTokensV1};
+            Account const& master = env.master;
+
+            BEAST_EXPECT(env.ownerCount(master) == 0);
+
+            env(cft::create(master));
+            env.close();
+            BEAST_EXPECT(env.ownerCount(master) == 1);
+
+            auto const id = keylet::cftIssuance(master.id(), env.seq(master));
+
+            env(cft::destroy(master, ripple::to_string(id.key)));
+            env.close();
+            BEAST_EXPECT(env.ownerCount(master) == 0);
+        }
     }
 
 public:
