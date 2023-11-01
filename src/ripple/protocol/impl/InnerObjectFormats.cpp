@@ -135,6 +135,17 @@ InnerObjectFormats::InnerObjectFormats()
         {
             {sfAccount, soeREQUIRED},
         });
+
+    add(sfCFToken.jsonName.c_str(),
+        sfCFToken.getCode(),
+        {
+            // TODO - do we even need to store the id since it can be derived
+            // from the Amount
+            {sfCFTokenIssuanceID, soeREQUIRED},
+            {sfCFTAmount, soeREQUIRED},
+            {sfLockedAmount, soeDEFAULT},
+            {sfFlags, soeOPTIONAL},
+        });
 }
 
 InnerObjectFormats const&
