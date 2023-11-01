@@ -26,6 +26,7 @@
 #include <ripple/app/tx/impl/AMMWithdraw.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
 #include <ripple/app/tx/impl/CFTokenIssuanceCreate.h>
+#include <ripple/app/tx/impl/CFTokenIssuanceDestroy.h>
 #include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CashCheck.h>
@@ -162,7 +163,7 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<DIDDelete>();
         case ttCFTOKEN_ISSUANCE_CREATE:
             return f.template operator()<CFTokenIssuanceCreate>();
-            case ttCFTOKEN_ISSUANCE_DESTORY:
+        case ttCFTOKEN_ISSUANCE_DESTROY:
             return f.template operator()<CFTokenIssuanceDestroy>();
         default:
             throw UnknownTxnType(txnType);

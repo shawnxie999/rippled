@@ -201,6 +201,8 @@ constexpr std::uint32_t tfBridgeModifyMask = ~(tfUniversal | tfClearAccountCreat
 constexpr std::uint32_t const tfCFTokenIssuanceCreateMask  =
   ~(tfCFTCanLock | tfCFTRequireAuth | tfCFTCanEscrow | tfCFTCanTrade | tfCFTCanTransfer | tfCFTCanClawback | tfUniversal);
 
+// CFTokenIssuanceDestroy flags:
+constexpr std::uint32_t const tfCFTokenIssuanceDestroyMask  = ~tfUniversal;
 // clang-format on
 
 }  // namespace ripple
