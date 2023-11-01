@@ -21,6 +21,7 @@
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/st.h>
+#include <ripple/protocol/TxFlags.h>
 
 namespace ripple {
 
@@ -30,8 +31,12 @@ CFTokenIssuanceDestroy::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureCFTokensV1))
         return temDISABLED;
 
+    //check flags
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
+
+    if (ctx.tx.getFlags() & tfCFTokenIssuanceDestroyMask)
+        return temINVALID_FLAG;
 
     return preflight2(ctx);
 }
