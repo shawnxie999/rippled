@@ -80,11 +80,10 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(master) == 0);
 
+            auto const id = keylet::cftIssuance(master.id(), env.seq(master));
             env(cft::create(master));
             env.close();
             BEAST_EXPECT(env.ownerCount(master) == 1);
-
-            auto const id = keylet::cftIssuance(master.id(), env.seq(master));
 
             env(cft::destroy(master, ripple::to_string(id.key)));
             env.close();
