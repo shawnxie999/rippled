@@ -500,6 +500,14 @@ TxFormats::TxFormats()
             {sfCFTokenIssuanceID, soeREQUIRED},
         },
         commonFields);
+
+    add(jss::CFTokenAuthorize,
+        ttCFTOKEN_AUTHORIZE,
+        {
+            {sfCFTokenIssuanceID, soeREQUIRED},
+            {sfCFTokenHolder, soeOPTIONAL},
+        },
+        commonFields);
 }
 
 TxFormats const&

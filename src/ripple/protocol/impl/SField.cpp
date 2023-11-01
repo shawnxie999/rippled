@@ -192,6 +192,7 @@ CONSTRUCT_TYPED_SFIELD(sfXChainAccountClaimCount,  "XChainAccountClaimCount",  U
 CONSTRUCT_TYPED_SFIELD(sfMaximumAmount,             "MaximumAmount",           UINT64, 23);
 CONSTRUCT_TYPED_SFIELD(sfOutstandingAmount,         "OutstandingAmount",       UINT64, 24);
 CONSTRUCT_TYPED_SFIELD(sfLockedAmount,              "LockedAmount",            UINT64, 25);
+CONSTRUCT_TYPED_SFIELD(sfCFTAmount,                 "CFTAmount",               UINT64, 26);
 
 // 128-bit
 CONSTRUCT_TYPED_SFIELD(sfEmailHash,             "EmailHash",            UINT128,    1);
@@ -318,6 +319,7 @@ CONSTRUCT_TYPED_SFIELD(sfUnauthorize,           "Unauthorize",          ACCOUNT,
 CONSTRUCT_TYPED_SFIELD(sfRegularKey,            "RegularKey",           ACCOUNT,    8);
 CONSTRUCT_TYPED_SFIELD(sfNFTokenMinter,         "NFTokenMinter",        ACCOUNT,    9);
 CONSTRUCT_TYPED_SFIELD(sfEmitCallback,          "EmitCallback",         ACCOUNT,   10);
+CONSTRUCT_TYPED_SFIELD(sfCFTokenHolder,         "CFTokenHolder",        ACCOUNT,   11);
 
 // account (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfHookAccount,           "HookAccount",          ACCOUNT,   16);

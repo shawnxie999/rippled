@@ -463,6 +463,7 @@ extern SF_UINT64 const sfXChainAccountClaimCount;
 extern SF_UINT64 const sfMaximumAmount;
 extern SF_UINT64 const sfOutstandingAmount;
 extern SF_UINT64 const sfLockedAmount;
+extern SF_UINT64 const sfCFTAmount;
 
 // 128-bit
 extern SF_UINT128 const sfEmailHash;
@@ -583,6 +584,7 @@ extern SF_ACCOUNT const sfUnauthorize;
 extern SF_ACCOUNT const sfRegularKey;
 extern SF_ACCOUNT const sfNFTokenMinter;
 extern SF_ACCOUNT const sfEmitCallback;
+extern SF_ACCOUNT const sfCFTokenHolder;
 
 // account (uncommon)
 extern SF_ACCOUNT const sfHookAccount;
@@ -642,6 +644,7 @@ extern SField const sfXChainClaimProofSig;
 extern SField const sfXChainCreateAccountProofSig;
 extern SField const sfXChainClaimAttestationCollectionElement;
 extern SField const sfXChainCreateAccountAttestationCollectionElement;
+extern SField const CFToken;
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array

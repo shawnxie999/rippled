@@ -142,6 +142,9 @@ constexpr std::uint32_t const tfCFTCanTrade                = lsfCFTCanTrade;
 constexpr std::uint32_t const tfCFTCanTransfer             = lsfCFTCanTransfer;
 constexpr std::uint32_t const tfCFTCanClawback             = lsfCFTCanClawback;
 
+// CFTokenAuthorize flags:
+constexpr std::uint32_t const tfCFTUnathorize             = 0x00000001;
+
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
 // accounts allowed a TrustLine to be added to the issuer of that token
 // without explicit permission from that issuer.  This was enabled by
@@ -203,6 +206,9 @@ constexpr std::uint32_t const tfCFTokenIssuanceCreateMask  =
 
 // CFTokenIssuanceDestroy flags:
 constexpr std::uint32_t const tfCFTokenIssuanceDestroyMask  = ~tfUniversal;
+
+// CFTokenAuthorize flags:
+constexpr std::uint32_t const tfCFTokenAuthorizeMask  = ~(tfCFTUnathorize | tfUniversal);
 // clang-format on
 
 }  // namespace ripple
