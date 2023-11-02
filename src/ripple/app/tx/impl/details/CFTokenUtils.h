@@ -17,32 +17,22 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED
-#define RIPPLE_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED
+#ifndef RIPPLE_TX_IMPL_DETAILS_CFTOKENUTILS_H_INCLUDED
+#define RIPPLE_TX_IMPL_DETAILS_CFTOKENUTILS_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/tagged_integer.h>
 #include <ripple/ledger/ApplyView.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/TER.h>
-#include <ripple/protocol/nft.h>
+#include <ripple/protocol/cft.h>
 #include <ripple/app/tx/impl/details/PageUtils.h>
 
 namespace ripple {
 
 namespace nft {
 
-/** Delete up to a specified number of offers from the specified token offer
- * directory. */
-std::size_t
-removeTokenOffersWithLimit(
-    ApplyView& view,
-    Keylet const& directory,
-    std::size_t maxDeletableOffers);
 
-/** Returns tesSUCCESS if NFToken has few enough offers that it can be burned */
-TER
-notTooManyOffers(ReadView const& view, uint256 const& nftokenID);
 
 /** Finds the specified token in the owner's token directory. */
 std::optional<STObject>
@@ -72,18 +62,6 @@ removeToken(
     uint256 const& nftokenID,
     std::shared_ptr<SLE>&& page);
 
-/** Deletes the given token offer.
-
-    An offer is tracked in two separate places:
-        - The token's 'buy' directory, if it's a buy offer; or
-        - The token's 'sell' directory, if it's a sell offer; and
-        - The owner directory of the account that placed the offer.
-
-    The offer also consumes one incremental reserve.
- */
-bool
-deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer);
-
 bool
 compareTokens(uint256 const& a, uint256 const& b);
 
@@ -91,4 +69,4 @@ compareTokens(uint256 const& a, uint256 const& b);
 
 }  // namespace ripple
 
-#endif  // RIPPLE_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED
+#endif  // RIPPLE_TX_IMPL_DETAILS_CFTOKENUTILS_H_INCLUDED

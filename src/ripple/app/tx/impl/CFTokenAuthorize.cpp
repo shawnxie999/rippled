@@ -37,6 +37,11 @@ CFTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     if (ctx.tx.getFlags() & tfCFTokenAuthorizeMask)
         return temINVALID_FLAG;
 
+    auto const accountID = ctx.tx[sfAccount];
+    auto const holder = ctx.tx[~sfCFTokenHolder];
+    if (holder && accountID == holder)
+        return temMALFORMED;
+
     return preflight2(ctx);
 }
 
@@ -49,7 +54,12 @@ CFTokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
         return tecOBJECT_NOT_FOUND;
 
     auto const accountID = ctx.tx[sfAccount];
+    auto const txFlags = ctx.tx[sfFlags];
+    auto const holder = ctx.tx[~sfCFTokenHolder]; 
     std::uint32_t const cftIssuanceFlags = sleCFT->getFieldU32(sfFlags);
+
+    // TODO: locate the CFToken Object and check if it exists
+    auto const sleCft = ;
 
     // If tx is submitted by issuer, they would either try to do the following for allowlisting
     // 1. authorize an account
@@ -59,9 +69,46 @@ CFTokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
         if (!(cftIssuanceFlags & lsfCFTRequireAuth))
             return tecNO_PERMISSION;
         
-        if()
+        if (!holder)
+            return no holder specfied;
+
+        if (!sleCft)
+            return no object;
+
+        // issuer wants to authorize the holder
+        if (!(txFlags & tfCFTUnathorize)){
+            //make sure the holder is not already authorized
+            if ((*sleCft)[sfFlags] & lsfCFTAuthorized)
+                return flag already set;
+            
+
+        }
+        // unathorize a holder
+        else {
+            if (!(*sleCft)[sfFlags] & lsfCFTAuthorized)
+                return cft is not authorized;
+        }
+
+
     }
-    else()
+    else{
+        if(holder)
+            return temMALFORMED;
+
+        // if holder wants to hold a cft
+        if (!(txFlags & tfCFTUnathorize)){
+
+            if (sleCft)
+                return already holds object;
+
+
+        }
+        // if holder no longer wants to use cft
+        else{
+           if((*sleCft)[sfCFTAmount] != 0)
+            return tecHAS_OBLIGATIONS; 
+        }
+    }
     return tesSUCCESS;
 }
 
