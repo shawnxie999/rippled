@@ -291,6 +291,10 @@ cftIssuance(uint256 const& issuance)
 {
     return {ltCFTOKEN_ISSUANCE, issuance};
 }
+
+Keylet
+cftoken(uint256 const& issuanceID, AccountID const& holder) noexcept;
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

@@ -353,6 +353,17 @@ LedgerFormats::LedgerFormats()
             {sfCFTokenMetadata,      soeOPTIONAL},
         },
         commonFields);
+
+    add(jss::CFToken,
+        ltCFTOKEN,
+        {
+            {sfAccount,           soeREQUIRED},
+            {sfCFTokenIssuanceID, soeREQUIRED},
+            {sfCFTAmount, soeREQUIRED},
+            {sfLockedAmount, soeDEFAULT},
+            {sfOwnerNode,            soeREQUIRED},
+        },
+        commonFields);
     // clang-format on
 }
 
