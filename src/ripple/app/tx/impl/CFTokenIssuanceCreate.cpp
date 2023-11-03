@@ -74,37 +74,36 @@ CFTokenIssuanceCreate::doApply()
     if (mPriorBalance < view().fees().accountReserve((*acct)[sfOwnerCount] + 1))
         return tecINSUFFICIENT_RESERVE;
 
-    auto const cftID =
+    auto const cftIssuanceID =
         keylet::cftIssuance(account_, ctx_.tx.getSeqProxy().value());
 
-    // create the CFT
+    // create the CFTokenIssuance
     {
         auto const ownerNode = view().dirInsert(
-            keylet::ownerDir(account_), cftID, describeOwnerDir(account_));
+            keylet::ownerDir(account_), cftIssuanceID, describeOwnerDir(account_));
 
         if (!ownerNode)
             return tecDIR_FULL;
 
-        auto cft = std::make_shared<SLE>(cftID);
-        (*cft)[sfFlags] = ctx_.tx.getFlags() & ~tfUniversalMask;
-        (*cft)[sfIssuer] = account_;
-        (*cft)[sfOutstandingAmount] = 0;
-        (*cft)[sfLockedAmount] = 0;
-        (*cft)[sfOwnerNode] = *ownerNode;
+        auto cftIssuance = std::make_shared<SLE>(cftIssuanceID);
+        (*cftIssuance)[sfFlags] = ctx_.tx.getFlags() & ~tfUniversalMask;
+        (*cftIssuance)[sfIssuer] = account_;
+        (*cftIssuance)[sfOutstandingAmount] = 0;
+        (*cftIssuance)[sfOwnerNode] = *ownerNode;
 
         if (auto const max = ctx_.tx[~sfMaximumAmount])
-            (*cft)[sfMaximumAmount] = *max;
+            (*cftIssuance)[sfMaximumAmount] = *max;
 
         if (auto const scale = ctx_.tx[~sfAssetScale])
-            (*cft)[sfAssetScale] = *scale;
+            (*cftIssuance)[sfAssetScale] = *scale;
 
         if (auto const fee = ctx_.tx[~sfTransferFee])
-            (*cft)[sfTransferFee] = *fee;
+            (*cftIssuance)[sfTransferFee] = *fee;
 
         if (auto const metadata = ctx_.tx[~sfCFTokenMetadata])
-            (*cft)[sfCFTokenMetadata] = *metadata;
+            (*cftIssuance)[sfCFTokenMetadata] = *metadata;
 
-        view().insert(cft);
+        view().insert(cftIssuance);
     }
 
     // Update owner count.
