@@ -26,7 +26,7 @@
 namespace ripple {
 
 NotTEC
-CFTokenIssuanceCreate::preflight(PreflightContext const& ctx)
+CFTokenAuthorize::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureCFTokensV1))
         return temDISABLED;
@@ -38,83 +38,157 @@ CFTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
 
     auto const accountID = ctx.tx[sfAccount];
-    auto const holder = ctx.tx[~sfCFTokenHolder];
-    if (holder && accountID == holder)
+    auto const holderID = ctx.tx[~sfCFTokenholder];
+    if (holderID && accountID == holderID)
         return temMALFORMED;
 
     return preflight2(ctx);
 }
 
 TER
-CFTokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
+CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleCFT =
+    auto const sleCftIssuance =
         ctx.view.read(keylet::cftIssuance(ctx.tx[sfCFTokenIssuanceID]));
-    if (!sleCFT)
+    if (!sleCftIssuance)
         return tecOBJECT_NOT_FOUND;
 
     auto const accountID = ctx.tx[sfAccount];
     auto const txFlags = ctx.tx[sfFlags];
-    auto const holder = ctx.tx[~sfCFTokenHolder]; 
-    std::uint32_t const cftIssuanceFlags = sleCFT->getFieldU32(sfFlags);
+    auto const holderID = ctx.tx[~sfCFTokenholder]; 
+
+    if (holderID && !(ctx.view.exists(keylet::account(holderID))))
+        return tecNO_DST;
+    
+    std::uint32_t const cftIssuanceFlags = sleCftIssuance->getFieldU32(sfFlags);
 
     // TODO: locate the CFToken Object and check if it exists
-    auto const sleCft = ;
+    std::shared_ptr<SLE const> const sleCft;
 
     // If tx is submitted by issuer, they would either try to do the following for allowlisting
     // 1. authorize an account
     // 2. unauthorize an account
-    if (accountID == (*sleCFT)[sfIssuer]){
+    if (accountID == (*sleCftIssuance)[sfIssuer]){
+
         // If tx is submitted by issuer, it only applies for CFT with lsfCFTRequireAuth set
         if (!(cftIssuanceFlags & lsfCFTRequireAuth))
-            return tecNO_PERMISSION;
+            return tecNO_AUTH;
         
-        if (!holder)
-            return no holder specfied;
-
-        if (!sleCft)
-            return no object;
-
-        // issuer wants to authorize the holder
-        if (!(txFlags & tfCFTUnathorize)){
-            //make sure the holder is not already authorized
-            if ((*sleCft)[sfFlags] & lsfCFTAuthorized)
-                return flag already set;
-            
-
-        }
-        // unathorize a holder
-        else {
-            if (!(*sleCft)[sfFlags] & lsfCFTAuthorized)
-                return cft is not authorized;
-        }
-
-
-    }
-    else{
-        if(holder)
+        if (!holderID)
             return temMALFORMED;
 
-        // if holder wants to hold a cft
-        if (!(txFlags & tfCFTUnathorize)){
+        sleCft = ctx.view.read(keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], holderID));
+        if (!sleCft)
+            return tecNO_ENTRY;
 
-            if (sleCft)
-                return already holds object;
+        auto const sleCftFlags = (*sleCft)[sfFlags];
 
+        // issuer wants to unauthorize the holder
+        if (txFlags & tfCFTUnathorize){
+            if (!(sleCftFlags & lsfCFTAuthorized))
+                return temINVALID_FLAG;
 
         }
-        // if holder no longer wants to use cft
+        // authorize a holder
+        else {
+            //make sure the holder is not already authorized
+            if (sleCftFlags & lsfCFTAuthorized)
+                return temMALFORMED;
+        }
+    }
+    // if non-issuer account submits this tx, then they are trying either:
+    // 1. Unauthorize/delete CFToken
+    // 2. Use/create CFToken
+    else{
+        if(holderID)
+            return temMALFORMED;
+
+        sleCft = ctx.view.read(keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], accountID));
+
+        // if holder wants to delete/unauthorize a cft
+        if (txFlags & tfCFTUnathorize){
+            if (!sleCft)
+                return tecNO_ENTRY;
+
+            if((*sleCft)[sfCFTAmount] != 0)
+                return tecHAS_OBLIGATIONS; 
+        }
+        // if holder wants to use and create a cft
         else{
-           if((*sleCft)[sfCFTAmount] != 0)
-            return tecHAS_OBLIGATIONS; 
+            if (sleCft)
+                return tecDUPLICATE;
         }
     }
     return tesSUCCESS;
 }
 
 TER
-CFTokenIssuanceCreate::doApply()
+CFTokenAuthorize::doApply()
 {
+    auto const cftIssuanceID = ctx_.tx[sfCFTokenIssuanceID];
+    auto const sleCftIssuance =
+        view().read(keylet::cftIssuance(cftIssuanceID));
+    if (!sleCftIssuance)
+        return tecINTERNAL;
+
+
+    auto const holderID = ctx_.tx[~sfCFTokenholder];
+    auto const txFlags = ctx.tx[sfFlags];
+
+    if (accountID == (*sleCftIssuance)[sfIssuer]){
+        auto const sleHolder = 
+    }
+
+    else{
+        // if holder wants to delete/unauthorize a cft
+        if (txFlags & tfCFTUnathorize){
+            if (!sleCft)
+                return tecNO_ENTRY;
+
+            if((*sleCft)[sfCFTAmount] != 0)
+                return tecHAS_OBLIGATIONS; 
+        }
+        // user wants to create a cft
+        else{
+            auto const sleAcct = view().peek(keylet::account(account_));
+            if (!acct)
+                return tecINTERNAL;
+
+            if (mPriorBalance < view().fees().accountReserve((*sleAcct)[sfOwnerCount] + 1))
+                return tecINSUFFICIENT_RESERVE;      
+
+            auto const cftokenID = keylet::cftoken(cftIssuanceID, account_);
+
+            
+            auto const ownerNode = view().dirInsert(
+                keylet::ownerDir(account_), cftokenID, describeOwnerDir(account_));
+
+            if (!ownerNode)
+                return tecDIR_FULL;
+            
+
+            auto const offerNode = view().dirInsert(keylet::cft_dir(cftIssuanceID), cftokenID,     
+                [&cftokenID](std::shared_ptr<SLE> const& sle) {
+                    (*sle)[sfCFTokenIssuanceID] = cftIssuanceID;
+            });
+            
+            auto cftoken = std::make_shared<SLE>(cftokenID);
+            (*cftoken)[sfAccount] = account_;
+            (*cftoken)[sfCFTokenIssuanceID] = cftIssuanceID;
+            (*cftoken)[sfFlags] = ctx_.tx.getFlags() & ~tfUniversalMask;
+            (*cftoken)[sfCFTAmount] = 0;
+            
+            view().insert(cftoken);
+
+
+            // Update owner count.
+            adjustOwnerCount(view(), acct, 1, j_);
+        }
+
+    }
+
+
+
 
     return tesSUCCESS;
 }
