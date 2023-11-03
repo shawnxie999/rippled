@@ -393,6 +393,7 @@ LedgerEntryTypesMatch::visitEntry(
             case ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID:
             case ltDID:
             case ltCFTOKEN_ISSUANCE:
+            case ltCFTOKEN:
                 break;
             default:
                 invalidTypeAdded_ = true;
