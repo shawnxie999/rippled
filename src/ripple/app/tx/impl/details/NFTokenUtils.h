@@ -26,7 +26,6 @@
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/nft.h>
-#include <ripple/app/tx/impl/details/PageUtils.h>
 
 namespace ripple {
 
@@ -51,6 +50,17 @@ findToken(
     AccountID const& owner,
     uint256 const& nftokenID);
 
+/** Finds the token in the owner's token directory.  Returns token and page. */
+struct TokenAndPage
+{
+    STObject token;
+    std::shared_ptr<SLE> page;
+
+    TokenAndPage(STObject const& token_, std::shared_ptr<SLE> page_)
+        : token(token_), page(std::move(page_))
+    {
+    }
+};
 std::optional<TokenAndPage>
 findTokenAndPage(
     ApplyView& view,
