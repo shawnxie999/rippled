@@ -27,7 +27,7 @@
 #include <ripple/app/tx/impl/ApplyContext.h>
 #include <ripple/app/tx/impl/CFTokenIssuanceCreate.h>
 #include <ripple/app/tx/impl/CFTokenIssuanceDestroy.h>
-#include <ripple/app/tx/impl/CFTokenIssuanceAuthorize.h>
+#include <ripple/app/tx/impl/CFTokenAuthorize.h>
 #include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CashCheck.h>
@@ -166,8 +166,8 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<CFTokenIssuanceCreate>();
         case ttCFTOKEN_ISSUANCE_DESTROY:
             return f.template operator()<CFTokenIssuanceDestroy>();
-        case ttCFTOKEN_ISSUANCE_AUTHORIZE:
-            return f.template operator()<CFTokenIssuanceAuthorize>();
+        case ttCFTOKEN_AUTHORIZE:
+            return f.template operator()<CFTokenAuthorize>();
         default:
             throw UnknownTxnType(txnType);
     }

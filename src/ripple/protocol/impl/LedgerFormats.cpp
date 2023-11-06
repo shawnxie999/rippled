@@ -74,6 +74,7 @@ LedgerFormats::LedgerFormats()
             {sfIndexNext,            soeOPTIONAL},
             {sfIndexPrevious,        soeOPTIONAL},
             {sfNFTokenID,            soeOPTIONAL},
+            {sfCFTokenIssuanceID,    soeOPTIONAL},
         },
         commonFields);
 

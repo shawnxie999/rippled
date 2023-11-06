@@ -91,6 +91,41 @@ class CFToken_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testHolderAuthorize(FeatureBitset features)
+    {
+        testcase("Enabled");
+
+        using namespace test::jtx;
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+            auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
+            env(cft::create(alice));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 1);
+
+            env(cft::authorize(bob, id.key, std::nullopt));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(bob) == 1);
+
+            env(cft::authorize(bob, id.key, std::nullopt), txflags(0x00000001));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(bob) == 0);
+        }
+
+    }
+
 public:
     void
     run() override
@@ -99,6 +134,7 @@ public:
         FeatureBitset const all{supported_amendments()};
 
         testEnabled(all);
+        testHolderAuthorize(all);
     }
 };
 
