@@ -325,9 +325,8 @@ enum LedgerSpecificFlags {
     lsfCFTCanTransfer = 0x00000020,
     lsfCFTCanClawback = 0x00000040,
 
-
     // ltCFTOKEN
-    lsfCFTAuthorized = 0x00000001,
+    lsfCFTAuthorized = 0x00000002,
 };
 
 //------------------------------------------------------------------------------
