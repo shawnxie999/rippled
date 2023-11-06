@@ -92,11 +92,172 @@ class CFToken_test : public beast::unit_test::suite
     }
 
     void
-    testHolderAuthorize(FeatureBitset features)
+    testAuthorizeValidation(FeatureBitset features)
     {
-        testcase("Enabled");
+        testcase("Validate authorize");
 
         using namespace test::jtx;
+        // Validate fields in CFTokenAuthorize (preflight)
+        {
+            Env env{*this, features};
+            Account const alice("alice"); //issuer
+            Account const bob("bob"); //holder
+
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+            auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
+            env(cft::create(alice));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 1);
+
+            env(cft::authorize(bob, id.key, std::nullopt), txflags(0x00000002), ter(temINVALID_FLAG));
+            env.close();
+
+            env(cft::authorize(bob, id.key, bob), ter(temMALFORMED));
+            env.close();
+
+            env(cft::authorize(alice, id.key, alice), ter(temMALFORMED));
+            env.close();
+        }
+
+        // Try authorizing when CFTokenIssuance doesnt exist in CFTokenAuthorize (preclaim)
+        {
+            Env env{*this, features};
+            Account const alice("alice"); //issuer
+            Account const bob("bob"); //holder
+
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+            auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
+
+            env(cft::authorize(alice, id.key, bob), ter(tecOBJECT_NOT_FOUND));
+            env.close();
+
+            env(cft::authorize(bob, id.key, std::nullopt), ter(tecOBJECT_NOT_FOUND));
+            env.close();
+        }
+
+        // Test bad scenarios without allowlisting in CFTokenAuthorize (preclaim)
+        {
+            Env env{*this, features};
+            Account const alice("alice"); //issuer
+            Account const bob("bob"); //holder
+
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+            auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
+            env(cft::create(alice));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 1);
+
+            // bob submits a tx with a holder field
+            env(cft::authorize(bob, id.key, alice), ter(temMALFORMED));
+            env.close();
+
+            env(cft::authorize(bob, id.key, bob), ter(temMALFORMED));
+            env.close();
+
+            env(cft::authorize(alice, id.key, alice), ter(temMALFORMED));
+            env.close();
+
+            // the cft does not enable allowlisting
+            env(cft::authorize(alice, id.key, bob), ter(tecNO_AUTH));
+            env.close();
+
+            // bob now holds a cftoken object
+            env(cft::authorize(bob, id.key, std::nullopt));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(bob) == 1);
+
+            // bob cannot create the cftoken the second time
+            env(cft::authorize(bob, id.key, std::nullopt), ter(tecDUPLICATE));
+            env.close();
+
+            // TODO: check where cftoken balance is nonzero
+
+            env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnathorize));
+            env.close();
+
+            env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnathorize), ter(tecNO_ENTRY));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(bob) == 0);
+        }
+
+        // Test bad scenarios with allow-listing in CFTokenAuthorize (preclaim)
+        {
+            Env env{*this, features};
+            Account const alice("alice"); //issuer
+            Account const bob("bob"); //holder
+            Account const cindy("cindy");
+
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+            auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
+            env(cft::create(alice), txflags(tfCFTRequireAuth));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 1);
+
+            // alice submits a tx without specifying a holder's account
+            env(cft::authorize(alice, id.key, std::nullopt), ter(temMALFORMED));
+            env.close();
+
+            // alice submits a tx to authorize a holder that hasn't created a cftoken yet
+            env(cft::authorize(alice, id.key, bob), ter(tecNO_ENTRY));
+            env.close();
+
+            // alice specifys a holder acct that doesn't exist
+            env(cft::authorize(alice, id.key, cindy), ter(tecNO_DST));
+            env.close();
+
+            // bob now holds a cftoken object
+            env(cft::authorize(bob, id.key, std::nullopt));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(bob) == 1);
+
+            // alice submits a tx to "unauthorize" a holder that hasn't been authorized
+            env(cft::authorize(alice, id.key, bob), txflags(tfCFTUnathorize), ter(temINVALID_FLAG));
+            env.close();  
+
+            // alice authorizes and set flag on bob's cftoken
+            env(cft::authorize(alice, id.key, bob));
+            env.close();  
+
+            // if alice tries to set again, it will fail
+            env(cft::authorize(alice, id.key, bob), ter(temMALFORMED));
+            env.close();        
+
+            env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnathorize));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(bob) == 0);
+        }
+    }
+
+    void
+    testBasicAuthorize(FeatureBitset features)
+    {
+        testcase("Basic authorize");
+
+        using namespace test::jtx;
+        // Basic authorization without allowlisting
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -118,7 +279,38 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
-            env(cft::authorize(bob, id.key, std::nullopt), txflags(0x00000001));
+            env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnathorize));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(bob) == 0);
+        }
+
+        // With allowlisting 
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+            auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
+            env(cft::create(alice), txflags(tfCFTRequireAuth));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 1);
+
+            env(cft::authorize(bob, id.key, std::nullopt));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(bob) == 1);
+
+            env(cft::authorize(alice, id.key, bob));
+            env.close();
+
+            env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnathorize));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 0);
@@ -134,7 +326,8 @@ public:
         FeatureBitset const all{supported_amendments()};
 
         testEnabled(all);
-        testHolderAuthorize(all);
+        testAuthorizeValidation(all);
+        testBasicAuthorize(all);
     }
 };
 
