@@ -86,7 +86,7 @@ CFTokenIssuanceCreate::doApply()
             return tecDIR_FULL;
 
         auto cftIssuance = std::make_shared<SLE>(cftIssuanceID);
-        (*cftIssuance)[sfFlags] = ctx_.tx.getFlags() & ~tfUniversalMask;
+        (*cftIssuance)[sfFlags] = ctx_.tx.getFlags() & ~tfUniversal;
         (*cftIssuance)[sfIssuer] = account_;
         (*cftIssuance)[sfOutstandingAmount] = 0;
         (*cftIssuance)[sfOwnerNode] = *ownerNode;
