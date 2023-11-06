@@ -362,6 +362,7 @@ LedgerFormats::LedgerFormats()
             {sfCFTAmount, soeREQUIRED},
             {sfLockedAmount, soeDEFAULT},
             {sfOwnerNode,            soeREQUIRED},
+            {sfCFTokenNode,            soeREQUIRED},
         },
         commonFields);
     // clang-format on

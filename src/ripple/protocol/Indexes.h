@@ -295,6 +295,8 @@ cftIssuance(uint256 const& issuance)
 Keylet
 cftoken(uint256 const& issuanceID, AccountID const& holder) noexcept;
 
+Keylet
+cft_dir(uint256 const& id) noexcept;
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:
