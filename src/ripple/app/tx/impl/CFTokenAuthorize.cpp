@@ -38,7 +38,7 @@ CFTokenAuthorize::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
 
     auto const accountID = ctx.tx[sfAccount];
-    auto const holderID = ctx.tx[~sfCFTokenholder];
+    auto const holderID = ctx.tx[~sfCFTokenHolder];
     if (holderID && accountID == holderID)
         return temMALFORMED;
 
@@ -54,16 +54,16 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
         return tecOBJECT_NOT_FOUND;
 
     auto const accountID = ctx.tx[sfAccount];
-    auto const txFlags = ctx.tx[sfFlags];
-    auto const holderID = ctx.tx[~sfCFTokenholder]; 
+    auto const txFlags = ctx.tx.getFlags();
+    auto const holderID = ctx.tx[~sfCFTokenHolder]; 
 
-    if (holderID && !(ctx.view.exists(keylet::account(holderID))))
+    if (holderID && !(ctx.view.exists(keylet::account(*holderID))))
         return tecNO_DST; // TODO: Change code
     
     std::uint32_t const cftIssuanceFlags = sleCftIssuance->getFieldU32(sfFlags);
 
     // TODO: locate the CFToken Object and check if it exists
-    std::shared_ptr<SLE const> const sleCft;
+    std::shared_ptr<SLE const>  sleCft;
 
     // If tx is submitted by issuer, they would either try to do the following for allowlisting
     // 1. authorize an account
@@ -77,7 +77,7 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
         if (!holderID)
             return temMALFORMED;
 
-        sleCft = ctx.view.read(keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], holderID));
+        sleCft = ctx.view.read(keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], *holderID));
         if (!sleCft)
             return tecNO_ENTRY;
 
@@ -132,18 +132,18 @@ CFTokenAuthorize::doApply()
         return tecINTERNAL;
 
     auto const sleAcct = view().peek(keylet::account(account_));
-    if (!acct)
+    if (!sleAcct)
         return tecINTERNAL;
 
-    auto const holderID = ctx_.tx[~sfCFTokenholder];
-    auto const txFlags = ctx.tx[sfFlags];
+    auto const holderID = ctx_.tx[~sfCFTokenHolder];
+    auto const txFlags = ctx_.tx.getFlags();
 
     // If the account that submitted this tx is the issuer of the CFT
     if (account_ == (*sleCftIssuance)[sfIssuer]){
         if (!holderID)
             return tecINTERNAL;
 
-        auto const sleCft = view().peek(keylet::cftoken(cftIssuanceID, holderID));
+        auto const sleCft = view().peek(keylet::cftoken(cftIssuanceID, *holderID));
 
         std::uint32_t const flagsIn = sleCft->getFieldU32(sfFlags);
         std::uint32_t flagsOut = flagsIn;
@@ -163,11 +163,11 @@ CFTokenAuthorize::doApply()
     // If the account that submitted the tx is a holder
     else{
         // When a holder wants to authorize/delete a CFT, the ledger must
-        //      - delete CFTokenID from both owner and cft directories
+        //      - delete cftokenKey from both owner and cft directories
         //      - delete the CFToken
         if (txFlags & tfCFTUnathorize){
-            auto const cftokenID = keylet::cftoken(cftIssuanceID, account_);
-            auto const sleCft = view().peek(cftokenID);
+            auto const cftokenKey = keylet::cftoken(cftIssuanceID, account_);
+            auto const sleCft = view().peek(cftokenKey);
             if (!sleCft)
                 return tecINTERNAL;
 
@@ -187,48 +187,48 @@ CFTokenAuthorize::doApply()
 
             adjustOwnerCount(
                     view(),
-                    view().peek(keylet::account(account_)),
+                    sleAcct,
                     -1,
                     beast::Journal{beast::Journal::getNullSink()});
 
             view().erase(sleCft);
         }
         // A potential holder wants to authorize/hold a cft, the ledger must:
-        //      - add the new CFTokenID to both the owner and cft directries
+        //      - add the new cftokenKey to both the owner and cft directries
         //      - create the CFToken object for the holder
         else{
             if (mPriorBalance < view().fees().accountReserve((*sleAcct)[sfOwnerCount] + 1))
                 return tecINSUFFICIENT_RESERVE;      
 
-            auto const cftokenID = keylet::cftoken(cftIssuanceID, account_);
+            auto const cftokenKey = keylet::cftoken(cftIssuanceID, account_);
 
             
             auto const ownerNode = view().dirInsert(
-                keylet::ownerDir(account_), cftokenID, describeOwnerDir(account_));
+                keylet::ownerDir(account_), cftokenKey, describeOwnerDir(account_));
 
             if (!ownerNode)
                 return tecDIR_FULL;
             
 
-            auto const cftNode = view().dirInsert(keylet::cft_dir(cftIssuanceID), cftokenID,     
-                [&cftokenID](std::shared_ptr<SLE> const& sle) {
+            auto const cftNode = view().dirInsert(keylet::cft_dir(cftIssuanceID), cftokenKey,     
+                [&cftIssuanceID](std::shared_ptr<SLE> const& sle) {
                     (*sle)[sfCFTokenIssuanceID] = cftIssuanceID;
             });
             
             if (!cftNode)
                 return tecDIR_FULL;
 
-            auto cftoken = std::make_shared<SLE>(cftokenID);
+            auto cftoken = std::make_shared<SLE>(cftokenKey);
             (*cftoken)[sfAccount] = account_;
             (*cftoken)[sfCFTokenIssuanceID] = cftIssuanceID;
-            (*cftoken)[sfFlags] = ctx_.tx.getFlags() & ~tfUniversalMask;
+            (*cftoken)[sfFlags] = 0;
             (*cftoken)[sfCFTAmount] = 0;
             (*cftoken)[sfOwnerNode] = *ownerNode;
             (*cftoken)[sfCFTokenNode] = *cftNode;
             view().insert(cftoken);
 
             // Update owner count.
-            adjustOwnerCount(view(), acct, 1, j_);
+            adjustOwnerCount(view(), sleAcct, 1, j_);
         }
     }
 

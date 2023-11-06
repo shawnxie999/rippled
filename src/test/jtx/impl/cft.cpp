@@ -46,6 +46,19 @@ destroy(jtx::Account const& account, std::string const& id)
     return jv;
 }
 
+Json::Value
+authorize(jtx::Account const& account, ripple::uint256 issuanceID, std::optional<jtx::Account> const& holder)
+{
+    Json::Value jv;
+    jv[sfAccount.jsonName] = account.human();
+    jv[sfTransactionType.jsonName] = jss::CFTokenAuthorize;
+    jv[sfCFTokenIssuanceID.jsonName] = to_string(issuanceID);
+    if(holder)
+        jv[sfCFTokenHolder.jsonName] = holder->human();
+
+    return jv;
+}
+
 }  // namespace cft
 
 }  // namespace jtx
