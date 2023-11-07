@@ -99,7 +99,7 @@ class CFToken_test : public beast::unit_test::suite
         using namespace test::jtx;
         // Validate fields in CFTokenAuthorize (preflight)
         {
-            Env env{*this, features};
+            Env env{*this, features - featureCFTokensV1};
             Account const alice("alice"); //issuer
             Account const bob("bob"); //holder
 
@@ -109,6 +109,12 @@ class CFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
             auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
+
+            env(cft::authorize(bob, id.key, std::nullopt), ter(temDISABLED));
+            env.close();
+
+            env.enableFeature(featureCFTokensV1);
+
             env(cft::create(alice));
             env.close();
 
@@ -182,7 +188,7 @@ class CFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
             // bob cannot create the cftoken the second time
-            env(cft::authorize(bob, id.key, std::nullopt), ter(tecDUPLICATE));
+            env(cft::authorize(bob, id.key, std::nullopt), ter(tecCFTOKEN_EXISTS));
             env.close();
 
             // TODO: check where cftoken balance is nonzero
@@ -241,7 +247,7 @@ class CFToken_test : public beast::unit_test::suite
             env.close();  
 
             // if alice tries to set again, it will fail
-            env(cft::authorize(alice, id.key, bob), ter(temMALFORMED));
+            env(cft::authorize(alice, id.key, bob), ter(tecCFTOKEN_ALREADY_AUTHORIZED));
             env.close();        
 
             env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnathorize));
@@ -249,12 +255,72 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(bob) == 0);
         }
+        
+        // Test cftoken reserve requirement - first two cfts free (doApply)
+        {
+            Env env{*this, features};
+            auto const acctReserve = env.current()->fees().accountReserve(0);
+            auto const incReserve = env.current()->fees().increment;
+
+            Account const alice("alice");
+            Account const bob("bob");
+
+            env.fund(XRP(10000), alice);
+            env.fund(acctReserve + XRP(1), bob);
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+            auto const id1 = keylet::cftIssuance(alice.id(), env.seq(alice));
+            env(cft::create(alice));
+            env.close();
+
+            auto const id2 = keylet::cftIssuance(alice.id(), env.seq(alice));
+            env(cft::create(alice));
+            env.close();
+
+            auto const id3 = keylet::cftIssuance(alice.id(), env.seq(alice));
+            env(cft::create(alice));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 3);
+
+            // first cft for free
+            env(cft::authorize(bob, id1.key, std::nullopt));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(bob) == 1);
+
+            // second cft free
+            env(cft::authorize(bob, id2.key, std::nullopt));
+            env.close();
+            BEAST_EXPECT(env.ownerCount(bob) == 2);
+
+            env(cft::authorize(bob, id3.key, std::nullopt), ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            env(pay(env.master, bob, drops(incReserve + incReserve + incReserve)));
+            env.close();
+
+            env(cft::authorize(bob, id3.key, std::nullopt));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(bob) == 3);
+        }
     }
 
     void
     testBasicAuthorize(FeatureBitset features)
     {
         testcase("Basic authorize");
+
+        auto const cftIsAuthorized =[](test::jtx::Env const& env,
+                                        ripple::uint256 const cftIssuanceID,
+                                         test::jtx::Account const& holder) -> bool {
+            auto const sleCft = env.le(keylet::cftoken(cftIssuanceID, holder));
+            uint32_t const cftFlags = sleCft->getFlags();
+            return cftFlags & lsfCFTAuthorized;
+        };
 
         using namespace test::jtx;
         // Basic authorization without allowlisting
@@ -278,6 +344,8 @@ class CFToken_test : public beast::unit_test::suite
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 1);
+
+            BEAST_EXPECT(!cftIsAuthorized(env, id.key, bob));
 
             env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnathorize));
             env.close();
@@ -307,8 +375,14 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
+            BEAST_EXPECT(!cftIsAuthorized(env, id.key, bob));
+
             env(cft::authorize(alice, id.key, bob));
             env.close();
+
+            BEAST_EXPECT(cftIsAuthorized(env, id.key, bob));
+
+            BEAST_EXPECT(env.ownerCount(bob) == 1);
 
             env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnathorize));
             env.close();

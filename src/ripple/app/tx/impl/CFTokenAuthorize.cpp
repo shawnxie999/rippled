@@ -58,7 +58,7 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
     auto const holderID = ctx.tx[~sfCFTokenHolder]; 
 
     if (holderID && !(ctx.view.exists(keylet::account(*holderID))))
-        return tecNO_DST; // TODO: Change code
+        return tecNO_DST;
     
     std::uint32_t const cftIssuanceFlags = sleCftIssuance->getFieldU32(sfFlags);
 
@@ -86,14 +86,14 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
         // issuer wants to unauthorize the holder
         if (txFlags & tfCFTUnathorize){
             if (!(sleCftFlags & lsfCFTAuthorized))
-                return temINVALID_FLAG; // TODO chanage code
+                return temINVALID_FLAG;
 
         }
         // authorize a holder
         else {
             //make sure the holder is not already authorized
             if (sleCftFlags & lsfCFTAuthorized)
-                return temMALFORMED; // TODO: change code
+                return tecCFTOKEN_ALREADY_AUTHORIZED;
         }
     }
     // if non-issuer account submits this tx, then they are trying either:
@@ -116,7 +116,7 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
         // if holder wants to use and create a cft
         else{
             if (sleCft)
-                return tecDUPLICATE;
+                return tecCFTOKEN_EXISTS;
         }
     }
     return tesSUCCESS;
@@ -144,6 +144,8 @@ CFTokenAuthorize::doApply()
             return tecINTERNAL;
 
         auto const sleCft = view().peek(keylet::cftoken(cftIssuanceID, *holderID));
+        if (!sleCft)
+            return tecINTERNAL;
 
         std::uint32_t const flagsIn = sleCft->getFieldU32(sfFlags);
         std::uint32_t flagsOut = flagsIn;
@@ -197,18 +199,21 @@ CFTokenAuthorize::doApply()
         //      - add the new cftokenKey to both the owner and cft directries
         //      - create the CFToken object for the holder
         else{
-            if (mPriorBalance < view().fees().accountReserve((*sleAcct)[sfOwnerCount] + 1))
+            std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
+            XRPAmount const reserveCreate(
+                (uOwnerCount < 2) ? XRPAmount(beast::zero)
+                                : view().fees().accountReserve(uOwnerCount + 1));
+
+            if (mPriorBalance < reserveCreate)
                 return tecINSUFFICIENT_RESERVE;      
 
             auto const cftokenKey = keylet::cftoken(cftIssuanceID, account_);
-
             
             auto const ownerNode = view().dirInsert(
                 keylet::ownerDir(account_), cftokenKey, describeOwnerDir(account_));
 
             if (!ownerNode)
                 return tecDIR_FULL;
-            
 
             auto const cftNode = view().dirInsert(keylet::cft_dir(cftIssuanceID), cftokenKey,     
                 [&cftIssuanceID](std::shared_ptr<SLE> const& sle) {
