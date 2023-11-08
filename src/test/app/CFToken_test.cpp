@@ -25,6 +25,25 @@ namespace ripple {
 
 class CFToken_test : public beast::unit_test::suite
 {
+    bool 
+    cftEqualsAmount(test::jtx::Env const& env,
+        ripple::uint256 const cftIssuanceID,
+            test::jtx::Account const& holder, std::uint64_t expectedAmount){
+        auto const sleCft = env.le(keylet::cftoken(cftIssuanceID, holder));
+        std::uint64_t const amount = (*sleCft)[sfCFTAmount];
+        return amount == expectedAmount;
+    }
+
+    bool   
+    cftIsAuthorized(test::jtx::Env const& env,
+        ripple::uint256 const cftIssuanceID,
+            test::jtx::Account const& holder)
+    {
+            auto const sleCft = env.le(keylet::cftoken(cftIssuanceID, holder));
+            uint32_t const cftFlags = sleCft->getFlags();
+            return cftFlags & lsfCFTAuthorized;
+    }
+
     void
     testEnabled(FeatureBitset features)
     {
@@ -313,15 +332,7 @@ class CFToken_test : public beast::unit_test::suite
     testBasicAuthorize(FeatureBitset features)
     {
         testcase("Basic authorize");
-
-        auto const cftIsAuthorized =[](test::jtx::Env const& env,
-                                        ripple::uint256 const cftIssuanceID,
-                                         test::jtx::Account const& holder) -> bool {
-            auto const sleCft = env.le(keylet::cftoken(cftIssuanceID, holder));
-            uint32_t const cftFlags = sleCft->getFlags();
-            return cftFlags & lsfCFTAuthorized;
-        };
-
+        
         using namespace test::jtx;
         // Basic authorization without allowlisting
         {
