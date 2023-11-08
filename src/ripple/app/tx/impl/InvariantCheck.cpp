@@ -812,7 +812,7 @@ ValidCFTIssuance::visitEntry(
     {
         if (isDelete)
             cftsDeleted_++;
-        else
+        else if (!before)
             cftsCreated_++;
     }
 }
