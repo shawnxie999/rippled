@@ -68,6 +68,9 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
     // If tx is submitted by issuer, they would either try to do the following for allowlisting
     // 1. authorize an account
     // 2. unauthorize an account
+    //
+    // Note: accountID is issuer's account
+    //       holderID is holder's account
     if (accountID == (*sleCftIssuance)[sfIssuer]){
 
         // If tx is submitted by issuer, it only applies for CFT with lsfCFTRequireAuth set
@@ -87,7 +90,6 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
         if (txFlags & tfCFTUnathorize){
             if (!(sleCftFlags & lsfCFTAuthorized))
                 return temINVALID_FLAG;
-
         }
         // authorize a holder
         else {
@@ -99,6 +101,9 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
     // if non-issuer account submits this tx, then they are trying either:
     // 1. Unauthorize/delete CFToken
     // 2. Use/create CFToken
+    //
+    // Note: accountID is holder's account
+    //       holderID is NOT used
     else{
         if(holderID)
             return temMALFORMED;
@@ -139,6 +144,8 @@ CFTokenAuthorize::doApply()
     auto const txFlags = ctx_.tx.getFlags();
 
     // If the account that submitted this tx is the issuer of the CFT
+    // Note: account_ is issuer's account
+    //       holderID is holder's account
     if (account_ == (*sleCftIssuance)[sfIssuer]){
         if (!holderID)
             return tecINTERNAL;
@@ -163,7 +170,12 @@ CFTokenAuthorize::doApply()
         view().update(sleCft);
     }
     // If the account that submitted the tx is a holder
+    // Note: account_ is holder's account
+    //       holderID is NOT used
     else{
+        if (holderID)
+            return tecINTERNAL;
+
         // When a holder wants to authorize/delete a CFT, the ledger must
         //      - delete cftokenKey from both owner and cft directories
         //      - delete the CFToken
