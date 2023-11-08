@@ -45,9 +45,9 @@ class CFToken_test : public beast::unit_test::suite
     }
 
     void
-    testEnabled(FeatureBitset features)
+    testCreateEnabled(FeatureBitset features)
     {
-        testcase("Enabled");
+        testcase("Create Enabled");
 
         using namespace test::jtx;
         {
@@ -76,6 +76,14 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(master) == 1);
         }
+    }
+
+    void
+    testDestoryEnabled(FeatureBitset features)
+    {
+        testcase("Destory Enabled");
+
+        using namespace test::jtx;
         {
             // If the CFT amendment is not enabled, you should not be able to
             // destroy CFTokenIssuances
@@ -108,12 +116,13 @@ class CFToken_test : public beast::unit_test::suite
             env.close();
             BEAST_EXPECT(env.ownerCount(master) == 0);
         }
+
     }
 
     void
     testAuthorizeValidation(FeatureBitset features)
     {
-        testcase("Validate authorize");
+        testcase("Validate authorize transaction");
 
         using namespace test::jtx;
         // Validate fields in CFTokenAuthorize (preflight)
@@ -329,9 +338,9 @@ class CFToken_test : public beast::unit_test::suite
     }
 
     void
-    testBasicAuthorize(FeatureBitset features)
+    testAuthorizeEnabled(FeatureBitset features)
     {
-        testcase("Basic authorize");
+        testcase("Authorize Enabled");
         
         using namespace test::jtx;
         // Basic authorization without allowlisting
@@ -403,7 +412,6 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(bob) == 0);
         }
-
     }
 
 public:
@@ -413,9 +421,15 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
 
-        testEnabled(all);
+        // CFTokenIssuanceCreate
+        testCreateEnabled(all);
+
+        // CFTokenIssuanceDestory
+        testDestoryEnabled(all);
+
+        // CFTokenAuthorize
         testAuthorizeValidation(all);
-        testBasicAuthorize(all);
+        testAuthorizeEnabled(all);
     }
 };
 
