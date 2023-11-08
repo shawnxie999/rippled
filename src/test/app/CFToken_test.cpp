@@ -357,6 +357,7 @@ class CFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
             BEAST_EXPECT(!cftIsAuthorized(env, id.key, bob));
+            BEAST_EXPECT(cftEqualsAmount(env, id.key, bob, 0));
 
             env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnathorize));
             env.close();
@@ -387,11 +388,13 @@ class CFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
             BEAST_EXPECT(!cftIsAuthorized(env, id.key, bob));
+            BEAST_EXPECT(cftEqualsAmount(env, id.key, bob, 0));
 
             env(cft::authorize(alice, id.key, bob));
             env.close();
 
             BEAST_EXPECT(cftIsAuthorized(env, id.key, bob));
+            BEAST_EXPECT(cftEqualsAmount(env, id.key, bob, 0));
 
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
