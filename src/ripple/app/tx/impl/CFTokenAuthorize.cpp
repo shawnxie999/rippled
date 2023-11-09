@@ -62,7 +62,6 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
     
     std::uint32_t const cftIssuanceFlags = sleCftIssuance->getFieldU32(sfFlags);
 
-    // TODO: locate the CFToken Object and check if it exists
     std::shared_ptr<SLE const>  sleCft;
 
     // If tx is submitted by issuer, they would either try to do the following for allowlisting
@@ -176,7 +175,7 @@ CFTokenAuthorize::doApply()
         if (holderID)
             return tecINTERNAL;
 
-        // When a holder wants to authorize/delete a CFT, the ledger must
+        // When a holder wants to unauthorize/delete a CFT, the ledger must
         //      - delete cftokenKey from both owner and cft directories
         //      - delete the CFToken
         if (txFlags & tfCFTUnathorize){
