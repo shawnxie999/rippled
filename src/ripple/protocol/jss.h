@@ -68,6 +68,7 @@ JSS(CFTokenIssuance);      // ledger type.
 JSS(CFTokenIssuanceCreate);  // transaction type.
 JSS(CFTokenIssuanceDestroy);  // transaction type.
 JSS(CFTokenAuthorize);  // transaction type.
+JSS(CFTokenIssuanceSet);  // transaction type.
 JSS(CFTokenIssuanceID);       // in: CFTokenIssuanceDestroy, CFTokenAuthorize
 JSS(Check);                // ledger type.
 JSS(CheckCancel);          // transaction type.

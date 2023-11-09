@@ -199,6 +199,9 @@ enum TxType : std::uint16_t
     /** This transaction destroys an existing CFTokenIssuance object. */
     ttCFTOKEN_AUTHORIZE = 53,
 
+    /** This transaction sets an existing CFTokenIssuance or CFToken object. */
+    ttCFTOKEN_ISSUANCE_SET = 54,
+
     /** This system-generated transaction type is used to update the status of the various amendments.
 
         For details, see: https://xrpl.org/amendments.html
