@@ -167,87 +167,87 @@ CFTokenAuthorize::doApply()
             sleCft->setFieldU32(sfFlags, flagsOut);
 
         view().update(sleCft);
+        return tesSUCCESS;
     }
+
     // If the account that submitted the tx is a holder
     // Note: account_ is holder's account
     //       holderID is NOT used
-    else{
-        if (holderID)
+    if (holderID)
+        return tecINTERNAL;
+
+    // When a holder wants to unauthorize/delete a CFT, the ledger must
+    //      - delete cftokenKey from both owner and cft directories
+    //      - delete the CFToken
+    if (txFlags & tfCFTUnathorize){
+        auto const cftokenKey = keylet::cftoken(cftIssuanceID, account_);
+        auto const sleCft = view().peek(cftokenKey);
+        if (!sleCft)
             return tecINTERNAL;
 
-        // When a holder wants to unauthorize/delete a CFT, the ledger must
-        //      - delete cftokenKey from both owner and cft directories
-        //      - delete the CFToken
-        if (txFlags & tfCFTUnathorize){
-            auto const cftokenKey = keylet::cftoken(cftIssuanceID, account_);
-            auto const sleCft = view().peek(cftokenKey);
-            if (!sleCft)
-                return tecINTERNAL;
+        if (!view().dirRemove(
+            keylet::ownerDir(account_),
+            (*sleCft)[sfOwnerNode],
+            sleCft->key(),
+            false))
+            return tecINTERNAL;
+        
+        if (!view().dirRemove(
+            keylet::cft_dir(cftIssuanceID),
+            (*sleCft)[sfCFTokenNode],
+            sleCft->key(),
+            false))
+            return tecINTERNAL;
 
-            if (!view().dirRemove(
-                keylet::ownerDir(account_),
-                (*sleCft)[sfOwnerNode],
-                sleCft->key(),
-                false))
-                return tecINTERNAL;
-            
-            if (!view().dirRemove(
-                keylet::cft_dir(cftIssuanceID),
-                (*sleCft)[sfCFTokenNode],
-                sleCft->key(),
-                false))
-                return tecINTERNAL;
+        adjustOwnerCount(
+                view(),
+                sleAcct,
+                -1,
+                beast::Journal{beast::Journal::getNullSink()});
 
-            adjustOwnerCount(
-                    view(),
-                    sleAcct,
-                    -1,
-                    beast::Journal{beast::Journal::getNullSink()});
-
-            view().erase(sleCft);
-        }
-        // A potential holder wants to authorize/hold a cft, the ledger must:
-        //      - add the new cftokenKey to both the owner and cft directries
-        //      - create the CFToken object for the holder
-        else{
-            std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
-            XRPAmount const reserveCreate(
-                (uOwnerCount < 2) ? XRPAmount(beast::zero)
-                                : view().fees().accountReserve(uOwnerCount + 1));
-
-            if (mPriorBalance < reserveCreate)
-                return tecINSUFFICIENT_RESERVE;      
-
-            auto const cftokenKey = keylet::cftoken(cftIssuanceID, account_);
-            
-            auto const ownerNode = view().dirInsert(
-                keylet::ownerDir(account_), cftokenKey, describeOwnerDir(account_));
-
-            if (!ownerNode)
-                return tecDIR_FULL;
-
-            auto const cftNode = view().dirInsert(keylet::cft_dir(cftIssuanceID), cftokenKey,     
-                [&cftIssuanceID](std::shared_ptr<SLE> const& sle) {
-                    (*sle)[sfCFTokenIssuanceID] = cftIssuanceID;
-            });
-            
-            if (!cftNode)
-                return tecDIR_FULL;
-
-            auto cftoken = std::make_shared<SLE>(cftokenKey);
-            (*cftoken)[sfAccount] = account_;
-            (*cftoken)[sfCFTokenIssuanceID] = cftIssuanceID;
-            (*cftoken)[sfFlags] = 0;
-            (*cftoken)[sfCFTAmount] = 0;
-            (*cftoken)[sfOwnerNode] = *ownerNode;
-            (*cftoken)[sfCFTokenNode] = *cftNode;
-            view().insert(cftoken);
-
-            // Update owner count.
-            adjustOwnerCount(view(), sleAcct, 1, j_);
-        }
+        view().erase(sleCft);
+        return tesSUCCESS;
     }
 
+    // A potential holder wants to authorize/hold a cft, the ledger must:
+    //      - add the new cftokenKey to both the owner and cft directries
+    //      - create the CFToken object for the holder
+    std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
+    XRPAmount const reserveCreate(
+        (uOwnerCount < 2) ? XRPAmount(beast::zero)
+                        : view().fees().accountReserve(uOwnerCount + 1));
+
+    if (mPriorBalance < reserveCreate)
+        return tecINSUFFICIENT_RESERVE;      
+
+    auto const cftokenKey = keylet::cftoken(cftIssuanceID, account_);
+    
+    auto const ownerNode = view().dirInsert(
+        keylet::ownerDir(account_), cftokenKey, describeOwnerDir(account_));
+
+    if (!ownerNode)
+        return tecDIR_FULL;
+
+    auto const cftNode = view().dirInsert(keylet::cft_dir(cftIssuanceID), cftokenKey,     
+        [&cftIssuanceID](std::shared_ptr<SLE> const& sle) {
+            (*sle)[sfCFTokenIssuanceID] = cftIssuanceID;
+    });
+    
+    if (!cftNode)
+        return tecDIR_FULL;
+
+    auto cftoken = std::make_shared<SLE>(cftokenKey);
+    (*cftoken)[sfAccount] = account_;
+    (*cftoken)[sfCFTokenIssuanceID] = cftIssuanceID;
+    (*cftoken)[sfFlags] = 0;
+    (*cftoken)[sfCFTAmount] = 0;
+    (*cftoken)[sfOwnerNode] = *ownerNode;
+    (*cftoken)[sfCFTokenNode] = *cftNode;
+    view().insert(cftoken);
+
+    // Update owner count.
+    adjustOwnerCount(view(), sleAcct, 1, j_);
+    
     return tesSUCCESS;
 }
 
