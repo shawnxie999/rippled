@@ -46,6 +46,11 @@ CFTokenIssuanceSet::preflight(PreflightContext const& ctx)
     else if (!(txFlags & tfCFTLock & tfCFTUnlock))
         return temINVALID_FLAG;
         
+    auto const accountID = ctx.tx[sfAccount];
+    auto const holderID = ctx.tx[~sfCFTokenHolder];
+    if (holderID && accountID == holderID)
+        return temMALFORMED;
+
     return preflight2(ctx);
 }
 
@@ -53,20 +58,55 @@ TER
 CFTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 {
     // ensure that issuance exists
-    auto const sleCFT =
+    auto const sleCftIssuance =
         ctx.view.read(keylet::cftIssuance(ctx.tx[sfCFTokenIssuanceID]));
-    if (!sleCFT)
+    if (!sleCftIssuance)
         return tecOBJECT_NOT_FOUND;
 
-
+    auto const holderID = ctx.tx[~sfCFTokenHolder];
+    
+    // issuer wants to lock/unlock a specific holder
+    if (holderID && !ctx.view.exists(keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], holderID)))
+        return tecOBJECT_NOT_FOUND;
+    
     return tesSUCCESS;
 }
 
 TER
 CFTokenIssuanceSet::doApply()
 {
+    auto const cftIssuanceID = ctx_.tx[sfCFTokenIssuanceID];
+    // auto const sleCftIssuance =
+    //     view().peek(keylet::cftIssuance(cftIssuanceID));
+    // if (!sleCftIssuance)
+    //     return tecINTERNAL;
 
+    auto const txFlags = ctx_.tx.getFlags(); 
+    auto const holderID = ctx_.tx[~sfCFTokenHolder];
 
+    if (holderID){
+        auto const sleCft = view().peek(keylet::cftoken(cftIssuanceID, holderID));
+        if (!sleCft)
+            return tecINTERNAL;
+
+        std::uint32_t const flagsIn = sleCft->getFieldU32(sfFlags);
+        std::uint32_t flagsOut = flagsIn;
+
+        if (txFlags & tfCFTLock){
+            flagsOut |= lsfCFTLocked;
+        }
+        else if (txFlags & tfCFTUnlock){
+            flagsOut &= ~lsfCFTLocked;
+        }
+
+        if (flagsIn != flagsOut)
+            sleCft->setFieldU32(sfFlags, flagsOut);
+
+        view().update(sleCft);
+        return tesSUCCESS;
+    }
+
+    
     return tesSUCCESS;
 }
 
