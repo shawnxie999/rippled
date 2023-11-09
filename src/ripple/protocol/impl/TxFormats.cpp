@@ -508,6 +508,14 @@ TxFormats::TxFormats()
             {sfCFTokenHolder, soeOPTIONAL},
         },
         commonFields);
+
+    add(jss::CFTokenIssusanceSet,
+        ttCFTOKEN_ISSUANCE_SET,
+        {
+            {sfCFTokenIssuanceID, soeREQUIRED},
+            {sfCFTokenHolder, soeOPTIONAL},
+        },
+        commonFields);
 }
 
 TxFormats const&

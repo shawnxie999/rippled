@@ -168,6 +168,8 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<CFTokenIssuanceDestroy>();
         case ttCFTOKEN_AUTHORIZE:
             return f.template operator()<CFTokenAuthorize>();
+        case ttCFTOKEN_ISSUANCE_SET:
+            return f.template operator()<CFTokenIssuanceSet>();
         default:
             throw UnknownTxnType(txnType);
     }
