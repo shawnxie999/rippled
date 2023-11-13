@@ -42,9 +42,6 @@ CFTokenIssuanceSet::preflight(PreflightContext const& ctx)
     // fails if both flags are set
     else if ((txFlags & tfCFTLock) && (txFlags & tfCFTUnlock))
         return temINVALID_FLAG;
-    // if no flag is set
-    else if (!(txFlags & tfCFTLock & tfCFTUnlock))
-        return temINVALID_FLAG;
         
     auto const accountID = ctx.tx[sfAccount];
     auto const holderID = ctx.tx[~sfCFTokenHolder];
@@ -63,10 +60,18 @@ CFTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     if (!sleCftIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    auto const holderID = ctx.tx[~sfCFTokenHolder];
+    // if the cft has disabled locking
+    if (!((*sleCftIssuance)[sfFlags] & lsfCFTCanLock))
+        return tecNO_PERMISSION;
     
-    // issuer wants to lock/unlock a specific holder
-    if (holderID && !ctx.view.exists(keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], holderID)))
+    // ensure it is issued by the tx submitter
+    if ((*sleCftIssuance)[sfIssuer] != ctx.tx[sfAccount])
+        return tecNO_PERMISSION;
+
+    auto const holderID = ctx.tx[~sfCFTokenHolder];
+
+    // the cftoken must exist
+    if (holderID && !ctx.view.exists(keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], *holderID)))
         return tecOBJECT_NOT_FOUND;
     
     return tesSUCCESS;
@@ -76,37 +81,33 @@ TER
 CFTokenIssuanceSet::doApply()
 {
     auto const cftIssuanceID = ctx_.tx[sfCFTokenIssuanceID];
-    // auto const sleCftIssuance =
-    //     view().peek(keylet::cftIssuance(cftIssuanceID));
-    // if (!sleCftIssuance)
-    //     return tecINTERNAL;
-
     auto const txFlags = ctx_.tx.getFlags(); 
     auto const holderID = ctx_.tx[~sfCFTokenHolder];
+    std::shared_ptr<SLE> sle;
 
-    if (holderID){
-        auto const sleCft = view().peek(keylet::cftoken(cftIssuanceID, holderID));
-        if (!sleCft)
-            return tecINTERNAL;
+    if (holderID)
+        sle = view().peek(keylet::cftoken(cftIssuanceID, *holderID));
+    else
+        sle = view().peek(keylet::cftIssuance(cftIssuanceID));
 
-        std::uint32_t const flagsIn = sleCft->getFieldU32(sfFlags);
-        std::uint32_t flagsOut = flagsIn;
+    if (!sle)
+        return tecINTERNAL;
 
-        if (txFlags & tfCFTLock){
-            flagsOut |= lsfCFTLocked;
-        }
-        else if (txFlags & tfCFTUnlock){
-            flagsOut &= ~lsfCFTLocked;
-        }
+    std::uint32_t const flagsIn = sle->getFieldU32(sfFlags);
+    std::uint32_t flagsOut = flagsIn;
 
-        if (flagsIn != flagsOut)
-            sleCft->setFieldU32(sfFlags, flagsOut);
-
-        view().update(sleCft);
-        return tesSUCCESS;
+    if (txFlags & tfCFTLock){
+        flagsOut |= lsfCFTLocked;
+    }
+    else if (txFlags & tfCFTUnlock){
+        flagsOut &= ~lsfCFTLocked;
     }
 
-    
+    if (flagsIn != flagsOut)
+        sle->setFieldU32(sfFlags, flagsOut);
+
+    view().update(sle);
+
     return tesSUCCESS;
 }
 
