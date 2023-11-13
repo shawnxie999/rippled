@@ -212,6 +212,8 @@ class CFToken_test : public beast::unit_test::suite
             env(cft::create(alice));
             env.close();
 
+            BEAST_EXPECT(cftIssuanceHasFlags(env, id.key, 0));
+
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
             // bob submits a tx with a holder field
@@ -264,6 +266,8 @@ class CFToken_test : public beast::unit_test::suite
             auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
             env(cft::create(alice), txflags(tfCFTRequireAuth));
             env.close();
+
+            BEAST_EXPECT(cftIssuanceHasFlags(env, id.key, lsfCFTRequireAuth));
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
@@ -377,6 +381,8 @@ class CFToken_test : public beast::unit_test::suite
             env(cft::create(alice));
             env.close();
 
+            BEAST_EXPECT(cftIssuanceHasFlags(env, id.key, 0));
+
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
             env(cft::authorize(bob, id.key, std::nullopt));
@@ -407,6 +413,8 @@ class CFToken_test : public beast::unit_test::suite
             auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
             env(cft::create(alice), txflags(tfCFTRequireAuth));
             env.close();
+
+            BEAST_EXPECT(cftIssuanceHasFlags(env, id.key, lsfCFTRequireAuth));
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
@@ -460,6 +468,8 @@ class CFToken_test : public beast::unit_test::suite
             env(cft::create(alice));
             env.close();
             
+            BEAST_EXPECT(cftIssuanceHasFlags(env, id.key, 0));
+            
             BEAST_EXPECT(env.ownerCount(alice) == 1);
             BEAST_EXPECT(env.ownerCount(bob) == 0);
 
@@ -499,6 +509,8 @@ class CFToken_test : public beast::unit_test::suite
             env(cft::create(alice)); // no locking
             env.close();
             
+            BEAST_EXPECT(cftIssuanceHasFlags(env, id.key, 0));
+
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
             // alice tries to lock a cftissuance that has disabled locking
@@ -543,6 +555,8 @@ class CFToken_test : public beast::unit_test::suite
             env(cft::create(alice), txflags(tfCFTCanLock));
             env.close();
             
+            BEAST_EXPECT(cftIssuanceHasFlags(env, id.key, lsfCFTCanLock));
+
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
             // a non-issuer acct tries to set the cftissuance
@@ -582,6 +596,8 @@ class CFToken_test : public beast::unit_test::suite
             // create a cftokenissuance with locking
             env(cft::create(alice), txflags(tfCFTCanLock));
             env.close();
+            
+            BEAST_EXPECT(cftIssuanceHasFlags(env, id.key, lsfCFTCanLock));
             
             BEAST_EXPECT(env.ownerCount(alice) == 1);
             BEAST_EXPECT(env.ownerCount(bob) == 0);
