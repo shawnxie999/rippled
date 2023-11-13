@@ -907,6 +907,32 @@ ValidCFTIssuance::finalize(
         return true;
     }
 
+    if (tx.getTxnType() == ttCFTOKEN_ISSUANCE_SET && result == tesSUCCESS)
+    {
+        if (cftIssuancesDeleted_ > 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: CFT issuance set "
+                               "succeeded while removing CFT issuances";
+        }
+        else if (cftIssuancesCreated_ > 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: CFT issuance set "
+                               "succeeded while creating CFT issuances";
+        }
+        else if (cftokensDeleted_ > 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: CFT issuance set "
+                               "succeeded while removing CFTokens";
+        }
+        else if (cftokensCreated_ > 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: CFT issuance set "
+                               "succeeded while creating CFTokens";
+        }
+
+        return cftIssuancesCreated_ == 0 && cftIssuancesDeleted_ == 0 && cftokensCreated_ == 0 && cftokensDeleted_ == 0;
+    }
+
     if (cftIssuancesCreated_ != 0)
     {
         JLOG(j.fatal()) << "Invariant failed: a CFT issuance was created";

@@ -514,6 +514,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/CFTokenIssuanceCreate.cpp
   src/ripple/app/tx/impl/CFTokenIssuanceDestroy.cpp
   src/ripple/app/tx/impl/CFTokenAuthorize.cpp
+  src/ripple/app/tx/impl/CFTokenIssuanceSet.cpp
   src/ripple/app/tx/impl/CancelCheck.cpp
   src/ripple/app/tx/impl/CancelOffer.cpp
   src/ripple/app/tx/impl/CashCheck.cpp
