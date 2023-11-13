@@ -86,7 +86,7 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
         auto const sleCftFlags = (*sleCft)[sfFlags];
 
         // issuer wants to unauthorize the holder
-        if (txFlags & tfCFTUnathorize){
+        if (txFlags & tfCFTUnauthorize){
             if (!(sleCftFlags & lsfCFTAuthorized))
                 return temINVALID_FLAG;
         }
@@ -110,7 +110,7 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
         sleCft = ctx.view.read(keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], accountID));
 
         // if holder wants to delete/unauthorize a cft
-        if (txFlags & tfCFTUnathorize){
+        if (txFlags & tfCFTUnauthorize){
             if (!sleCft)
                 return tecNO_ENTRY;
 
@@ -157,7 +157,7 @@ CFTokenAuthorize::doApply()
         std::uint32_t flagsOut = flagsIn;
 
         // Issuer wants to unauthorize the holder, unset lsfCFTAuthorized on their CFToken
-        if (txFlags & tfCFTUnathorize)
+        if (txFlags & tfCFTUnauthorize)
             flagsOut &= ~lsfCFTAuthorized;
         // Issuer wants to authorize a holder, set lsfCFTAuthorized on their CFToken
         else
@@ -179,7 +179,7 @@ CFTokenAuthorize::doApply()
     // When a holder wants to unauthorize/delete a CFT, the ledger must
     //      - delete cftokenKey from both owner and cft directories
     //      - delete the CFToken
-    if (txFlags & tfCFTUnathorize){
+    if (txFlags & tfCFTUnauthorize){
         auto const cftokenKey = keylet::cftoken(cftIssuanceID, account_);
         auto const sleCft = view().peek(cftokenKey);
         if (!sleCft)

@@ -221,10 +221,10 @@ class CFToken_test : public beast::unit_test::suite
 
             // TODO: check where cftoken balance is nonzero
 
-            env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnathorize));
+            env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnauthorize));
             env.close();
 
-            env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnathorize), ter(tecNO_ENTRY));
+            env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnauthorize), ter(tecNO_ENTRY));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 0);
@@ -267,7 +267,7 @@ class CFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
             // alice submits a tx to "unauthorize" a holder that hasn't been authorized
-            env(cft::authorize(alice, id.key, bob), txflags(tfCFTUnathorize), ter(temINVALID_FLAG));
+            env(cft::authorize(alice, id.key, bob), txflags(tfCFTUnauthorize), ter(temINVALID_FLAG));
             env.close();  
 
             // alice authorizes and set flag on bob's cftoken
@@ -278,7 +278,7 @@ class CFToken_test : public beast::unit_test::suite
             env(cft::authorize(alice, id.key, bob), ter(tecCFTOKEN_ALREADY_AUTHORIZED));
             env.close();        
 
-            env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnathorize));
+            env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnauthorize));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 0);
@@ -368,7 +368,7 @@ class CFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(!cftIsAuthorized(env, id.key, bob));
             BEAST_EXPECT(cftEqualsAmount(env, id.key, bob, 0));
 
-            env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnathorize));
+            env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnauthorize));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 0);
@@ -407,7 +407,7 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
-            env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnathorize));
+            env(cft::authorize(bob, id.key, std::nullopt), txflags(tfCFTUnauthorize));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 0);
