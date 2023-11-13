@@ -39,10 +39,15 @@ Json::Value
 destroy(jtx::Account const& account, std::string const& id);
 
 Json::Value
-authorize(jtx::Account const& account, ripple::uint256 issuanceID, std::optional<jtx::Account> const& holder);
+authorize(
+    jtx::Account const& account,
+    ripple::uint256 issuanceID,
+    std::optional<jtx::Account> const& holder);
 
 Json::Value
-set(jtx::Account const& account, ripple::uint256 issuanceID, std::optional<jtx::Account> const& holder);
+set(jtx::Account const& account,
+    ripple::uint256 issuanceID,
+    std::optional<jtx::Account> const& holder);
 }  // namespace cft
 
 }  // namespace jtx

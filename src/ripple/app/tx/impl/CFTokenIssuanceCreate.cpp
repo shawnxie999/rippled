@@ -80,7 +80,9 @@ CFTokenIssuanceCreate::doApply()
     // create the CFTokenIssuance
     {
         auto const ownerNode = view().dirInsert(
-            keylet::ownerDir(account_), cftIssuanceID, describeOwnerDir(account_));
+            keylet::ownerDir(account_),
+            cftIssuanceID,
+            describeOwnerDir(account_));
 
         if (!ownerNode)
             return tecDIR_FULL;

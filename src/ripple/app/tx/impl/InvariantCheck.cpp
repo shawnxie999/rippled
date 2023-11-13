@@ -878,8 +878,8 @@ ValidCFTIssuance::finalize(
 
     if (tx.getTxnType() == ttCFTOKEN_AUTHORIZE && result == tesSUCCESS)
     {
-        bool const  submittedByIssuer = tx.isFieldPresent(sfCFTokenHolder);
- 
+        bool const submittedByIssuer = tx.isFieldPresent(sfCFTokenHolder);
+
         if (cftIssuancesCreated_ > 0)
         {
             JLOG(j.fatal()) << "Invariant failed: CFT authorize "
@@ -892,15 +892,22 @@ ValidCFTIssuance::finalize(
                                "succeeded but deleted issuances";
             return false;
         }
-        else if (submittedByIssuer && (cftokensCreated_ > 0 || cftokensDeleted_ > 0)){
-            JLOG(j.fatal()) << "Invariant failed: CFT authorize submitted by issuer "
-                                "succeeded but created/deleted cftokens";
+        else if (
+            submittedByIssuer && (cftokensCreated_ > 0 || cftokensDeleted_ > 0))
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: CFT authorize submitted by issuer "
+                   "succeeded but created/deleted cftokens";
             return false;
         }
-        else if(!submittedByIssuer && (cftokensCreated_ + cftokensDeleted_ != 1)){
-            // if the holder submitted this tx, then a cftoken must be either created or deleted.
-            JLOG(j.fatal()) << "Invariant failed: CFT authorize submitted by holder "
-                                "succeeded but created/deleted bad number of cftokens";
+        else if (
+            !submittedByIssuer && (cftokensCreated_ + cftokensDeleted_ != 1))
+        {
+            // if the holder submitted this tx, then a cftoken must be either
+            // created or deleted.
+            JLOG(j.fatal())
+                << "Invariant failed: CFT authorize submitted by holder "
+                   "succeeded but created/deleted bad number of cftokens";
             return false;
         }
 
@@ -930,7 +937,8 @@ ValidCFTIssuance::finalize(
                                "succeeded while creating CFTokens";
         }
 
-        return cftIssuancesCreated_ == 0 && cftIssuancesDeleted_ == 0 && cftokensCreated_ == 0 && cftokensDeleted_ == 0;
+        return cftIssuancesCreated_ == 0 && cftIssuancesDeleted_ == 0 &&
+            cftokensCreated_ == 0 && cftokensDeleted_ == 0;
     }
 
     if (cftIssuancesCreated_ != 0)
@@ -950,7 +958,8 @@ ValidCFTIssuance::finalize(
         JLOG(j.fatal()) << "Invariant failed: a CFToken was deleted";
     }
 
-    return cftIssuancesCreated_ == 0 && cftIssuancesDeleted_ == 0 && cftokensCreated_ == 0 && cftokensDeleted_ == 0;
+    return cftIssuancesCreated_ == 0 && cftIssuancesDeleted_ == 0 &&
+        cftokensCreated_ == 0 && cftokensDeleted_ == 0;
 }
 
 }  // namespace ripple

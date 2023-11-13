@@ -20,8 +20,8 @@
 #include <ripple/app/tx/impl/CFTokenIssuanceSet.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/st.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/st.h>
 
 namespace ripple {
 
@@ -31,7 +31,7 @@ CFTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureCFTokensV1))
         return temDISABLED;
 
-    //check flags
+    // check flags
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -42,7 +42,7 @@ CFTokenIssuanceSet::preflight(PreflightContext const& ctx)
     // fails if both flags are set
     else if ((txFlags & tfCFTLock) && (txFlags & tfCFTUnlock))
         return temINVALID_FLAG;
-        
+
     auto const accountID = ctx.tx[sfAccount];
     auto const holderID = ctx.tx[~sfCFTokenHolder];
     if (holderID && accountID == holderID)
@@ -63,7 +63,7 @@ CFTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     // if the cft has disabled locking
     if (!((*sleCftIssuance)[sfFlags] & lsfCFTCanLock))
         return tecNO_PERMISSION;
-    
+
     // ensure it is issued by the tx submitter
     if ((*sleCftIssuance)[sfIssuer] != ctx.tx[sfAccount])
         return tecNO_PERMISSION;
@@ -71,9 +71,11 @@ CFTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     auto const holderID = ctx.tx[~sfCFTokenHolder];
 
     // the cftoken must exist
-    if (holderID && !ctx.view.exists(keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], *holderID)))
+    if (holderID &&
+        !ctx.view.exists(
+            keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], *holderID)))
         return tecOBJECT_NOT_FOUND;
-    
+
     return tesSUCCESS;
 }
 
@@ -81,7 +83,7 @@ TER
 CFTokenIssuanceSet::doApply()
 {
     auto const cftIssuanceID = ctx_.tx[sfCFTokenIssuanceID];
-    auto const txFlags = ctx_.tx.getFlags(); 
+    auto const txFlags = ctx_.tx.getFlags();
     auto const holderID = ctx_.tx[~sfCFTokenHolder];
     std::shared_ptr<SLE> sle;
 
@@ -96,10 +98,12 @@ CFTokenIssuanceSet::doApply()
     std::uint32_t const flagsIn = sle->getFieldU32(sfFlags);
     std::uint32_t flagsOut = flagsIn;
 
-    if (txFlags & tfCFTLock){
+    if (txFlags & tfCFTLock)
+    {
         flagsOut |= lsfCFTLocked;
     }
-    else if (txFlags & tfCFTUnlock){
+    else if (txFlags & tfCFTUnlock)
+    {
         flagsOut &= ~lsfCFTLocked;
     }
 

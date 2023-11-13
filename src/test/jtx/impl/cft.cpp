@@ -47,26 +47,31 @@ destroy(jtx::Account const& account, std::string const& id)
 }
 
 Json::Value
-authorize(jtx::Account const& account, ripple::uint256 issuanceID, std::optional<jtx::Account> const& holder)
+authorize(
+    jtx::Account const& account,
+    ripple::uint256 issuanceID,
+    std::optional<jtx::Account> const& holder)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfTransactionType.jsonName] = jss::CFTokenAuthorize;
     jv[sfCFTokenIssuanceID.jsonName] = to_string(issuanceID);
-    if(holder)
+    if (holder)
         jv[sfCFTokenHolder.jsonName] = holder->human();
 
     return jv;
 }
 
 Json::Value
-set(jtx::Account const& account, ripple::uint256 issuanceID, std::optional<jtx::Account> const& holder)
+set(jtx::Account const& account,
+    ripple::uint256 issuanceID,
+    std::optional<jtx::Account> const& holder)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfTransactionType.jsonName] = jss::CFTokenIssuanceSet;
     jv[sfCFTokenIssuanceID.jsonName] = to_string(issuanceID);
-    if(holder)
+    if (holder)
         jv[sfCFTokenHolder.jsonName] = holder->human();
 
     return jv;
