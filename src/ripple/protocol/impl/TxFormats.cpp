@@ -509,7 +509,7 @@ TxFormats::TxFormats()
         },
         commonFields);
 
-    add(jss::CFTokenIssusanceSet,
+    add(jss::CFTokenIssuanceSet,
         ttCFTOKEN_ISSUANCE_SET,
         {
             {sfCFTokenIssuanceID, soeREQUIRED},

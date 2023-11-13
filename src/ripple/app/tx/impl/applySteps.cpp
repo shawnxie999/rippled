@@ -28,6 +28,7 @@
 #include <ripple/app/tx/impl/CFTokenIssuanceCreate.h>
 #include <ripple/app/tx/impl/CFTokenIssuanceDestroy.h>
 #include <ripple/app/tx/impl/CFTokenAuthorize.h>
+#include <ripple/app/tx/impl/CFTokenIssuanceSet.h>
 #include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CashCheck.h>
