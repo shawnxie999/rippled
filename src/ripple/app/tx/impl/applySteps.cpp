@@ -25,9 +25,9 @@
 #include <ripple/app/tx/impl/AMMVote.h>
 #include <ripple/app/tx/impl/AMMWithdraw.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
+#include <ripple/app/tx/impl/CFTokenAuthorize.h>
 #include <ripple/app/tx/impl/CFTokenIssuanceCreate.h>
 #include <ripple/app/tx/impl/CFTokenIssuanceDestroy.h>
-#include <ripple/app/tx/impl/CFTokenAuthorize.h>
 #include <ripple/app/tx/impl/CFTokenIssuanceSet.h>
 #include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/tx/impl/CancelOffer.h>

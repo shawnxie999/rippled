@@ -20,19 +20,17 @@
 #ifndef RIPPLE_TX_IMPL_DETAILS_CFTOKENUTILS_H_INCLUDED
 #define RIPPLE_TX_IMPL_DETAILS_CFTOKENUTILS_H_INCLUDED
 
+#include <ripple/app/tx/impl/details/PageUtils.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/tagged_integer.h>
 #include <ripple/ledger/ApplyView.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/cft.h>
-#include <ripple/app/tx/impl/details/PageUtils.h>
 
 namespace ripple {
 
 namespace nft {
-
-
 
 /** Finds the specified token in the owner's token directory. */
 std::optional<STObject>

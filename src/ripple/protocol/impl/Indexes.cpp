@@ -455,12 +455,10 @@ cftIssuance(AccountID const& issuer, std::uint32_t seq) noexcept
         indexHash(LedgerNameSpace::CFTOKEN_ISSUANCE, issuer, seq)};
 }
 
-Keylet 
+Keylet
 cftoken(uint256 const& issuanceID, AccountID const& holder) noexcept
 {
-    return {
-        ltCFTOKEN,
-        indexHash(LedgerNameSpace::CFTOKEN, issuanceID, holder)};
+    return {ltCFTOKEN, indexHash(LedgerNameSpace::CFTOKEN, issuanceID, holder)};
 }
 
 Keylet
