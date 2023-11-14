@@ -101,37 +101,38 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
             if (sleCftFlags & lsfCFTAuthorized)
                 return tecCFTOKEN_ALREADY_AUTHORIZED;
         }
+
+        return tesSUCCESS;
     }
+
     // if non-issuer account submits this tx, then they are trying either:
     // 1. Unauthorize/delete CFToken
     // 2. Use/create CFToken
     //
     // Note: accountID is holder's account
     //       holderID is NOT used
+    if (holderID)
+        return temMALFORMED;
+
+    sleCft = ctx.view.read(
+        keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], accountID));
+
+    // if holder wants to delete/unauthorize a cft
+    if (txFlags & tfCFTUnauthorize)
+    {
+        if (!sleCft)
+            return tecNO_ENTRY;
+
+        if ((*sleCft)[sfCFTAmount] != 0)
+            return tecHAS_OBLIGATIONS;
+    }
+    // if holder wants to use and create a cft
     else
     {
-        if (holderID)
-            return temMALFORMED;
-
-        sleCft = ctx.view.read(
-            keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], accountID));
-
-        // if holder wants to delete/unauthorize a cft
-        if (txFlags & tfCFTUnauthorize)
-        {
-            if (!sleCft)
-                return tecNO_ENTRY;
-
-            if ((*sleCft)[sfCFTAmount] != 0)
-                return tecHAS_OBLIGATIONS;
-        }
-        // if holder wants to use and create a cft
-        else
-        {
-            if (sleCft)
-                return tecCFTOKEN_EXISTS;
-        }
+        if (sleCft)
+            return tecCFTOKEN_EXISTS;
     }
+    
     return tesSUCCESS;
 }
 
