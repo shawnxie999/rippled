@@ -112,7 +112,6 @@ transResults()
         MAKE_ERROR(tecXCHAIN_CREATE_ACCOUNT_DISABLED, "This bridge does not support account creation."),
         MAKE_ERROR(tecEMPTY_DID,                     "The DID object did not have a URI or DIDDocument field."),
         MAKE_ERROR(tecCFTOKEN_EXISTS,                "The account already owns the CFToken object."),
-        MAKE_ERROR(tecCFTOKEN_ALREADY_AUTHORIZED,    "The CFToken that the issuer tries to authorize is already authorized."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
