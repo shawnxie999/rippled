@@ -69,8 +69,8 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
     // 1. authorize an account
     // 2. unauthorize an account
     //
-    // Note: accountID is issuer's account
-    //       holderID is holder's account
+    // Note: `accountID` is issuer's account
+    //       `holderID` is holder's account
     if (accountID == (*sleCftIssuance)[sfIssuer])
     {
         // If tx is submitted by issuer, it only applies for CFT with
@@ -109,8 +109,8 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
     // 1. Unauthorize/delete CFToken
     // 2. Use/create CFToken
     //
-    // Note: accountID is holder's account
-    //       holderID is NOT used
+    // Note: `accountID` is holder's account
+    //       `holderID` is NOT used
     if (holderID)
         return temMALFORMED;
 
@@ -152,8 +152,8 @@ CFTokenAuthorize::doApply()
     auto const txFlags = ctx_.tx.getFlags();
 
     // If the account that submitted this tx is the issuer of the CFT
-    // Note: account_ is issuer's account
-    //       holderID is holder's account
+    // Note: `account_` is issuer's account
+    //       `holderID` is holder's account
     if (account_ == (*sleCftIssuance)[sfIssuer])
     {
         if (!holderID)
@@ -184,8 +184,8 @@ CFTokenAuthorize::doApply()
     }
 
     // If the account that submitted the tx is a holder
-    // Note: account_ is holder's account
-    //       holderID is NOT used
+    // Note: `account_` is holder's account
+    //       `holderID` is NOT used
     if (holderID)
         return tecINTERNAL;
 
