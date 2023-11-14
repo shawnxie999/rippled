@@ -86,22 +86,6 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
         if (!sleCft)
             return tecNO_ENTRY;
 
-        auto const sleCftFlags = (*sleCft)[sfFlags];
-
-        // issuer wants to unauthorize the holder
-        if (txFlags & tfCFTUnauthorize)
-        {
-            if (!(sleCftFlags & lsfCFTAuthorized))
-                return temINVALID_FLAG;
-        }
-        // authorize a holder
-        else
-        {
-            // make sure the holder is not already authorized
-            if (sleCftFlags & lsfCFTAuthorized)
-                return tecCFTOKEN_ALREADY_AUTHORIZED;
-        }
-
         return tesSUCCESS;
     }
 

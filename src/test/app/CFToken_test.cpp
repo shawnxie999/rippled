@@ -310,22 +310,31 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
-            // alice submits a tx to "unauthorize" a holder that hasn't been
-            // authorized
-            env(cft::authorize(alice, id.key, bob),
-                txflags(tfCFTUnauthorize),
-                ter(temINVALID_FLAG));
-            env.close();
+            // alice tries to unauthorize bob
+            assertCFTokenFlags(env, id.key, bob, 0);
 
-            // alice authorizes and set flag on bob's cftoken
+            // alice tries to unauthorize bob.
+            // although tx is successful,
+            // but nothing happens because bob hasn't been authorized yet
+            env(cft::authorize(alice, id.key, bob),
+                txflags(tfCFTUnauthorize));
+            env.close();
+            assertCFTokenFlags(env, id.key, bob, 0);
+
+            // alice authorizes bob
+            // make sure bob's cftoken has set lsfCFTAuthorized
             env(cft::authorize(alice, id.key, bob));
             env.close();
+            assertCFTokenFlags(env, id.key, bob, lsfCFTAuthorized);
 
-            // if alice tries to set again, it will fail
-            env(cft::authorize(alice, id.key, bob),
-                ter(tecCFTOKEN_ALREADY_AUTHORIZED));
+            // alice tries authorizes bob again.
+            // tx is successful, but bob is already authorized, 
+            // so no changes 
+            env(cft::authorize(alice, id.key, bob));
             env.close();
+            assertCFTokenFlags(env, id.key, bob, lsfCFTAuthorized);
 
+            // bob deletes his cftoken
             env(cft::authorize(bob, id.key, std::nullopt),
                 txflags(tfCFTUnauthorize));
             env.close();
@@ -405,6 +414,7 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
+            // alice create cftissuance without allowisting
             auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
             env(cft::create(alice));
             env.close();
@@ -413,6 +423,7 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
+            // bob creates a cftoken
             env(cft::authorize(bob, id.key, std::nullopt));
             env.close();
 
@@ -421,6 +432,7 @@ class CFToken_test : public beast::unit_test::suite
             assertCFTokenFlags(env, id.key, bob, 0);
             assertCFTokenAmount(env, id.key, bob, 0);
 
+            // bob deletes his cftoken
             env(cft::authorize(bob, id.key, std::nullopt),
                 txflags(tfCFTUnauthorize));
             env.close();
@@ -439,6 +451,7 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
+            // alice creates a cftokenissuance that requires authorization
             auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
             env(cft::create(alice), txflags(tfCFTRequireAuth));
             env.close();
@@ -447,6 +460,7 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
+            // bob creates a cftoken
             env(cft::authorize(bob, id.key, std::nullopt));
             env.close();
 
@@ -455,11 +469,20 @@ class CFToken_test : public beast::unit_test::suite
             assertCFTokenFlags(env, id.key, bob, 0);
             assertCFTokenAmount(env, id.key, bob, 0);
 
+            // alice authorizes bob
             env(cft::authorize(alice, id.key, bob));
             env.close();
 
+            // make sure bob's cftoken has lsfCFTAuthorized set
             assertCFTokenFlags(env, id.key, bob, lsfCFTAuthorized);
-            assertCFTokenAmount(env, id.key, bob, 0);
+
+            // Unauthorize bob's cftoken
+            env(cft::authorize(alice, id.key, bob),
+                txflags(tfCFTUnauthorize));
+            env.close();
+            
+            // ensure bob's cftoken no longer has lsfCFTAuthorized set
+            assertCFTokenFlags(env, id.key, bob, 0);
 
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
@@ -469,6 +492,9 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(bob) == 0);
         }
+
+        // TODO: test allowlisting cases where bob tries to send tokens
+        //       without being authorized.
     }
 
     void
