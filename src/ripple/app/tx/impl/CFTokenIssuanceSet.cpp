@@ -70,6 +70,10 @@ CFTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     auto const holderID = ctx.tx[~sfCFTokenHolder];
 
+    // make sure holder account exists
+    if (holderID && !ctx.view.exists(keylet::account(*holderID)))
+        return tecNO_DST;
+
     // the cftoken must exist
     if (holderID &&
         !ctx.view.exists(
