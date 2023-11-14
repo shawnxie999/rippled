@@ -310,7 +310,6 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
-            // alice tries to unauthorize bob
             assertCFTokenFlags(env, id.key, bob, 0);
 
             // alice tries to unauthorize bob.
@@ -647,7 +646,7 @@ class CFToken_test : public beast::unit_test::suite
             // trying to set a holder who doesn't exist
             env(cft::set(alice, id.key, cindy),
                 txflags(tfCFTLock),
-                ter(tecOBJECT_NOT_FOUND));
+                ter(tecNO_DST));
             env.close();
         }
     }

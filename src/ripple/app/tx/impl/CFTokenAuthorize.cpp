@@ -81,9 +81,8 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
         if (!holderID)
             return temMALFORMED;
 
-        sleCft = ctx.view.read(
-            keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], *holderID));
-        if (!sleCft)
+        if(!ctx.view.exists(
+            keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], *holderID)))
             return tecNO_ENTRY;
 
         return tesSUCCESS;
