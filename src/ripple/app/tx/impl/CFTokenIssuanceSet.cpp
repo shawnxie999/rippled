@@ -99,13 +99,9 @@ CFTokenIssuanceSet::doApply()
     std::uint32_t flagsOut = flagsIn;
 
     if (txFlags & tfCFTLock)
-    {
         flagsOut |= lsfCFTLocked;
-    }
     else if (txFlags & tfCFTUnlock)
-    {
         flagsOut &= ~lsfCFTLocked;
-    }
 
     if (flagsIn != flagsOut)
         sle->setFieldU32(sfFlags, flagsOut);
