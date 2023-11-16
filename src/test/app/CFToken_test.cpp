@@ -49,7 +49,7 @@ class CFToken_test : public beast::unit_test::suite
         auto const sleCftIssuance = env.le(keylet::cftIssuance(cftIssuanceid));
         if (!sleCftIssuance)
             return false;
-            
+
         uint32_t const cftIssuanceFlags = sleCftIssuance->getFlags();
         return expectedFlags == cftIssuanceFlags;
     }
@@ -62,14 +62,15 @@ class CFToken_test : public beast::unit_test::suite
         uint32_t const expectedFlags)
     {
         auto const sleCft = env.le(keylet::cftoken(cftIssuanceid, holder));
-        if (!sleCft)    
+        if (!sleCft)
             return false;
         uint32_t const cftFlags = sleCft->getFlags();
         return cftFlags == expectedFlags;
     }
 
     void
-    testCreateValidation(FeatureBitset features){
+    testCreateValidation(FeatureBitset features)
+    {
         testcase("Create Validate");
         using namespace test::jtx;
 
@@ -89,22 +90,24 @@ class CFToken_test : public beast::unit_test::suite
             env.close();
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
-            
+
             env.enableFeature(featureCFTokensV1);
 
             env(cft::create(alice), txflags(0x00000001), ter(temINVALID_FLAG));
             env.close();
 
             // tries to set a txfee while not enabling in the flag
-            env(cft::create(alice, 100, 0, 1, "test"),  ter(temMALFORMED));
+            env(cft::create(alice, 100, 0, 1, "test"), ter(temMALFORMED));
             env.close();
 
             // tries to set a txfee while not enabling transfer
-            env(cft::create(alice, 100, 0, maxTransferFee + 1, "test"), txflags(tfCFTCanTransfer), ter(temBAD_CFTOKEN_TRANSFER_FEE));
+            env(cft::create(alice, 100, 0, maxTransferFee + 1, "test"),
+                txflags(tfCFTCanTransfer),
+                ter(temBAD_CFTOKEN_TRANSFER_FEE));
             env.close();
 
             // empty metadata returns error
-            env(cft::create(alice, 100, 0, 0, ""),  ter(temMALFORMED));
+            env(cft::create(alice, 100, 0, 0, ""), ter(temMALFORMED));
             env.close();
         }
     }
@@ -128,10 +131,17 @@ class CFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
             auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
-            env(cft::create(alice, 100, 1, 10, "123"), txflags(tfCFTCanLock | tfCFTRequireAuth | tfCFTCanEscrow | tfCFTCanTrade  | tfCFTCanTransfer | tfCFTCanClawback));
+            env(cft::create(alice, 100, 1, 10, "123"),
+                txflags(
+                    tfCFTCanLock | tfCFTRequireAuth | tfCFTCanEscrow |
+                    tfCFTCanTrade | tfCFTCanTransfer | tfCFTCanClawback));
             env.close();
 
-            BEAST_EXPECT(checkCFTokenIssuanceFlags(env, id.key, lsfCFTCanLock | lsfCFTRequireAuth | lsfCFTCanEscrow | lsfCFTCanTrade |  lsfCFTCanTransfer | lsfCFTCanClawback));
+            BEAST_EXPECT(checkCFTokenIssuanceFlags(
+                env,
+                id.key,
+                lsfCFTCanLock | lsfCFTRequireAuth | lsfCFTCanEscrow |
+                    lsfCFTCanTrade | lsfCFTCanTransfer | lsfCFTCanClawback));
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
         }
@@ -154,8 +164,7 @@ class CFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
             auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
-            env(cft::destroy(alice, id.key),
-                ter(temDISABLED));
+            env(cft::destroy(alice, id.key), ter(temDISABLED));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
@@ -163,7 +172,8 @@ class CFToken_test : public beast::unit_test::suite
             env.enableFeature(featureCFTokensV1);
 
             env(cft::destroy(alice, id.key),
-                txflags(0x00000001), ter(temINVALID_FLAG));
+                txflags(0x00000001),
+                ter(temINVALID_FLAG));
             env.close();
         }
 
@@ -184,7 +194,7 @@ class CFToken_test : public beast::unit_test::suite
             env.close();
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
-            
+
             auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
             env(cft::create(alice));
             env.close();
@@ -198,7 +208,6 @@ class CFToken_test : public beast::unit_test::suite
             // TODO: add test when OutstandingAmount is non zero
         }
     }
-
 
     void
     testDestroyEnabled(FeatureBitset features)
@@ -366,7 +375,8 @@ class CFToken_test : public beast::unit_test::suite
             env(cft::create(alice), txflags(tfCFTRequireAuth));
             env.close();
 
-            BEAST_EXPECT(checkCFTokenIssuanceFlags(env, id.key, lsfCFTRequireAuth));
+            BEAST_EXPECT(
+                checkCFTokenIssuanceFlags(env, id.key, lsfCFTRequireAuth));
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
@@ -394,8 +404,7 @@ class CFToken_test : public beast::unit_test::suite
             // alice tries to unauthorize bob.
             // although tx is successful,
             // but nothing happens because bob hasn't been authorized yet
-            env(cft::authorize(alice, id.key, bob),
-                txflags(tfCFTUnauthorize));
+            env(cft::authorize(alice, id.key, bob), txflags(tfCFTUnauthorize));
             env.close();
             BEAST_EXPECT(checkCFTokenFlags(env, id.key, bob, 0));
 
@@ -406,8 +415,8 @@ class CFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(checkCFTokenFlags(env, id.key, bob, lsfCFTAuthorized));
 
             // alice tries authorizes bob again.
-            // tx is successful, but bob is already authorized, 
-            // so no changes 
+            // tx is successful, but bob is already authorized,
+            // so no changes
             env(cft::authorize(alice, id.key, bob));
             env.close();
             BEAST_EXPECT(checkCFTokenFlags(env, id.key, bob, lsfCFTAuthorized));
@@ -534,7 +543,8 @@ class CFToken_test : public beast::unit_test::suite
             env(cft::create(alice), txflags(tfCFTRequireAuth));
             env.close();
 
-            BEAST_EXPECT(checkCFTokenIssuanceFlags(env, id.key, lsfCFTRequireAuth));
+            BEAST_EXPECT(
+                checkCFTokenIssuanceFlags(env, id.key, lsfCFTRequireAuth));
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
@@ -555,10 +565,9 @@ class CFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(checkCFTokenFlags(env, id.key, bob, lsfCFTAuthorized));
 
             // Unauthorize bob's cftoken
-            env(cft::authorize(alice, id.key, bob),
-                txflags(tfCFTUnauthorize));
+            env(cft::authorize(alice, id.key, bob), txflags(tfCFTUnauthorize));
             env.close();
-            
+
             // ensure bob's cftoken no longer has lsfCFTAuthorized set
             BEAST_EXPECT(checkCFTokenFlags(env, id.key, bob, 0));
 
@@ -789,7 +798,8 @@ class CFToken_test : public beast::unit_test::suite
         env.close();
 
         // now both the cftissuance and cftoken are locked up
-        BEAST_EXPECT(checkCFTokenIssuanceFlags(env, id.key, lsfCFTCanLock | lsfCFTLocked));
+        BEAST_EXPECT(checkCFTokenIssuanceFlags(
+            env, id.key, lsfCFTCanLock | lsfCFTLocked));
         BEAST_EXPECT(checkCFTokenFlags(env, id.key, bob, lsfCFTLocked));
 
         // alice tries to lock up both cftissuance and cftoken again
@@ -800,7 +810,8 @@ class CFToken_test : public beast::unit_test::suite
         env.close();
 
         // now both the cftissuance and cftoken remain locked up
-        BEAST_EXPECT(checkCFTokenIssuanceFlags(env, id.key, lsfCFTCanLock | lsfCFTLocked));
+        BEAST_EXPECT(checkCFTokenIssuanceFlags(
+            env, id.key, lsfCFTCanLock | lsfCFTLocked));
         BEAST_EXPECT(checkCFTokenFlags(env, id.key, bob, lsfCFTLocked));
 
         // alice unlocks bob's cftoken
@@ -808,7 +819,8 @@ class CFToken_test : public beast::unit_test::suite
         env.close();
 
         // only cftissuance is locked
-        BEAST_EXPECT(checkCFTokenIssuanceFlags(env, id.key, lsfCFTCanLock | lsfCFTLocked));
+        BEAST_EXPECT(checkCFTokenIssuanceFlags(
+            env, id.key, lsfCFTCanLock | lsfCFTLocked));
         BEAST_EXPECT(checkCFTokenFlags(env, id.key, bob, 0));
 
         // locks up bob's cftoken again
@@ -816,7 +828,8 @@ class CFToken_test : public beast::unit_test::suite
         env.close();
 
         // now both the cftissuance and cftokens are locked up
-        BEAST_EXPECT(checkCFTokenIssuanceFlags(env, id.key, lsfCFTCanLock | lsfCFTLocked));
+        BEAST_EXPECT(checkCFTokenIssuanceFlags(
+            env, id.key, lsfCFTCanLock | lsfCFTLocked));
         BEAST_EXPECT(checkCFTokenFlags(env, id.key, bob, lsfCFTLocked));
 
         // alice unlocks cftissuance
