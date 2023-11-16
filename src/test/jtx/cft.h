@@ -35,7 +35,12 @@ Json::Value
 create(jtx::Account const& account);
 
 Json::Value
-create(jtx::Account const& account, std::uint32_t const maxAmt, std::uint8_t const assetScale, std::uint16_t transferFee,  std::string metadata);
+create(
+    jtx::Account const& account,
+    std::uint32_t const maxAmt,
+    std::uint8_t const assetScale,
+    std::uint16_t transferFee,
+    std::string metadata);
 
 /** Destroy a CFT. */
 Json::Value

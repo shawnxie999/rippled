@@ -81,8 +81,8 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
         if (!holderID)
             return temMALFORMED;
 
-        if(!ctx.view.exists(
-            keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], *holderID)))
+        if (!ctx.view.exists(
+                keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], *holderID)))
             return tecNO_ENTRY;
 
         return tesSUCCESS;
@@ -97,8 +97,8 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (holderID)
         return temMALFORMED;
 
-    sleCft = ctx.view.read(
-        keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], accountID));
+    sleCft =
+        ctx.view.read(keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], accountID));
 
     // if holder wants to delete/unauthorize a cft
     if (txFlags & tfCFTUnauthorize)
@@ -115,7 +115,7 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
         if (sleCft)
             return tecCFTOKEN_EXISTS;
     }
-    
+
     return tesSUCCESS;
 }
 
