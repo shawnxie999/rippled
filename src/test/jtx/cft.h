@@ -34,19 +34,22 @@ namespace cft {
 Json::Value
 create(jtx::Account const& account);
 
+Json::Value
+create(jtx::Account const& account, std::uint32_t const maxAmt, std::uint8_t const assetScale, std::uint16_t transferFee,  std::string metadata);
+
 /** Destroy a CFT. */
 Json::Value
-destroy(jtx::Account const& account, std::string const& id);
+destroy(jtx::Account const& account, ripple::uint256 const& id);
 
 Json::Value
 authorize(
     jtx::Account const& account,
-    ripple::uint256 issuanceID,
+    ripple::uint256 const& issuanceID,
     std::optional<jtx::Account> const& holder);
 
 Json::Value
 set(jtx::Account const& account,
-    ripple::uint256 issuanceID,
+    ripple::uint256 const& issuanceID,
     std::optional<jtx::Account> const& holder);
 }  // namespace cft
 
