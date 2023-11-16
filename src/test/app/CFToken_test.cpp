@@ -92,7 +92,7 @@ class CFToken_test : public beast::unit_test::suite
             
             env.enableFeature(featureCFTokensV1);
 
-            env(cft::create(alice), txflags(0x08000000), ter(temINVALID_FLAG));
+            env(cft::create(alice), txflags(0x00000001), ter(temINVALID_FLAG));
             env.close();
 
             // tries to set a txfee while not enabling in the flag
@@ -119,7 +119,7 @@ class CFToken_test : public beast::unit_test::suite
         {
             // If the CFT amendment IS enabled, you should be able to create
             // CFTokenIssuances
-            Env env{*this, features | featureCFTokensV1};
+            Env env{*this, features};
             Account const alice("alice");  // issuer
 
             env.fund(XRP(10000), alice);
@@ -127,8 +127,11 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            env(cft::create(alice));
+            auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
+            env(cft::create(alice, 100, 1, 10, "123"), txflags(tfCFTCanLock | tfCFTRequireAuth | tfCFTCanEscrow | tfCFTCanTrade  | tfCFTCanTransfer | tfCFTCanClawback));
             env.close();
+
+            BEAST_EXPECT(checkCFTokenIssuanceFlags(env, id.key, lsfCFTCanLock | lsfCFTRequireAuth | lsfCFTCanEscrow | lsfCFTCanTrade |  lsfCFTCanTransfer | lsfCFTCanClawback));
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
         }
@@ -223,7 +226,6 @@ class CFToken_test : public beast::unit_test::suite
         env(cft::destroy(alice, id.key));
         env.close();
         BEAST_EXPECT(env.ownerCount(alice) == 0);
-        
     }
 
     void
