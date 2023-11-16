@@ -76,77 +76,161 @@ class CFToken_test : public beast::unit_test::suite
     }
 
     void
+    testCreateValidation(FeatureBitset features){
+        testcase("Create Validate");
+        using namespace test::jtx;
+
+        // test preflight of CFTokenIssuanceCreate
+        {
+            // If the CFT amendment is not enabled, you should not be able to
+            // create CFTokenIssuances
+            Env env{*this, features - featureCFTokensV1};
+            Account const alice("alice");  // issuer
+
+            env.fund(XRP(10000), alice);
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+            env(cft::create(alice), ter(temDISABLED));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+            
+            env.enableFeature(featureCFTokensV1);
+
+            env(cft::create(alice), txflags(0x08000000), ter(temINVALID_FLAG));
+            env.close();
+
+            // tries to set a txfee while not enabling in the flag
+            env(cft::create(alice, 100, 0, 1, "test"),  ter(temMALFORMED));
+            env.close();
+
+            // tries to set a txfee while not enabling transfer
+            env(cft::create(alice, 100, 0, maxTransferFee + 1, "test"), txflags(tfCFTCanTransfer), ter(temBAD_CFTOKEN_TRANSFER_FEE));
+            env.close();
+
+            // empty metadata returns error
+            env(cft::create(alice, 100, 0, 0, ""),  ter(temMALFORMED));
+            env.close();
+        }
+    }
+
+    void
     testCreateEnabled(FeatureBitset features)
     {
         testcase("Create Enabled");
 
         using namespace test::jtx;
-        {
-            // If the CFT amendment is not enabled, you should not be able to
-            // create CFTokenIssuances
-            Env env{*this, features - featureCFTokensV1};
-            Account const& master = env.master;
 
-            BEAST_EXPECT(env.ownerCount(master) == 0);
-
-            env(cft::create(master), ter(temDISABLED));
-            env.close();
-
-            BEAST_EXPECT(env.ownerCount(master) == 0);
-        }
         {
             // If the CFT amendment IS enabled, you should be able to create
             // CFTokenIssuances
             Env env{*this, features | featureCFTokensV1};
-            Account const& master = env.master;
+            Account const alice("alice");  // issuer
 
-            BEAST_EXPECT(env.ownerCount(master) == 0);
-
-            env(cft::create(master));
+            env.fund(XRP(10000), alice);
             env.close();
 
-            BEAST_EXPECT(env.ownerCount(master) == 1);
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+            env(cft::create(alice));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 1);
         }
     }
 
     void
-    testDestoryEnabled(FeatureBitset features)
+    testDestroyValidation(FeatureBitset features)
     {
-        testcase("Destory Enabled");
+        testcase("Destroy Validate");
 
         using namespace test::jtx;
+        // CFTokenIssuanceDestroy (preflight)
         {
-            // If the CFT amendment is not enabled, you should not be able to
-            // destroy CFTokenIssuances
             Env env{*this, features - featureCFTokensV1};
-            Account const& master = env.master;
+            Account const alice("alice");  // issuer
 
-            BEAST_EXPECT(env.ownerCount(master) == 0);
+            env.fund(XRP(10000), alice);
+            env.close();
 
-            auto const id = keylet::cftIssuance(master.id(), env.seq(master));
-            env(cft::destroy(master, ripple::to_string(id.key)),
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+            auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
+            env(cft::destroy(alice, id.key),
                 ter(temDISABLED));
             env.close();
 
-            BEAST_EXPECT(env.ownerCount(master) == 0);
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+            env.enableFeature(featureCFTokensV1);
+
+            env(cft::destroy(alice, id.key),
+                txflags(0x00000001), ter(temINVALID_FLAG));
+            env.close();
         }
+
+        // CFTokenIssuanceDestroy (preclaim)
         {
-            // If the CFT amendment IS enabled, you should be able to destroy
-            // CFTokenIssuances
-            Env env{*this, features | featureCFTokensV1};
-            Account const& master = env.master;
+            Env env{*this, features};
+            Account const alice("alice");  // issuer
+            Account const bob("bob");      // holder
 
-            BEAST_EXPECT(env.ownerCount(master) == 0);
-
-            auto const id = keylet::cftIssuance(master.id(), env.seq(master));
-            env(cft::create(master));
+            env.fund(XRP(10000), alice, bob);
             env.close();
-            BEAST_EXPECT(env.ownerCount(master) == 1);
 
-            env(cft::destroy(master, ripple::to_string(id.key)));
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+            auto const fakeID = keylet::cftIssuance(alice.id(), env.seq(alice));
+
+            env(cft::destroy(alice, fakeID.key), ter(tecOBJECT_NOT_FOUND));
             env.close();
-            BEAST_EXPECT(env.ownerCount(master) == 0);
+
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+            
+            auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
+            env(cft::create(alice));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 1);
+
+            // a non-issuer tries to destroy a cftissuance they didn't issue
+            env(cft::destroy(bob, id.key), ter(tecNO_PERMISSION));
+            env.close();
+
+            // TODO: add test when OutstandingAmount is non zero
         }
+    }
+
+
+    void
+    testDestroyEnabled(FeatureBitset features)
+    {
+        testcase("Destroy Enabled");
+
+        using namespace test::jtx;
+
+        // If the CFT amendment IS enabled, you should be able to destroy
+        // CFTokenIssuances
+        Env env{*this, features};
+        Account const alice("alice");  // issuer
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+        auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
+        env(cft::create(alice));
+        env.close();
+
+        BEAST_EXPECT(env.ownerCount(alice) == 1);
+
+        env(cft::destroy(alice, id.key));
+        env.close();
+        BEAST_EXPECT(env.ownerCount(alice) == 0);
+        
     }
 
     void
@@ -777,10 +861,12 @@ public:
         FeatureBitset const all{supported_amendments()};
 
         // CFTokenIssuanceCreate
+        testCreateValidation(all);
         testCreateEnabled(all);
 
-        // CFTokenIssuanceDestory
-        testDestoryEnabled(all);
+        // CFTokenIssuanceDestroy
+        testDestroyValidation(all);
+        testDestroyEnabled(all);
 
         // CFTokenAuthorize
         testAuthorizeValidation(all);
