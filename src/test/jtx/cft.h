@@ -30,10 +30,11 @@ namespace jtx {
 
 namespace cft {
 
-/** Issue a CFT. */
+/** Issue a CFT with default fields. */
 Json::Value
 create(jtx::Account const& account);
 
+/** Issue a CFT with user-defined fields. */
 Json::Value
 create(
     jtx::Account const& account,
@@ -46,12 +47,14 @@ create(
 Json::Value
 destroy(jtx::Account const& account, ripple::uint256 const& id);
 
+/** Authorize a CFT. */
 Json::Value
 authorize(
     jtx::Account const& account,
     ripple::uint256 const& issuanceID,
     std::optional<jtx::Account> const& holder);
 
+/** Set a CFT. */
 Json::Value
 set(jtx::Account const& account,
     ripple::uint256 const& issuanceID,
