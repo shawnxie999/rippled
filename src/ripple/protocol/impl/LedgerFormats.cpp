@@ -352,6 +352,8 @@ LedgerFormats::LedgerFormats()
             {sfOutstandingAmount,    soeREQUIRED},
             {sfLockedAmount,         soeDEFAULT},
             {sfCFTokenMetadata,      soeOPTIONAL},
+            {sfPreviousTxnID,        soeREQUIRED},
+            {sfPreviousTxnLgrSeq,    soeREQUIRED}
         },
         commonFields);
 
@@ -364,6 +366,8 @@ LedgerFormats::LedgerFormats()
             {sfLockedAmount, soeDEFAULT},
             {sfOwnerNode,            soeREQUIRED},
             {sfCFTokenNode,            soeREQUIRED},
+            {sfPreviousTxnID,        soeREQUIRED},
+            {sfPreviousTxnLgrSeq,    soeREQUIRED}
         },
         commonFields);
     // clang-format on
