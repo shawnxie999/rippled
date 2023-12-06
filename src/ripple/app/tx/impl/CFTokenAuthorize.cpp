@@ -37,9 +37,7 @@ CFTokenAuthorize::preflight(PreflightContext const& ctx)
     if (ctx.tx.getFlags() & tfCFTokenAuthorizeMask)
         return temINVALID_FLAG;
 
-    auto const accountID = ctx.tx[sfAccount];
-    auto const holderID = ctx.tx[~sfCFTokenHolder];
-    if (holderID && accountID == holderID)
+    if (ctx.tx[sfAccount] == ctx.tx[~sfCFTokenHolder])
         return temMALFORMED;
 
     return preflight2(ctx);
@@ -62,10 +60,8 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
     std::uint32_t const cftIssuanceFlags = sleCftIssuance->getFieldU32(sfFlags);
 
-    std::shared_ptr<SLE const> sleCft;
-
     // If tx is submitted by issuer, they would either try to do the following
-    // for allowlisting:
+    // for allow-listing:
     // 1. authorize an account
     // 2. unauthorize an account
     //
@@ -97,7 +93,7 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (holderID)
         return temMALFORMED;
 
-    sleCft =
+    std::shared_ptr<SLE const> sleCft =
         ctx.view.read(keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], accountID));
 
     // if holder wants to delete/unauthorize a cft
@@ -110,11 +106,8 @@ CFTokenAuthorize::preclaim(PreclaimContext const& ctx)
             return tecHAS_OBLIGATIONS;
     }
     // if holder wants to use and create a cft
-    else
-    {
-        if (sleCft)
+    else if (sleCft)
             return tecCFTOKEN_EXISTS;
-    }
 
     return tesSUCCESS;
 }
@@ -197,7 +190,7 @@ CFTokenAuthorize::doApply()
             return tecINTERNAL;
 
         adjustOwnerCount(
-            view(), sleAcct, -1, beast::Journal{beast::Journal::getNullSink()});
+            view(), sleAcct, -1, j_);
 
         view().erase(sleCft);
         return tesSUCCESS;
@@ -236,7 +229,6 @@ CFTokenAuthorize::doApply()
     (*cftoken)[sfAccount] = account_;
     (*cftoken)[sfCFTokenIssuanceID] = cftIssuanceID;
     (*cftoken)[sfFlags] = 0;
-    (*cftoken)[sfCFTAmount] = 0;
     (*cftoken)[sfOwnerNode] = *ownerNode;
     (*cftoken)[sfCFTokenNode] = *cftNode;
     view().insert(cftoken);

@@ -25,6 +25,7 @@ namespace ripple {
 
 class CFToken_test : public beast::unit_test::suite
 {
+    [[nodiscard]]
     bool
     checkCFTokenAmount(
         test::jtx::Env const& env,
@@ -40,6 +41,7 @@ class CFToken_test : public beast::unit_test::suite
         return amount == expectedAmount;
     }
 
+    [[nodiscard]]
     bool
     checkCFTokenIssuanceFlags(
         test::jtx::Env const& env,
@@ -54,6 +56,7 @@ class CFToken_test : public beast::unit_test::suite
         return expectedFlags == cftIssuanceFlags;
     }
 
+    [[nodiscard]]
     bool
     checkCFTokenFlags(
         test::jtx::Env const& env,

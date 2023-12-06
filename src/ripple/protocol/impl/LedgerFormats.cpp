@@ -362,7 +362,7 @@ LedgerFormats::LedgerFormats()
         {
             {sfAccount,           soeREQUIRED},
             {sfCFTokenIssuanceID, soeREQUIRED},
-            {sfCFTAmount, soeREQUIRED},
+            {sfCFTAmount, soeDEFAULT},
             {sfLockedAmount, soeDEFAULT},
             {sfOwnerNode,            soeREQUIRED},
             {sfCFTokenNode,            soeREQUIRED},
