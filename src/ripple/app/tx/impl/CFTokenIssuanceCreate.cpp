@@ -59,12 +59,6 @@ CFTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 }
 
 TER
-CFTokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
-{
-    return tesSUCCESS;
-}
-
-TER
 CFTokenIssuanceCreate::doApply()
 {
     auto const acct = view().peek(keylet::account(account_));
