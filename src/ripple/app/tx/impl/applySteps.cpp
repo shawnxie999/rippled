@@ -25,10 +25,10 @@
 #include <ripple/app/tx/impl/AMMVote.h>
 #include <ripple/app/tx/impl/AMMWithdraw.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
-#include <ripple/app/tx/impl/CFTokenAuthorize.h>
-#include <ripple/app/tx/impl/CFTokenIssuanceCreate.h>
-#include <ripple/app/tx/impl/CFTokenIssuanceDestroy.h>
-#include <ripple/app/tx/impl/CFTokenIssuanceSet.h>
+#include <ripple/app/tx/impl/MPTokenAuthorize.h>
+#include <ripple/app/tx/impl/MPTokenIssuanceCreate.h>
+#include <ripple/app/tx/impl/MPTokenIssuanceDestroy.h>
+#include <ripple/app/tx/impl/MPTokenIssuanceSet.h>
 #include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CashCheck.h>
@@ -163,14 +163,14 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<DIDSet>();
         case ttDID_DELETE:
             return f.template operator()<DIDDelete>();
-        case ttCFTOKEN_ISSUANCE_CREATE:
-            return f.template operator()<CFTokenIssuanceCreate>();
-        case ttCFTOKEN_ISSUANCE_DESTROY:
-            return f.template operator()<CFTokenIssuanceDestroy>();
-        case ttCFTOKEN_AUTHORIZE:
-            return f.template operator()<CFTokenAuthorize>();
-        case ttCFTOKEN_ISSUANCE_SET:
-            return f.template operator()<CFTokenIssuanceSet>();
+        case ttMPTOKEN_ISSUANCE_CREATE:
+            return f.template operator()<MPTokenIssuanceCreate>();
+        case ttMPTOKEN_ISSUANCE_DESTROY:
+            return f.template operator()<MPTokenIssuanceDestroy>();
+        case ttMPTOKEN_AUTHORIZE:
+            return f.template operator()<MPTokenAuthorize>();
+        case ttMPTOKEN_ISSUANCE_SET:
+            return f.template operator()<MPTokenIssuanceSet>();
         default:
             throw UnknownTxnType(txnType);
     }

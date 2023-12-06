@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_CFT_H_INCLUDED
-#define RIPPLE_TEST_JTX_CFT_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_MPT_H_INCLUDED
+#define RIPPLE_TEST_JTX_MPT_H_INCLUDED
 
 #include <test/jtx/Account.h>
 
@@ -28,13 +28,13 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-namespace cft {
+namespace mpt {
 
-/** Issue a CFT with default fields. */
+/** Issue a MPT with default fields. */
 Json::Value
 create(jtx::Account const& account);
 
-/** Issue a CFT with user-defined fields. */
+/** Issue a MPT with user-defined fields. */
 Json::Value
 create(
     jtx::Account const& account,
@@ -43,23 +43,23 @@ create(
     std::uint16_t transferFee,
     std::string metadata);
 
-/** Destroy a CFT. */
+/** Destroy a MPT. */
 Json::Value
 destroy(jtx::Account const& account, ripple::uint256 const& id);
 
-/** Authorize a CFT. */
+/** Authorize a MPT. */
 Json::Value
 authorize(
     jtx::Account const& account,
     ripple::uint256 const& issuanceID,
     std::optional<jtx::Account> const& holder);
 
-/** Set a CFT. */
+/** Set a MPT. */
 Json::Value
 set(jtx::Account const& account,
     ripple::uint256 const& issuanceID,
     std::optional<jtx::Account> const& holder);
-}  // namespace cft
+}  // namespace mpt
 
 }  // namespace jtx
 }  // namespace test

@@ -63,13 +63,13 @@ JSS(Asset2);               // in: AMM Asset2
 JSS(AuthAccount);          // in: AMM Auction Slot
 JSS(AuthAccounts);         // in: AMM Auction Slot
 JSS(Bridge);               // ledger type.
-JSS(CFToken);              // ledger type.
-JSS(CFTokenIssuance);      // ledger type.
-JSS(CFTokenIssuanceCreate);   // transaction type.
-JSS(CFTokenIssuanceDestroy);  // transaction type.
-JSS(CFTokenAuthorize);        // transaction type.
-JSS(CFTokenIssuanceSet);      // transaction type.
-JSS(CFTokenIssuanceID);       // in: CFTokenIssuanceDestroy, CFTokenAuthorize
+JSS(MPToken);              // ledger type.
+JSS(MPTokenIssuance);      // ledger type.
+JSS(MPTokenIssuanceCreate);   // transaction type.
+JSS(MPTokenIssuanceDestroy);  // transaction type.
+JSS(MPTokenAuthorize);        // transaction type.
+JSS(MPTokenIssuanceSet);      // transaction type.
+JSS(MPTokenIssuanceID);       // in: MPTokenIssuanceDestroy, MPTokenAuthorize
 JSS(Check);                // ledger type.
 JSS(CheckCancel);          // transaction type.
 JSS(CheckCash);            // transaction type.

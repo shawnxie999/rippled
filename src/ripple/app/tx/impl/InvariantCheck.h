@@ -418,13 +418,13 @@ public:
         beast::Journal const&);
 };
 
-class ValidCFTIssuance
+class ValidMPTIssuance
 {
-    std::uint32_t cftIssuancesCreated_ = 0;
-    std::uint32_t cftIssuancesDeleted_ = 0;
+    std::uint32_t mptIssuancesCreated_ = 0;
+    std::uint32_t mptIssuancesDeleted_ = 0;
 
-    std::uint32_t cftokensCreated_ = 0;
-    std::uint32_t cftokensDeleted_ = 0;
+    std::uint32_t mptokensCreated_ = 0;
+    std::uint32_t mptokensDeleted_ = 0;
 
 public:
     void
@@ -457,7 +457,7 @@ using InvariantChecks = std::tuple<
     ValidNFTokenPage,
     NFTokenCountTracking,
     ValidClawback,
-    ValidCFTIssuance>;
+    ValidMPTIssuance>;
 
 /**
  * @brief get a tuple of all invariant checks

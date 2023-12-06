@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <test/jtx/cft.h>
+#include <test/jtx/mpt.h>
 
 #include <ripple/protocol/jss.h>
 
@@ -25,14 +25,14 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-namespace cft {
+namespace mpt {
 
 Json::Value
 create(jtx::Account const& account)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
-    jv[sfTransactionType.jsonName] = jss::CFTokenIssuanceCreate;
+    jv[sfTransactionType.jsonName] = jss::MPTokenIssuanceCreate;
     return jv;
 }
 
@@ -46,11 +46,11 @@ create(
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
-    jv[sfTransactionType.jsonName] = jss::CFTokenIssuanceCreate;
+    jv[sfTransactionType.jsonName] = jss::MPTokenIssuanceCreate;
     jv[sfMaximumAmount.jsonName] = maxAmt;
     jv[sfAssetScale.jsonName] = assetScale;
     jv[sfTransferFee.jsonName] = transferFee;
-    jv[sfCFTokenMetadata.jsonName] = strHex(metadata);
+    jv[sfMPTokenMetadata.jsonName] = strHex(metadata);
     return jv;
 }
 
@@ -59,8 +59,8 @@ destroy(jtx::Account const& account, ripple::uint256 const& id)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
-    jv[sfCFTokenIssuanceID.jsonName] = to_string(id);
-    jv[sfTransactionType.jsonName] = jss::CFTokenIssuanceDestroy;
+    jv[sfMPTokenIssuanceID.jsonName] = to_string(id);
+    jv[sfTransactionType.jsonName] = jss::MPTokenIssuanceDestroy;
     return jv;
 }
 
@@ -72,10 +72,10 @@ authorize(
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
-    jv[sfTransactionType.jsonName] = jss::CFTokenAuthorize;
-    jv[sfCFTokenIssuanceID.jsonName] = to_string(issuanceID);
+    jv[sfTransactionType.jsonName] = jss::MPTokenAuthorize;
+    jv[sfMPTokenIssuanceID.jsonName] = to_string(issuanceID);
     if (holder)
-        jv[sfCFTokenHolder.jsonName] = holder->human();
+        jv[sfMPTokenHolder.jsonName] = holder->human();
 
     return jv;
 }
@@ -87,15 +87,15 @@ set(jtx::Account const& account,
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
-    jv[sfTransactionType.jsonName] = jss::CFTokenIssuanceSet;
-    jv[sfCFTokenIssuanceID.jsonName] = to_string(issuanceID);
+    jv[sfTransactionType.jsonName] = jss::MPTokenIssuanceSet;
+    jv[sfMPTokenIssuanceID.jsonName] = to_string(issuanceID);
     if (holder)
-        jv[sfCFTokenHolder.jsonName] = holder->human();
+        jv[sfMPTokenHolder.jsonName] = holder->human();
 
     return jv;
 }
 
-}  // namespace cft
+}  // namespace mpt
 
 }  // namespace jtx
 }  // namespace test

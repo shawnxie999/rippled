@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/CFTokenIssuanceCreate.h>
+#include <ripple/app/tx/impl/MPTokenIssuanceCreate.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/TxFlags.h>
@@ -26,32 +26,32 @@
 namespace ripple {
 
 NotTEC
-CFTokenIssuanceCreate::preflight(PreflightContext const& ctx)
+MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureCFTokensV1))
+    if (!ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.tx.getFlags() & tfCFTokenIssuanceCreateMask)
+    if (ctx.tx.getFlags() & tfMPTokenIssuanceCreateMask)
         return temINVALID_FLAG;
 
     if (auto const fee = ctx.tx[~sfTransferFee])
     {
         if (fee > maxTransferFee)
-            return temBAD_CFTOKEN_TRANSFER_FEE;
+            return temBAD_MPTOKEN_TRANSFER_FEE;
 
         // If a non-zero TransferFee is set then the tfTransferable flag
         // must also be set.
-        if (fee > 0u && !ctx.tx.isFlag(tfCFTCanTransfer))
+        if (fee > 0u && !ctx.tx.isFlag(tfMPTCanTransfer))
             return temMALFORMED;
     }
 
-    if (auto const metadata = ctx.tx[~sfCFTokenMetadata])
+    if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
         if (metadata->length() == 0 ||
-            metadata->length() > maxCFTokenMetadataLength)
+            metadata->length() > maxMPTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -59,13 +59,13 @@ CFTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 }
 
 TER
-CFTokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
+MPTokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
 {
     return tesSUCCESS;
 }
 
 TER
-CFTokenIssuanceCreate::doApply()
+MPTokenIssuanceCreate::doApply()
 {
     auto const acct = view().peek(keylet::account(account_));
     if (!acct)
@@ -74,38 +74,38 @@ CFTokenIssuanceCreate::doApply()
     if (mPriorBalance < view().fees().accountReserve((*acct)[sfOwnerCount] + 1))
         return tecINSUFFICIENT_RESERVE;
 
-    auto const cftIssuanceID =
-        keylet::cftIssuance(account_, ctx_.tx.getSeqProxy().value());
+    auto const mptIssuanceID =
+        keylet::mptIssuance(account_, ctx_.tx.getSeqProxy().value());
 
-    // create the CFTokenIssuance
+    // create the MPTokenIssuance
     {
         auto const ownerNode = view().dirInsert(
             keylet::ownerDir(account_),
-            cftIssuanceID,
+            mptIssuanceID,
             describeOwnerDir(account_));
 
         if (!ownerNode)
             return tecDIR_FULL;
 
-        auto cftIssuance = std::make_shared<SLE>(cftIssuanceID);
-        (*cftIssuance)[sfFlags] = ctx_.tx.getFlags() & ~tfUniversal;
-        (*cftIssuance)[sfIssuer] = account_;
-        (*cftIssuance)[sfOutstandingAmount] = 0;
-        (*cftIssuance)[sfOwnerNode] = *ownerNode;
+        auto mptIssuance = std::make_shared<SLE>(mptIssuanceID);
+        (*mptIssuance)[sfFlags] = ctx_.tx.getFlags() & ~tfUniversal;
+        (*mptIssuance)[sfIssuer] = account_;
+        (*mptIssuance)[sfOutstandingAmount] = 0;
+        (*mptIssuance)[sfOwnerNode] = *ownerNode;
 
         if (auto const max = ctx_.tx[~sfMaximumAmount])
-            (*cftIssuance)[sfMaximumAmount] = *max;
+            (*mptIssuance)[sfMaximumAmount] = *max;
 
         if (auto const scale = ctx_.tx[~sfAssetScale])
-            (*cftIssuance)[sfAssetScale] = *scale;
+            (*mptIssuance)[sfAssetScale] = *scale;
 
         if (auto const fee = ctx_.tx[~sfTransferFee])
-            (*cftIssuance)[sfTransferFee] = *fee;
+            (*mptIssuance)[sfTransferFee] = *fee;
 
-        if (auto const metadata = ctx_.tx[~sfCFTokenMetadata])
-            (*cftIssuance)[sfCFTokenMetadata] = *metadata;
+        if (auto const metadata = ctx_.tx[~sfMPTokenMetadata])
+            (*mptIssuance)[sfMPTokenMetadata] = *metadata;
 
-        view().insert(cftIssuance);
+        view().insert(mptIssuance);
     }
 
     // Update owner count.

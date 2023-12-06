@@ -95,8 +95,8 @@ std::size_t constexpr maxDIDAttestationLength = 256;
 /** The maximum length of a domain */
 std::size_t constexpr maxDomainLength = 256;
 
-/** The maximum length of CFTokenMetadata */
-std::size_t constexpr maxCFTokenMetadataLength = 1024;
+/** The maximum length of MPTokenMetadata */
+std::size_t constexpr maxMPTokenMetadataLength = 1024;
 
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;

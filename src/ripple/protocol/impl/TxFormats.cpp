@@ -484,36 +484,36 @@ TxFormats::TxFormats()
 
     add(jss::DIDDelete, ttDID_DELETE, {}, commonFields);
 
-    add(jss::CFTokenIssuanceCreate,
-        ttCFTOKEN_ISSUANCE_CREATE,
+    add(jss::MPTokenIssuanceCreate,
+        ttMPTOKEN_ISSUANCE_CREATE,
         {
             {sfAssetScale, soeOPTIONAL},
             {sfTransferFee, soeOPTIONAL},
             {sfMaximumAmount, soeOPTIONAL},
-            {sfCFTokenMetadata, soeOPTIONAL},
+            {sfMPTokenMetadata, soeOPTIONAL},
         },
         commonFields);
 
-    add(jss::CFTokenIssuanceDestroy,
-        ttCFTOKEN_ISSUANCE_DESTROY,
+    add(jss::MPTokenIssuanceDestroy,
+        ttMPTOKEN_ISSUANCE_DESTROY,
         {
-            {sfCFTokenIssuanceID, soeREQUIRED},
+            {sfMPTokenIssuanceID, soeREQUIRED},
         },
         commonFields);
 
-    add(jss::CFTokenAuthorize,
-        ttCFTOKEN_AUTHORIZE,
+    add(jss::MPTokenAuthorize,
+        ttMPTOKEN_AUTHORIZE,
         {
-            {sfCFTokenIssuanceID, soeREQUIRED},
-            {sfCFTokenHolder, soeOPTIONAL},
+            {sfMPTokenIssuanceID, soeREQUIRED},
+            {sfMPTokenHolder, soeOPTIONAL},
         },
         commonFields);
 
-    add(jss::CFTokenIssuanceSet,
-        ttCFTOKEN_ISSUANCE_SET,
+    add(jss::MPTokenIssuanceSet,
+        ttMPTOKEN_ISSUANCE_SET,
         {
-            {sfCFTokenIssuanceID, soeREQUIRED},
-            {sfCFTokenHolder, soeOPTIONAL},
+            {sfMPTokenIssuanceID, soeREQUIRED},
+            {sfMPTokenHolder, soeOPTIONAL},
         },
         commonFields);
 }
