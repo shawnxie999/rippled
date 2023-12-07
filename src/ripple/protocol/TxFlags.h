@@ -134,13 +134,20 @@ constexpr std::uint32_t const tfTransferable               = 0x00000008;
 
 // CFTokenIssuanceCreate flags:
 // NOTE - there is intentionally no flag here for 0x01 because that
-// corresponds to lsfCFTIsLocked, which this transaction cannot mutate. 
-constexpr std::uint32_t const tfCFTCannotLockBalances      = lsfCFTCannotLockBalances;
+// corresponds to lsfCFTLocked, which this transaction cannot mutate. 
+constexpr std::uint32_t const tfCFTCanLock                 = lsfCFTCanLock;
 constexpr std::uint32_t const tfCFTRequireAuth             = lsfCFTRequireAuth;
 constexpr std::uint32_t const tfCFTCanEscrow               = lsfCFTCanEscrow;
 constexpr std::uint32_t const tfCFTCanTrade                = lsfCFTCanTrade;
 constexpr std::uint32_t const tfCFTCanTransfer             = lsfCFTCanTransfer;
 constexpr std::uint32_t const tfCFTCanClawback             = lsfCFTCanClawback;
+
+// CFTokenAuthorize flags:
+constexpr std::uint32_t const tfCFTUnauthorize             = 0x00000001;
+
+// CFTokenIssuanceSet flags:
+constexpr std::uint32_t const tfCFTLock                   = 0x00000001;
+constexpr std::uint32_t const tfCFTUnlock                 = 0x00000002;
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
 // accounts allowed a TrustLine to be added to the issuer of that token
@@ -199,8 +206,16 @@ constexpr std::uint32_t tfBridgeModifyMask = ~(tfUniversal | tfClearAccountCreat
 
 // CFTokenIssuanceCreate flags:
 constexpr std::uint32_t const tfCFTokenIssuanceCreateMask  =
-  ~(tfCFTCannotLockBalances | tfCFTRequireAuth | tfCFTCanEscrow | tfCFTCanTrade | tfCFTCanTransfer | tfCFTCanClawback | tfUniversal);
+  ~(tfCFTCanLock | tfCFTRequireAuth | tfCFTCanEscrow | tfCFTCanTrade | tfCFTCanTransfer | tfCFTCanClawback | tfUniversal);
 
+// CFTokenIssuanceDestroy flags:
+constexpr std::uint32_t const tfCFTokenIssuanceDestroyMask  = ~tfUniversal;
+
+// CFTokenAuthorize flags:
+constexpr std::uint32_t const tfCFTokenAuthorizeMask  = ~(tfCFTUnauthorize | tfUniversal);
+
+// CFTokenIssuanceSet flags:
+constexpr std::uint32_t const tfCFTokenIssuanceSetMask  = ~(tfCFTLock | tfCFTUnlock | tfUniversal);
 // clang-format on
 
 }  // namespace ripple

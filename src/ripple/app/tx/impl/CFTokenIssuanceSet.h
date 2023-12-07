@@ -17,24 +17,27 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_CFTOKENISSUANCECREATE_H_INCLUDED
-#define RIPPLE_TX_CFTOKENISSUANCECREATE_H_INCLUDED
+#ifndef RIPPLE_TX_CFTOKENISSUANCESET_H_INCLUDED
+#define RIPPLE_TX_CFTOKENISSUANCESET_H_INCLUDED
 
 #include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
 
-class CFTokenIssuanceCreate : public Transactor
+class CFTokenIssuanceSet : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit CFTokenIssuanceCreate(ApplyContext& ctx) : Transactor(ctx)
+    explicit CFTokenIssuanceSet(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
     static NotTEC
     preflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
 
     TER
     doApply() override;

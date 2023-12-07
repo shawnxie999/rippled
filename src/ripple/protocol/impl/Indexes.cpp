@@ -73,6 +73,8 @@ enum class LedgerNameSpace : std::uint16_t {
     XCHAIN_CREATE_ACCOUNT_CLAIM_ID = 'K',
     DID = 'I',
     CFTOKEN_ISSUANCE = '~',
+    CFTOKEN = 't',
+    CFT_DIR = 'k',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -446,13 +448,24 @@ did(AccountID const& account) noexcept
 }
 
 Keylet
-cftIssuance(AccountID const& issuer, uint160 const& asset) noexcept
+cftIssuance(AccountID const& issuer, std::uint32_t seq) noexcept
 {
     return {
         ltCFTOKEN_ISSUANCE,
-        indexHash(LedgerNameSpace::CFTOKEN_ISSUANCE, issuer, asset)};
+        indexHash(LedgerNameSpace::CFTOKEN_ISSUANCE, issuer, seq)};
 }
 
+Keylet
+cftoken(uint256 const& issuanceID, AccountID const& holder) noexcept
+{
+    return {ltCFTOKEN, indexHash(LedgerNameSpace::CFTOKEN, issuanceID, holder)};
+}
+
+Keylet
+cft_dir(uint256 const& id) noexcept
+{
+    return {ltDIR_NODE, indexHash(LedgerNameSpace::CFT_DIR, id)};
+}
 }  // namespace keylet
 
 }  // namespace ripple

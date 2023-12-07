@@ -74,6 +74,7 @@ LedgerFormats::LedgerFormats()
             {sfIndexNext,            soeOPTIONAL},
             {sfIndexPrevious,        soeOPTIONAL},
             {sfNFTokenID,            soeOPTIONAL},
+            {sfCFTokenIssuanceID,    soeOPTIONAL},
         },
         commonFields);
 
@@ -346,12 +347,27 @@ LedgerFormats::LedgerFormats()
             {sfIssuer,               soeREQUIRED},
             {sfTransferFee,          soeDEFAULT},
             {sfOwnerNode,            soeREQUIRED},
-            {sfAssetCode,            soeREQUIRED},
             {sfAssetScale,           soeDEFAULT},
             {sfMaximumAmount,        soeOPTIONAL},
             {sfOutstandingAmount,    soeREQUIRED},
-            {sfLockedAmount,         soeREQUIRED},
+            {sfLockedAmount,         soeDEFAULT},
             {sfCFTokenMetadata,      soeOPTIONAL},
+            {sfPreviousTxnID,        soeREQUIRED},
+            {sfPreviousTxnLgrSeq,    soeREQUIRED}
+        },
+        commonFields);
+
+    add(jss::CFToken,
+        ltCFTOKEN,
+        {
+            {sfAccount,           soeREQUIRED},
+            {sfCFTokenIssuanceID, soeREQUIRED},
+            {sfCFTAmount, soeDEFAULT},
+            {sfLockedAmount, soeDEFAULT},
+            {sfOwnerNode,            soeREQUIRED},
+            {sfCFTokenNode,            soeREQUIRED},
+            {sfPreviousTxnID,        soeREQUIRED},
+            {sfPreviousTxnLgrSeq,    soeREQUIRED}
         },
         commonFields);
     // clang-format on

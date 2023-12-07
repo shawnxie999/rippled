@@ -487,11 +487,33 @@ TxFormats::TxFormats()
     add(jss::CFTokenIssuanceCreate,
         ttCFTOKEN_ISSUANCE_CREATE,
         {
-            {sfAssetCode, soeREQUIRED},
             {sfAssetScale, soeOPTIONAL},
             {sfTransferFee, soeOPTIONAL},
             {sfMaximumAmount, soeOPTIONAL},
             {sfCFTokenMetadata, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::CFTokenIssuanceDestroy,
+        ttCFTOKEN_ISSUANCE_DESTROY,
+        {
+            {sfCFTokenIssuanceID, soeREQUIRED},
+        },
+        commonFields);
+
+    add(jss::CFTokenAuthorize,
+        ttCFTOKEN_AUTHORIZE,
+        {
+            {sfCFTokenIssuanceID, soeREQUIRED},
+            {sfCFTokenHolder, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::CFTokenIssuanceSet,
+        ttCFTOKEN_ISSUANCE_SET,
+        {
+            {sfCFTokenIssuanceID, soeREQUIRED},
+            {sfCFTokenHolder, soeOPTIONAL},
         },
         commonFields);
 }

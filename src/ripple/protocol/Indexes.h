@@ -284,7 +284,19 @@ Keylet
 did(AccountID const& account) noexcept;
 
 Keylet
-cftIssuance(AccountID const& issuer, uint160 const& asset) noexcept;
+cftIssuance(AccountID const& issuer, std::uint32_t seq) noexcept;
+
+inline Keylet
+cftIssuance(uint256 const& issuance)
+{
+    return {ltCFTOKEN_ISSUANCE, issuance};
+}
+
+Keylet
+cftoken(uint256 const& issuanceID, AccountID const& holder) noexcept;
+
+Keylet
+cft_dir(uint256 const& id) noexcept;
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:
