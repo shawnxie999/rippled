@@ -225,6 +225,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a009526a350a90e20d382513f27304a98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79feb7167d74a61f8cb1e273cb71b8c6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a79feb7167d74a61f8cb1e273cb71b8c6">clearLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq)</td></tr>
 <tr class="separator:a79feb7167d74a61f8cb1e273cb71b8c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a48138c39fa398b7f218f8278b496f550"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a48138c39fa398b7f218f8278b496f550">isValidated</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;ledger)</td></tr>
+<tr class="separator:a48138c39fa398b7f218f8278b496f550"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a777c77ff2d32f4bd6692f92f5a960471"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a777c77ff2d32f4bd6692f92f5a960471">getValidatedRange</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &amp;minVal, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &amp;maxVal)</td></tr>
 <tr class="separator:a777c77ff2d32f4bd6692f92f5a960471"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa15ee23de914287001e731bada1e1237"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#aa15ee23de914287001e731bada1e1237">getFullValidatedRange</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &amp;minVal, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &amp;maxVal)</td></tr>
@@ -276,6 +278,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a1f75b908e89910ac3852dd92a4c79ec5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a85ab10f185f8e05e7dbd76f6a8df25f5"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a85ab10f185f8e05e7dbd76f6a8df25f5">minSqlSeq</a> ()</td></tr>
 <tr class="separator:a85ab10f185f8e05e7dbd76f6a8df25f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a73b0187c85aa6bca492a83f5acfd7d21"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LedgerMaster.html#a73b0187c85aa6bca492a83f5acfd7d21">txnIdFromIndex</a> (uint32_t ledgerSeq, uint32_t txnIndex)</td></tr>
+<tr class="separator:a73b0187c85aa6bca492a83f5acfd7d21"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -549,7 +553,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01647">1647</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01698">1698</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -568,7 +572,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01654">1654</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01705">1705</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -606,7 +610,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01664">1664</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01715">1715</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -625,7 +629,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01679">1679</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01730">1730</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -644,7 +648,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01694">1694</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01745">1745</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -721,7 +725,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00697">697</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00748">748</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -777,7 +781,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00911">911</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00962">962</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -849,7 +853,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00972">972</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01023">1023</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -868,7 +872,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01701">1701</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01752">1752</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -913,7 +917,7 @@ Private Attributes</h2></td></tr>
 <p>Get the next transaction held for a particular account if any. </p>
 <p>This is normally called when a transaction for that account is successfully applied to the open ledger so the next transaction can be resubmitted without waiting for ledger close. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00574">574</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00577">577</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -935,7 +939,7 @@ Private Attributes</h2></td></tr>
 
 <p>Get a ledger's hash by sequence number using the cache. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01743">1743</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01794">1794</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -967,7 +971,7 @@ Private Attributes</h2></td></tr>
 
 <p>Walk to a ledger's hash using the skip list. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01754">1754</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01805">1805</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1006,7 +1010,7 @@ Private Attributes</h2></td></tr>
 <p>Walk the chain of ledger hashes to determine the hash of the ledger with the specified index. </p>
 <p>The referenceLedger is used as the base of the chain and should be fully validated and must not precede the target index. This function may throw if nodes from the reference ledger or any prior ledger are not present in the node store. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01765">1765</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01816">1816</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1026,7 +1030,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01818">1818</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01869">1869</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1046,7 +1050,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01854">1854</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01905">1905</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1076,7 +1080,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01867">1867</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01918">1918</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1096,7 +1100,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01713">1713</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01764">1764</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1126,7 +1130,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01721">1721</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01772">1772</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1166,7 +1170,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00856">856</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00907">907</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1186,7 +1190,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00588">588</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00591">591</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1206,7 +1210,27 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00595">595</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00598">598</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a48138c39fa398b7f218f8278b496f550"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a48138c39fa398b7f218f8278b496f550">&#9670;&nbsp;</a></span>isValidated()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::LedgerMaster::isValidated </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;&#160;</td>
+          <td class="paramname"><em>ledger</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00605">605</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1236,7 +1260,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00630">630</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00681">681</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1266,7 +1290,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00603">603</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00654">654</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1285,7 +1309,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01874">1874</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01925">1925</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1304,7 +1328,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01881">1881</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01932">1932</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1324,7 +1348,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01042">1042</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01093">1093</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1354,7 +1378,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00981">981</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01032">1032</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1392,7 +1416,7 @@ Private Attributes</h2></td></tr>
 
 <p>Report that the consensus process built a particular ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01190">1190</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01241">1241</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1412,7 +1436,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00582">582</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00585">585</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1431,7 +1455,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01459">1459</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01510">1510</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1450,7 +1474,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01595">1595</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01646">1646</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1469,7 +1493,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01603">1603</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01654">1654</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1488,7 +1512,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01614">1614</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01665">1665</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1538,7 +1562,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01887">1887</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01938">1938</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1558,7 +1582,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01895">1895</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01946">1946</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1578,7 +1602,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01901">1901</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01952">1952</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1597,7 +1621,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01907">1907</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01958">1958</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1627,7 +1651,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02159">2159</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02210">2210</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1657,7 +1681,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02140">2140</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02191">2191</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1697,7 +1721,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1AbstractFetchPackContainer.html#a20b49247b790371ff50608f29dfe555d">ripple::AbstractFetchPackContainer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02146">2146</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02197">2197</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1739,7 +1763,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02229">2229</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02280">2280</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1758,7 +1782,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02360">2360</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02411">2411</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1779,7 +1803,7 @@ Private Attributes</h2></td></tr>
 
 <p>Whether we have ever fully validated a ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00286">286</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00288">288</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -1798,7 +1822,37 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02367">2367</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02418">2418</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a73b0187c85aa6bca492a83f5acfd7d21"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a73b0187c85aa6bca492a83f5acfd7d21">&#9670;&nbsp;</a></span>txnIdFromIndex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; ripple::LedgerMaster::txnIdFromIndex </td>
+          <td>(</td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>ledgerSeq</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>txnIndex</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02424">2424</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1882,7 +1936,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00711">711</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00762">762</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1922,7 +1976,7 @@ Private Attributes</h2></td></tr>
 
 <p>Request a fetch pack to get to the specified ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00783">783</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l00834">834</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1960,7 +2014,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01291">1291</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01342">1342</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -1990,7 +2044,7 @@ Private Attributes</h2></td></tr>
 <p>Determines how many validations are needed to fully validate a ledger. </p>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Number.html">Number</a> of validations needed </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01036">1036</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01087">1087</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -2040,7 +2094,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01913">1913</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01964">1964</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -2068,7 +2122,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02039">2039</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02090">2090</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -2096,7 +2150,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01314">1314</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01365">1365</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -2123,7 +2177,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01491">1491</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01542">1542</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -2163,7 +2217,7 @@ Private Attributes</h2></td></tr>
 
 <p>A thread needs to be dispatched to handle pathfinding work of some kind. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01625">1625</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l01676">1676</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -2190,7 +2244,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00435">435</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00441">441</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2215,7 +2269,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00334">334</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00340">340</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2239,7 +2293,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00335">335</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00341">341</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2263,7 +2317,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00337">337</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00343">343</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2287,7 +2341,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00340">340</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00346">346</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2311,7 +2365,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00343">343</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00349">349</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2335,7 +2389,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00346">346</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00352">352</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2359,7 +2413,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00349">349</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00355">355</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2383,7 +2437,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00352">352</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00358">358</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2407,7 +2461,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00355">355</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00361">361</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2431,7 +2485,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00358">358</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00364">364</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2455,7 +2509,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00360">360</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00366">366</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2479,7 +2533,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00362">362</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00368">368</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2503,7 +2557,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00365">365</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00371">371</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2527,7 +2581,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00367">367</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00373">373</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2551,7 +2605,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00368">368</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00374">374</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2575,7 +2629,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00371">371</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00377">377</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2599,7 +2653,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00374">374</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00380">380</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2623,7 +2677,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00375">375</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00381">381</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2647,7 +2701,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00377">377</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00383">383</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2671,7 +2725,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00378">378</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00384">384</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2697,7 +2751,7 @@ Private Attributes</h2></td></tr>
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">        ATOMIC_FLAG_INIT</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00380">380</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00386">386</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2721,7 +2775,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00383">383</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00389">389</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2745,7 +2799,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00384">384</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00390">390</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2769,7 +2823,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00385">385</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00391">391</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2793,7 +2847,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00386">386</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00392">392</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2817,7 +2871,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00387">387</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00393">393</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2841,7 +2895,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00390">390</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00396">396</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2865,7 +2919,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00393">393</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00399">399</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2889,7 +2943,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00396">396</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00402">402</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2913,7 +2967,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00398">398</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00404">404</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2937,7 +2991,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00400">400</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00406">406</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2961,7 +3015,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00402">402</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00408">408</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -2985,7 +3039,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00406">406</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00412">412</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -3009,7 +3063,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00409">409</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00415">415</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
@@ -3033,7 +3087,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00431">431</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8h_source.html#l00437">437</a> of file <a class="el" href="LedgerMaster_8h_source.html">LedgerMaster.h</a>.</p>
 
 </div>
 </div>
