@@ -59,6 +59,17 @@ CFTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 }
 
 TER
+CFTokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
+{
+    // if a CFT issuance with this asset code already exists - error
+    if (ctx.view.exists(
+            keylet::cftIssuance(ctx.tx[sfAccount], ctx.tx[sfAssetCode])))
+        return tecDUPLICATE;
+
+    return tesSUCCESS;
+}
+
+TER
 CFTokenIssuanceCreate::doApply()
 {
     auto const acct = view().peek(keylet::account(account_));
@@ -68,38 +79,37 @@ CFTokenIssuanceCreate::doApply()
     if (mPriorBalance < view().fees().accountReserve((*acct)[sfOwnerCount] + 1))
         return tecINSUFFICIENT_RESERVE;
 
-    auto const cftIssuanceID =
-        keylet::cftIssuance(account_, ctx_.tx.getSeqProxy().value());
+    auto const cftID = keylet::cftIssuance(account_, ctx_.tx[sfAssetCode]);
 
-    // create the CFTokenIssuance
+    // create the CFT
     {
         auto const ownerNode = view().dirInsert(
-            keylet::ownerDir(account_),
-            cftIssuanceID,
-            describeOwnerDir(account_));
+            keylet::ownerDir(account_), cftID, describeOwnerDir(account_));
 
         if (!ownerNode)
             return tecDIR_FULL;
 
-        auto cftIssuance = std::make_shared<SLE>(cftIssuanceID);
-        (*cftIssuance)[sfFlags] = ctx_.tx.getFlags() & ~tfUniversal;
-        (*cftIssuance)[sfIssuer] = account_;
-        (*cftIssuance)[sfOutstandingAmount] = 0;
-        (*cftIssuance)[sfOwnerNode] = *ownerNode;
+        auto cft = std::make_shared<SLE>(cftID);
+        (*cft)[sfFlags] = ctx_.tx.getFlags() & ~tfUniversalMask;
+        (*cft)[sfIssuer] = account_;
+        (*cft)[sfAssetCode] = ctx_.tx[sfAssetCode];
+        (*cft)[sfOutstandingAmount] = 0;
+        (*cft)[sfLockedAmount] = 0;
+        (*cft)[sfOwnerNode] = *ownerNode;
 
         if (auto const max = ctx_.tx[~sfMaximumAmount])
-            (*cftIssuance)[sfMaximumAmount] = *max;
+            (*cft)[sfMaximumAmount] = *max;
 
         if (auto const scale = ctx_.tx[~sfAssetScale])
-            (*cftIssuance)[sfAssetScale] = *scale;
+            (*cft)[sfAssetScale] = *scale;
 
         if (auto const fee = ctx_.tx[~sfTransferFee])
-            (*cftIssuance)[sfTransferFee] = *fee;
+            (*cft)[sfTransferFee] = *fee;
 
         if (auto const metadata = ctx_.tx[~sfCFTokenMetadata])
-            (*cftIssuance)[sfCFTokenMetadata] = *metadata;
+            (*cft)[sfCFTokenMetadata] = *metadata;
 
-        view().insert(cftIssuance);
+        view().insert(cft);
     }
 
     // Update owner count.

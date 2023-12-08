@@ -28,70 +28,15 @@ namespace jtx {
 namespace cft {
 
 Json::Value
-create(jtx::Account const& account)
+create(jtx::Account const& account, std::string const& asset)
 {
+    auto const assetCurrency = to_currency(asset);
+    assert(assetCurrency != noCurrency());
+
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
+    jv[sfAssetCode.jsonName] = ripple::to_string(assetCurrency);
     jv[sfTransactionType.jsonName] = jss::CFTokenIssuanceCreate;
-    return jv;
-}
-
-Json::Value
-create(
-    jtx::Account const& account,
-    std::uint32_t const maxAmt,
-    std::uint8_t const assetScale,
-    std::uint16_t transferFee,
-    std::string metadata)
-{
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfTransactionType.jsonName] = jss::CFTokenIssuanceCreate;
-    jv[sfMaximumAmount.jsonName] = maxAmt;
-    jv[sfAssetScale.jsonName] = assetScale;
-    jv[sfTransferFee.jsonName] = transferFee;
-    jv[sfCFTokenMetadata.jsonName] = strHex(metadata);
-    return jv;
-}
-
-Json::Value
-destroy(jtx::Account const& account, ripple::uint256 const& id)
-{
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfCFTokenIssuanceID.jsonName] = to_string(id);
-    jv[sfTransactionType.jsonName] = jss::CFTokenIssuanceDestroy;
-    return jv;
-}
-
-Json::Value
-authorize(
-    jtx::Account const& account,
-    ripple::uint256 const& issuanceID,
-    std::optional<jtx::Account> const& holder)
-{
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfTransactionType.jsonName] = jss::CFTokenAuthorize;
-    jv[sfCFTokenIssuanceID.jsonName] = to_string(issuanceID);
-    if (holder)
-        jv[sfCFTokenHolder.jsonName] = holder->human();
-
-    return jv;
-}
-
-Json::Value
-set(jtx::Account const& account,
-    ripple::uint256 const& issuanceID,
-    std::optional<jtx::Account> const& holder)
-{
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfTransactionType.jsonName] = jss::CFTokenIssuanceSet;
-    jv[sfCFTokenIssuanceID.jsonName] = to_string(issuanceID);
-    if (holder)
-        jv[sfCFTokenHolder.jsonName] = holder->human();
-
     return jv;
 }
 

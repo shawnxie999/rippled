@@ -420,11 +420,8 @@ public:
 
 class ValidCFTIssuance
 {
-    std::uint32_t cftIssuancesCreated_ = 0;
-    std::uint32_t cftIssuancesDeleted_ = 0;
-
-    std::uint32_t cftokensCreated_ = 0;
-    std::uint32_t cftokensDeleted_ = 0;
+    std::uint32_t cftsCreated_ = 0;
+    std::uint32_t cftsDeleted_ = 0;
 
 public:
     void

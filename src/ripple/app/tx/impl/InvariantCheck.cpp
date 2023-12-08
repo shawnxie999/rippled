@@ -393,7 +393,6 @@ LedgerEntryTypesMatch::visitEntry(
             case ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID:
             case ltDID:
             case ltCFTOKEN_ISSUANCE:
-            case ltCFTOKEN:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -806,23 +805,15 @@ ValidClawback::finalize(
 void
 ValidCFTIssuance::visitEntry(
     bool isDelete,
-    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& _before,
     std::shared_ptr<SLE const> const& after)
 {
     if (after && after->getType() == ltCFTOKEN_ISSUANCE)
     {
         if (isDelete)
-            cftIssuancesDeleted_++;
-        else if (!before)
-            cftIssuancesCreated_++;
-    }
-
-    if (after && after->getType() == ltCFTOKEN)
-    {
-        if (isDelete)
-            cftokensDeleted_++;
-        else if (!before)
-            cftokensCreated_++;
+            cftsDeleted_++;
+        else
+            cftsCreated_++;
     }
 }
 
@@ -834,136 +825,37 @@ ValidCFTIssuance::finalize(
     ReadView const& _view,
     beast::Journal const& j)
 {
-    if (result != tesSUCCESS){
-        if (cftIssuancesCreated_ != 0)
-        {
-            JLOG(j.fatal()) << "Invariant failed: a CFT issuance was created";
-        }
-        else if (cftIssuancesDeleted_ != 0)
-        {
-            JLOG(j.fatal()) << "Invariant failed: a CFT issuance was deleted";
-        }
-        else if (cftokensCreated_ != 0)
-        {
-            JLOG(j.fatal()) << "Invariant failed: a CFToken was created";
-        }
-        else if (cftokensDeleted_ != 0)
-        {
-            JLOG(j.fatal()) << "Invariant failed: a CFToken was deleted";
-        }
-
-        return cftIssuancesCreated_ == 0 && cftIssuancesDeleted_ == 0 &&
-            cftokensCreated_ == 0 && cftokensDeleted_ == 0;
-    }
-
-    if (tx.getTxnType() == ttCFTOKEN_ISSUANCE_CREATE)
+    if (tx.getTxnType() == ttCFTOKEN_ISSUANCE_CREATE && result == tesSUCCESS)
     {
-        if (cftIssuancesCreated_ == 0)
+        if (cftsCreated_ == 0)
         {
             JLOG(j.fatal()) << "Invariant failed: CFT issuance creation "
-                            "succeeded without creating a CFT issuance";
+                               "succeeded without creating a CFT issuance";
         }
-        else if (cftIssuancesDeleted_ != 0)
+        else if (cftsDeleted_ != 0)
         {
             JLOG(j.fatal()) << "Invariant failed: CFT issuance creation "
-                            "succeeded while removing CFT issuances";
+                               "succeeded while removing CFT issuances";
         }
-        else if (cftIssuancesCreated_ > 1)
+        else if (cftsCreated_ > 1)
         {
             JLOG(j.fatal()) << "Invariant failed: CFT issuance creation "
-                            "succeeded but created multiple issuances";
+                               "succeeded but created multiple issuances";
         }
 
-        return cftIssuancesCreated_ == 1 && cftIssuancesDeleted_ == 0;
+        return cftsCreated_ == 1 && cftsDeleted_ == 0;
     }
 
-    if (tx.getTxnType() == ttCFTOKEN_ISSUANCE_DESTROY)
+    if (cftsCreated_ != 0)
     {
-        if (cftIssuancesDeleted_ == 0)
-        {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance deletion "
-                            "succeeded without removing a CFT issuance";
-        }
-        else if (cftIssuancesCreated_ > 0)
-        {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance deletion "
-                            "succeeded while creating CFT issuances";
-        }
-        else if (cftIssuancesDeleted_ > 1)
-        {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance deletion "
-                            "succeeded but deleted multiple issuances";
-        }
-
-        return cftIssuancesCreated_ == 0 && cftIssuancesDeleted_ == 1;
+        JLOG(j.fatal()) << "Invariant failed: a CFT issuance was created";
     }
-
-    if (tx.getTxnType() == ttCFTOKEN_AUTHORIZE)
+    else if (cftsDeleted_ != 0)
     {
-        bool const submittedByIssuer = tx.isFieldPresent(sfCFTokenHolder);
-
-        if (cftIssuancesCreated_ > 0)
-        {
-            JLOG(j.fatal()) << "Invariant failed: CFT authorize "
-                            "succeeded but created CFT issuances";
-            return false;
-        }
-        else if (cftIssuancesDeleted_ > 0)
-        {
-            JLOG(j.fatal()) << "Invariant failed: CFT authorize "
-                            "succeeded but deleted issuances";
-            return false;
-        }
-        else if (
-            submittedByIssuer && (cftokensCreated_ > 0 || cftokensDeleted_ > 0))
-        {
-            JLOG(j.fatal())
-                << "Invariant failed: CFT authorize submitted by issuer "
-                "succeeded but created/deleted cftokens";
-            return false;
-        }
-        else if (
-            !submittedByIssuer && (cftokensCreated_ + cftokensDeleted_ != 1))
-        {
-            // if the holder submitted this tx, then a cftoken must be either
-            // created or deleted.
-            JLOG(j.fatal())
-                << "Invariant failed: CFT authorize submitted by holder "
-                "succeeded but created/deleted bad number of cftokens";
-            return false;
-        }
-
-        return true;
+        JLOG(j.fatal()) << "Invariant failed: a CFT issuance was deleted";
     }
 
-    if (tx.getTxnType() == ttCFTOKEN_ISSUANCE_SET)
-    {
-        if (cftIssuancesDeleted_ > 0)
-        {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance set "
-                            "succeeded while removing CFT issuances";
-        }
-        else if (cftIssuancesCreated_ > 0)
-        {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance set "
-                            "succeeded while creating CFT issuances";
-        }
-        else if (cftokensDeleted_ > 0)
-        {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance set "
-                            "succeeded while removing CFTokens";
-        }
-        else if (cftokensCreated_ > 0)
-        {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance set "
-                            "succeeded while creating CFTokens";
-        }
-
-        return cftIssuancesCreated_ == 0 && cftIssuancesDeleted_ == 0 &&
-            cftokensCreated_ == 0 && cftokensDeleted_ == 0;
-    }
-
-    return true;
+    return cftsCreated_ == 0 && cftsDeleted_ == 0;
 }
 
 }  // namespace ripple
