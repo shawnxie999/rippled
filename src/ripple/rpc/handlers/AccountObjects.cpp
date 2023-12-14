@@ -203,6 +203,7 @@ doAccountObjects(RPC::JsonContext& context)
              ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
             {jss::bridge, ltBRIDGE},
             {jss::cft_issuance, ltCFTOKEN_ISSUANCE},
+            {jss::cftoken, ltCFTOKEN}
             };
 
         typeFilter.emplace();
