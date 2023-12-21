@@ -751,6 +751,8 @@ JSS(write_load);                            // out: GetCounts
 JSS(xchain_owned_claim_id);                 // in: LedgerEntry, AccountObjects
 JSS(xchain_owned_create_account_claim_id);  // in: LedgerEntry
 JSS(NegativeUNL);                           // out: ValidatorList; ledger type
+JSS(cft_issuance);                          // in: LedgerEntry, AccountObjects
+JSS(cftoken);                          // in: LedgerEntry, AccountObjects
 #undef JSS
 
 }  // namespace jss
