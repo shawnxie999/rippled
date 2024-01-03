@@ -950,6 +950,37 @@ class CFToken_test : public beast::unit_test::suite
         BEAST_EXPECT(expectOffers(env, alice, 0));
     }
 
+    void
+    testTxJsonMetaFields(FeatureBitset features)
+    {
+        // checks synthetically parsed cftissuanceid from  `tx` response
+        // it checks the parsing logic
+        testcase("Test synthetic fields from tx response");
+
+        using namespace test::jtx;
+
+        Account const alice{"alice"};
+
+        Env env{*this, features};
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto const id = getCftID(alice.id(), env.seq(alice));
+
+        env(cft::create(alice));  
+        env.close();
+    
+        std::string const txHash{
+            env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+
+        Json::Value const meta =
+            env.rpc("tx", txHash)[jss::result][jss::meta];
+
+        // Expect cft_issuance_id field
+        BEAST_EXPECT(meta.isMember(jss::cft_issuance_id));
+        BEAST_EXPECT(meta[jss::cft_issuance_id] == to_string(id));
+    }
+
 public:
     void
     run() override
@@ -978,6 +1009,12 @@ public:
 
         // Test CFT Amount is invalid in non-Payment Tx
         testCFTInvalidInTx(all);
+
+        // Test parsed CFTokenIssuanceID in API response metadata
+        // TODO: This test exercises the parsing logic of cftID in `tx`, but,
+        //       cftID is also parsed in different places like `account_tx`, `subscribe`, `ledger`.
+        //       We should create test for these occurances (lower prioirity).
+        testTxJsonMetaFields(all);
     }
 };
 

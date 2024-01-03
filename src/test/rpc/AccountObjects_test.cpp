@@ -879,6 +879,8 @@ public:
         }
         {
             // gw creates a CFTokenIssuance that we can look for in the ledger.
+            auto const id = getCftID(gw, env.seq(gw));
+
             Json::Value jvCFTIssuance;
             jvCFTIssuance[jss::TransactionType] = jss::CFTokenIssuanceCreate;
             jvCFTIssuance[jss::Flags] = tfUniversal;
@@ -886,13 +888,13 @@ public:
             jvCFTIssuance[sfCFTokenMetadata.jsonName] = strHex(std::string{"metadata"});
             env(jvCFTIssuance);
             env.close();
-        }
-        {
+
             // Find the CFTokenIssuance.
             Json::Value const resp = acct_objs(gw, jss::cft_issuance);
             BEAST_EXPECT(acct_objs_is_size(resp, 1));
 
             auto const& cftIssuance = resp[jss::result][jss::account_objects][0u];
+            BEAST_EXPECT(cftIssuance[jss::cft_issuance_id] == to_string(id));
             BEAST_EXPECT(cftIssuance[sfIssuer.jsonName] == gw.human());
             BEAST_EXPECT(cftIssuance[sfCFTokenMetadata.jsonName] == strHex(std::string{"metadata"}));
         }
