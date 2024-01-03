@@ -981,6 +981,175 @@ class CFToken_test : public beast::unit_test::suite
         BEAST_EXPECT(meta[jss::cft_issuance_id] == to_string(id));
     }
 
+    void
+    testCFTHoldersAPI(FeatureBitset features)
+    {
+        testcase("CFT Holders");
+        using namespace test::jtx;
+
+        // a lambda that checks API correctness given different numbers of CFToken
+        auto checkCFTokens =[&](int expectCount,
+                                int expectMarkerCount,
+                                int line){
+            Env env{*this, features};
+            Account const alice("alice");  // issuer
+
+            env.fund(XRP(10000), alice);
+            env.close();
+            
+            auto const id = getCftID(alice.id(), env.seq(alice));
+
+            env(cft::create(alice));  
+            env.close();
+        
+            // create accounts that will create CFTokens
+            for (auto i = 0; i < expectCount; i++)
+            {
+                Account const bob{std::string("bob") + std::to_string(i)};
+                env.fund(XRP(1000), bob);
+                env.close();
+                                    
+                // a holder creates a cftoken
+                env(cft::authorize(bob, id, std::nullopt));
+                env.close();
+            }
+
+            // Checks cft_holder query responses
+            {
+                int markerCount = 0;
+                Json::Value allHolders(Json::arrayValue);
+                std::string marker;
+
+                // The do/while collects results until no marker is returned.
+                do
+                {
+                    Json::Value cftHolders = [&env, &id, &marker]() {
+                        Json::Value params;
+                        params[jss::cft_issuance_id] = to_string(id);
+
+                        if (!marker.empty())
+                            params[jss::marker] = marker;
+                        return env.rpc("json", "cft_holders", to_string(params));
+                    }();
+
+                    // If there are cftokens we get an error
+                    if (expectCount == 0)
+                    {
+                        if (expect(
+                                cftHolders.isMember(jss::result),
+                                "expected \"result\"",
+                                __FILE__,
+                                line))
+                        {
+                            if (expect(
+                                    cftHolders[jss::result].isMember(jss::error),
+                                    "expected \"error\"",
+                                    __FILE__,
+                                    line))
+                            {
+                                expect(
+                                    cftHolders[jss::result][jss::error].asString() ==
+                                        "objectNotFound",
+                                    "expected \"objectNotFound\"",
+                                    __FILE__,
+                                    line);
+                            }
+                        }
+                        break;
+                    }
+
+                    marker.clear();
+                    if (expect(
+                            cftHolders.isMember(jss::result),
+                            "expected \"result\"",
+                            __FILE__,
+                            line))
+                    {
+                        Json::Value& result = cftHolders[jss::result];
+
+                        if (result.isMember(jss::marker))
+                        {
+                            ++markerCount;
+                            marker = result[jss::marker].asString();
+                        }
+
+                        if (expect(
+                                result.isMember(jss::holders),
+                                "expected \"holders\"",
+                                __FILE__,
+                                line))
+                        {
+                            Json::Value& someHolders = result[jss::holders];
+                            for (std::size_t i = 0; i < someHolders.size(); ++i)
+                                allHolders.append(someHolders[i]);
+                        }
+                    }
+                } while (!marker.empty());
+
+                // Verify the contents of allHolders makes sense.
+                expect(
+                    allHolders.size() == expectCount,
+                    "Unexpected returned offer count",
+                    __FILE__,
+                    line);
+                expect(
+                    markerCount == expectMarkerCount,
+                    "Unexpected marker count",
+                    __FILE__,
+                    line);
+                std::optional<int> globalFlags;
+                std::set<std::string> cftIndexes;
+                std::set<std::string> holderAddresses;
+                for (Json::Value const& holder : allHolders)
+                {
+                    // The flags on all found offers should be the same.
+                    if (!globalFlags)
+                        globalFlags = holder[jss::flags].asInt();
+
+                    expect(
+                        *globalFlags == holder[jss::flags].asInt(),
+                        "Inconsistent flags returned",
+                        __FILE__,
+                        line);
+
+                    // The test conditions should produce unique indexes and
+                    // amounts for all holders.
+                    cftIndexes.insert(holder[jss::cftoken_index].asString());
+                    holderAddresses.insert(holder[jss::account].asString());
+                }
+
+                expect(
+                    cftIndexes.size() == expectCount,
+                    "Duplicate indexes returned?",
+                    __FILE__,
+                    line);
+                expect(
+                    holderAddresses.size() == expectCount,
+                    "Duplicate addresses returned?",
+                    __FILE__,
+                    line);        
+            }
+        };
+        
+        // Test 1 CFToken 
+        checkCFTokens(1, 0, __LINE__);
+
+        // Test 10 CFTokens
+        checkCFTokens(10, 0, __LINE__);
+
+        // Test 200 CFTokens
+        checkCFTokens(200, 0, __LINE__);
+
+        // Test 201 CFTokens
+        checkCFTokens(201, 1, __LINE__);
+
+        // Test 400 CFTokens
+        checkCFTokens(400, 1, __LINE__);
+
+        // Test 401 CFTokesn
+        checkCFTokens(401, 2, __LINE__);
+    }
+
 public:
     void
     run() override
@@ -1015,6 +1184,9 @@ public:
         //       cftID is also parsed in different places like `account_tx`, `subscribe`, `ledger`.
         //       We should create test for these occurances (lower prioirity).
         testTxJsonMetaFields(all);
+
+        // Test cft_holders
+        testCFTHoldersAPI(all);
     }
 };
 

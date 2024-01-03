@@ -917,6 +917,7 @@ public:
             BEAST_EXPECT(acct_objs_is_size(resp, 1));
             auto const& cftoken = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(cftoken[sfCFTokenIssuanceID.jsonName] == to_string(issuanceID));
+            BEAST_EXPECT(cftoken[sfAccount.jsonName] == gw.human());
         }
         // Make gw multisigning by adding a signerList.
         env(jtx::signers(gw, 6, {{alice, 7}}));
