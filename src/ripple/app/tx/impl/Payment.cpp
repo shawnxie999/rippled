@@ -89,8 +89,8 @@ Payment::preflight(PreflightContext const& ctx)
 
     // isZero() is XRP.  FIX!
     bool const bXRPDirect = uSrcCurrency.isXRP() && uDstCurrency.isXRP();
-    bool const bCFTDirect = uSrcCurrency.isCFT() && uDstCurrency.isCFT();
-    bool const bDirect = bXRPDirect || bCFTDirect;
+    bool const bMPTDirect = uSrcCurrency.isMPT() && uDstCurrency.isMPT();
+    bool const bDirect = bXRPDirect || bMPTDirect;
 
     if (!isLegalNet(saDstAmount) || !isLegalNet(maxSourceAmount))
         return temBAD_AMOUNT;
@@ -135,14 +135,14 @@ Payment::preflight(PreflightContext const& ctx)
     {
         // Consistent but redundant transaction.
         JLOG(j.trace()) << "Malformed transaction: "
-                        << "SendMax specified for XRP to XRP or CFT to CFT.";
+                        << "SendMax specified for XRP to XRP or MPT to MPT.";
         return temBAD_SEND_XRP_MAX;  // TODO new err code here and below
     }
     if (bDirect && bPaths)
     {
         // XRP is sent without paths.
         JLOG(j.trace()) << "Malformed transaction: "
-                        << "Paths specified for XRP to XRP or CFT to CFT.";
+                        << "Paths specified for XRP to XRP or MPT to MPT.";
         return temBAD_SEND_XRP_PATHS;
     }
     if (bDirect && partialPaymentAllowed)
@@ -150,7 +150,7 @@ Payment::preflight(PreflightContext const& ctx)
         // Consistent but redundant transaction.
         JLOG(j.trace())
             << "Malformed transaction: "
-            << "Partial payment specified for XRP to XRP or CFT to CFT.";
+            << "Partial payment specified for XRP to XRP or MPT to MPT.";
         return temBAD_SEND_XRP_PARTIAL;
     }
     if (bDirect && limitQuality)
@@ -158,7 +158,7 @@ Payment::preflight(PreflightContext const& ctx)
         // Consistent but redundant transaction.
         JLOG(j.trace())
             << "Malformed transaction: "
-            << "Limit quality specified for XRP to XRP or CFT to CFT.";
+            << "Limit quality specified for XRP to XRP or MPT to MPT.";
         return temBAD_SEND_XRP_LIMIT;
     }
     if (bDirect && !defaultPathsAllowed)
@@ -166,7 +166,7 @@ Payment::preflight(PreflightContext const& ctx)
         // Consistent but redundant transaction.
         JLOG(j.trace())
             << "Malformed transaction: "
-            << "No ripple direct specified for XRP to XRP or CFT to CFT.";
+            << "No ripple direct specified for XRP to XRP or MPT to MPT.";
         return temBAD_SEND_XRP_NO_DIRECT;
     }
 
@@ -355,7 +355,7 @@ Payment::doApply()
     bool const depositPreauth = view().rules().enabled(featureDepositPreauth);
 
     bool const bRipple =
-        paths || sendMax || !(saDstAmount.native() || saDstAmount.isCFT());
+        paths || sendMax || !(saDstAmount.native() || saDstAmount.isMPT());
 
     // If the destination has lsfDepositAuth set, then only direct XRP
     // payments (no intermediate steps) are allowed to the destination.
@@ -427,11 +427,11 @@ Payment::doApply()
             terResult = tecPATH_DRY;
         return terResult;
     }
-    else if (saDstAmount.isCFT())
+    else if (saDstAmount.isMPT())
     {
         PaymentSandbox pv(&view());
         auto const res =
-            rippleCFTCredit(pv, account_, uDstAccountID, saDstAmount, j_);
+            rippleMPTCredit(pv, account_, uDstAccountID, saDstAmount, j_);
         pv.apply(ctx_.rawView());
         return res;
     }

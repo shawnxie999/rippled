@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_CFTOKENISSUANCESET_H_INCLUDED
-#define RIPPLE_TX_CFTOKENISSUANCESET_H_INCLUDED
+#ifndef RIPPLE_TX_MPTOKENISSUANCEDESTROY_H_INCLUDED
+#define RIPPLE_TX_MPTOKENISSUANCEDESTROY_H_INCLUDED
 
 #include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
 
-class CFTokenIssuanceSet : public Transactor
+class MPTokenIssuanceDestroy : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit CFTokenIssuanceSet(ApplyContext& ctx) : Transactor(ctx)
+    explicit MPTokenIssuanceDestroy(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 

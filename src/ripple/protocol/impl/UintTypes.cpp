@@ -125,11 +125,11 @@ noCurrency()
     return currency;
 }
 
-CFT const&
-noCFT()
+MPT const&
+noMPT()
 {
-    static CFT const cft{0, noAccount()};
-    return cft;
+    static MPT const mpt{0, noAccount()};
+    return mpt;
 }
 
 Currency const&

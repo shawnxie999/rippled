@@ -351,33 +351,33 @@ operator<<(std::ostream& os, IOU const& iou);
 
 //------------------------------------------------------------------------------
 
-/** Converts to CFT Issue or STAmount.
+/** Converts to MPT Issue or STAmount.
 
     Examples:
-        CFT         Converts to the underlying Issue
-        CFT(10)     Returns STAmount of 10 of
-                        the underlying CFT
+        MPT         Converts to the underlying Issue
+        MPT(10)     Returns STAmount of 10 of
+                        the underlying MPT
 */
-class CFT
+class MPT
 {
 public:
     std::string name;
-    ripple::CFT cftID;
+    ripple::MPT mptID;
 
-    CFT(std::string const& n, ripple::CFT const& cftID_)
-        : name(n), cftID(cftID_)
+    MPT(std::string const& n, ripple::MPT const& mptID_)
+        : name(n), mptID(mptID_)
     {
     }
 
     Issue
     issue() const
     {
-        return {cftID};
+        return {mptID};
     }
 
     /** Implicit conversion to Issue.
 
-        This allows passing an CFT
+        This allows passing an MPT
         value where an Issue is expected.
     */
     operator Issue() const
@@ -407,16 +407,16 @@ public:
     }
 
     friend BookSpec
-    operator~(CFT const& cft)
+    operator~(MPT const& mpt)
     {
         assert(false);
-        Throw<std::logic_error>("CFT is not supported");
+        Throw<std::logic_error>("MPT is not supported");
         return BookSpec{beast::zero, noCurrency()};
     }
 };
 
 std::ostream&
-operator<<(std::ostream& os, CFT const& cft);
+operator<<(std::ostream& os, MPT const& mpt);
 
 //------------------------------------------------------------------------------
 

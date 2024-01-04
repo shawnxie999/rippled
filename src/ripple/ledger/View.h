@@ -494,7 +494,7 @@ deleteAMMTrustLine(
     beast::Journal j);
 
 [[nodiscard]] TER
-rippleCFTCredit(
+rippleMPTCredit(
     ApplyView& view,
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
@@ -502,7 +502,7 @@ rippleCFTCredit(
     beast::Journal j);
 
 Rate
-transferRateCFT(ReadView const& view, CFT const& id);
+transferRateMPT(ReadView const& view, MPT const& id);
 
 }  // namespace ripple
 

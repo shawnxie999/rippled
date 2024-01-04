@@ -46,10 +46,10 @@ public:
     explicit NodeIDTag() = default;
 };
 
-class CFTTag
+class MPTTag
 {
 public:
-    explicit CFTTag() = default;
+    explicit MPTTag() = default;
 };
 
 }  // namespace detail
@@ -64,8 +64,8 @@ using Currency = base_uint<160, detail::CurrencyTag>;
 /** NodeID is a 160-bit hash representing one node. */
 using NodeID = base_uint<160, detail::NodeIDTag>;
 
-/** CFT is a 192-bit hash representing CFTID. */
-using CFT = std::pair<std::uint32_t, AccountID>;
+/** MPT is a 192-bit hash representing MPTID. */
+using MPT = std::pair<std::uint32_t, AccountID>;
 
 /** XRP currency. */
 Currency const&
@@ -75,9 +75,9 @@ xrpCurrency();
 Currency const&
 noCurrency();
 
-/** A placeholder for empty CFTID. */
-CFT const&
-noCFT();
+/** A placeholder for empty MPTID. */
+MPT const&
+noMPT();
 
 /** We deliberately disallow the currency that looks like "XRP" because too
     many people were using it instead of the correct XRP currency. */

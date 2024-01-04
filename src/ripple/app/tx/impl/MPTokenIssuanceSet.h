@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_CFTOKENAUTHORIZE_H_INCLUDED
-#define RIPPLE_TX_CFTOKENAUTHORIZE_H_INCLUDED
+#ifndef RIPPLE_TX_MPTOKENISSUANCESET_H_INCLUDED
+#define RIPPLE_TX_MPTOKENISSUANCESET_H_INCLUDED
 
 #include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
 
-class CFTokenAuthorize : public Transactor
+class MPTokenIssuanceSet : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit CFTokenAuthorize(ApplyContext& ctx) : Transactor(ctx)
+    explicit MPTokenIssuanceSet(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 

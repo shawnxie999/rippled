@@ -529,10 +529,10 @@ isMemoOkay(STObject const& st, std::string& reason)
     return true;
 }
 
-// Ensure all account fields are 160-bits and that CFT amount is only passed
-// to Payment tx (until CFT is supported in more tx)
+// Ensure all account fields are 160-bits and that MPT amount is only passed
+// to Payment tx (until MPT is supported in more tx)
 static bool
-isAccountAndCFTFieldOkay(STObject const& st)
+isAccountAndMPTFieldOkay(STObject const& st)
 {
     auto const txType = st[~sfTransactionType];
     bool const isPaymentTx = txType && safe_cast<TxType>(*txType) == ttPAYMENT;
@@ -542,7 +542,7 @@ isAccountAndCFTFieldOkay(STObject const& st)
         if (t && t->isDefault())
             return false;
         auto amt = dynamic_cast<STAmount const*>(st.peekAtPIndex(i));
-        if (amt && amt->isCFT() && !isPaymentTx)
+        if (amt && amt->isMPT() && !isPaymentTx)
             return false;
     }
 
@@ -555,9 +555,9 @@ passesLocalChecks(STObject const& st, std::string& reason)
     if (!isMemoOkay(st, reason))
         return false;
 
-    if (!isAccountAndCFTFieldOkay(st))
+    if (!isAccountAndMPTFieldOkay(st))
     {
-        reason = "An account or CFT field is invalid.";
+        reason = "An account or MPT field is invalid.";
         return false;
     }
 

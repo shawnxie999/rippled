@@ -284,40 +284,40 @@ Keylet
 did(AccountID const& account) noexcept;
 
 Keylet
-cftIssuance(AccountID const& issuer, std::uint32_t seq) noexcept;
+mptIssuance(AccountID const& issuer, std::uint32_t seq) noexcept;
 
 Keylet
-cftIssuance(uint192 const& cft) noexcept;
+mptIssuance(uint192 const& mpt) noexcept;
 
 Keylet
-cftIssuance(ripple::CFT const& cft) noexcept;
+mptIssuance(ripple::MPT const& mpt) noexcept;
 
 inline Keylet
-cftIssuance(uint256 const& issuance)
+mptIssuance(uint256 const& issuance)
 {
-    return {ltCFTOKEN_ISSUANCE, issuance};
+    return {ltMPTOKEN_ISSUANCE, issuance};
 }
 
 Keylet
-cftoken(CFT const& issuanceID, AccountID const& holder) noexcept;
+mptoken(MPT const& issuanceID, AccountID const& holder) noexcept;
 
 Keylet
-cftoken(uint192 const& issuanceID, AccountID const& holder) noexcept;
+mptoken(uint192 const& issuanceID, AccountID const& holder) noexcept;
 
 inline Keylet
-cftoken(uint256 const& cftokenKey)
+mptoken(uint256 const& mptokenKey)
 {
-    return {ltCFTOKEN, cftokenKey};
+    return {ltMPTOKEN, mptokenKey};
 }
 
 Keylet
-cftoken(uint256 const& issuanceKey, AccountID const& holder) noexcept;
+mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept;
 
 Keylet
-cft_dir(uint192 const& id) noexcept;
+mpt_dir(uint192 const& id) noexcept;
 
 Keylet
-cft_dir(uint256 const& id) noexcept;
+mpt_dir(uint256 const& id) noexcept;
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:
@@ -339,7 +339,7 @@ uint256
 getTicketIndex(AccountID const& account, SeqProxy ticketSeq);
 
 uint192
-getCftID(AccountID const& account, std::uint32_t sequence);
+getMptID(AccountID const& account, std::uint32_t sequence);
 
 }  // namespace ripple
 

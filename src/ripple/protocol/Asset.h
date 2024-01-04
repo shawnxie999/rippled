@@ -29,8 +29,8 @@ namespace ripple {
 
 class Asset
 {
-    inline static CFT none = noCFT();
-    using asset_type = std::variant<Currency, CFT>;
+    inline static MPT none = noMPT();
+    using asset_type = std::variant<Currency, MPT>;
 
 private:
     asset_type asset_;
@@ -42,7 +42,7 @@ public:
     Asset(Currency const& c) : asset_(c)
     {
     }
-    Asset(CFT const& u) : asset_(u)
+    Asset(MPT const& u) : asset_(u)
     {
     }
     Asset&
@@ -52,7 +52,7 @@ public:
         return *this;
     }
     Asset&
-    operator=(CFT const& u)
+    operator=(MPT const& u)
     {
         asset_ = u;
         return *this;
@@ -65,9 +65,9 @@ public:
     }
 
     bool constexpr
-    isCFT() const
+    isMPT() const
     {
-        return std::holds_alternative<CFT>(asset_);
+        return std::holds_alternative<MPT>(asset_);
     }
     bool constexpr
     isCurrency() const
@@ -87,16 +87,16 @@ public:
             s.addBitString(std::get<Currency>(asset_));
         else
         {
-            s.add32(std::get<CFT>(asset_).first);
-            s.addBitString(std::get<CFT>(asset_).second);
+            s.add32(std::get<MPT>(asset_).first);
+            s.addBitString(std::get<MPT>(asset_).second);
         }
     }
 
     bool
     empty() const
     {
-        return std::holds_alternative<CFT>(asset_) &&
-            std::get<CFT>(asset_) == none;
+        return std::holds_alternative<MPT>(asset_) &&
+            std::get<MPT>(asset_) == none;
     }
 
     template <typename Hasher>
@@ -107,7 +107,7 @@ public:
     }
 
     template <typename T>
-    requires(std::is_same_v<T, Currency> || std::is_same_v<T, CFT>)
+    requires(std::is_same_v<T, Currency> || std::is_same_v<T, MPT>)
         T const* get() const
     {
         return std::get_if<T>(asset_);
@@ -121,12 +121,12 @@ public:
         return std::get<Currency>(asset_);
     }
 
-    operator CFT const&() const
+    operator MPT const&() const
     {
-        assert(std::holds_alternative<CFT>(asset_));
-        if (!std::holds_alternative<CFT>(asset_))
-            Throw<std::logic_error>("Invalid CFT cast");
-        return std::get<CFT>(asset_);
+        assert(std::holds_alternative<MPT>(asset_));
+        if (!std::holds_alternative<MPT>(asset_))
+            Throw<std::logic_error>("Invalid MPT cast");
+        return std::get<MPT>(asset_);
     }
 
     friend bool
@@ -185,23 +185,23 @@ public:
             return std::get<Currency>(lhs.asset_) <=>
                 std::get<Currency>(rhs.asset_);
         if (auto const c{
-                std::get<CFT>(lhs.asset_).second <=>
-                std::get<CFT>(rhs.asset_).second};
+                std::get<MPT>(lhs.asset_).second <=>
+                std::get<MPT>(rhs.asset_).second};
             c != 0)
             return c;
-        return std::get<CFT>(lhs.asset_).first <=>
-            std::get<CFT>(rhs.asset_).first;
+        return std::get<MPT>(lhs.asset_).first <=>
+            std::get<MPT>(rhs.asset_).first;
     }
     friend std::string
     to_string(Asset const& a)
     {
         if (a.isCurrency())
             return to_string((Currency&)a);
-        // TODO, common getCftID()
+        // TODO, common getMptID()
         uint192 u;
         auto const sequence =
-            boost::endian::native_to_big(std::get<CFT>(a.asset_).first);
-        auto const& account = std::get<CFT>(a.asset_).second;
+            boost::endian::native_to_big(std::get<MPT>(a.asset_).first);
+        auto const& account = std::get<MPT>(a.asset_).second;
         memcpy(u.data(), &sequence, sizeof(sequence));
         memcpy(u.data() + sizeof(sequence), account.data(), sizeof(account));
         return to_string(u);

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_CFTOKENISSUANCEID_H_INCLUDED
-#define RIPPLE_RPC_CFTOKENISSUANCEID_H_INCLUDED
+#ifndef RIPPLE_RPC_MPTOKENISSUANCEID_H_INCLUDED
+#define RIPPLE_RPC_MPTOKENISSUANCEID_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
 #include <ripple/json/json_forwards.h>
@@ -33,7 +33,7 @@ namespace ripple {
 namespace RPC {
 
 bool
-canHaveCFTokenIssuanceID(
+canHaveMPTokenIssuanceID(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta);
 
@@ -41,7 +41,7 @@ std::optional<uint192>
 getIDFromCreatedIssuance(TxMeta const& transactionMeta);
 
 void
-insertCFTokenIssuanceID(
+insertMPTokenIssuanceID(
     Json::Value& response,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta);

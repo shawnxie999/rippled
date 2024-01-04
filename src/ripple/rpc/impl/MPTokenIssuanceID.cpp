@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/rpc/CFTokenIssuanceID.h>
+#include <ripple/rpc/MPTokenIssuanceID.h>
 
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/net/RPCErr.h>
@@ -29,7 +29,7 @@ namespace ripple {
 namespace RPC {
 
 bool
-canHaveCFTokenIssuanceID(
+canHaveMPTokenIssuanceID(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
 {
@@ -37,7 +37,7 @@ canHaveCFTokenIssuanceID(
         return false;
 
     TxType const tt = serializedTx->getTxnType();
-    if (tt != ttCFTOKEN_ISSUANCE_CREATE)
+    if (tt != ttMPTOKEN_ISSUANCE_CREATE)
         return false;
 
     // if the transaction failed nothing could have been delivered.
@@ -52,29 +52,29 @@ getIDFromCreatedIssuance(TxMeta const& transactionMeta)
 {
     for (STObject const& node : transactionMeta.getNodes())
     {
-        if (node.getFieldU16(sfLedgerEntryType) != ltCFTOKEN_ISSUANCE ||
+        if (node.getFieldU16(sfLedgerEntryType) != ltMPTOKEN_ISSUANCE ||
             node.getFName() != sfCreatedNode)
             continue;
         
-        auto const& cftNode = node.peekAtField(sfNewFields).downcast<STObject>();
-        return getCftID(cftNode.getAccountID(sfIssuer), cftNode.getFieldU32(sfSequence));
+        auto const& mptNode = node.peekAtField(sfNewFields).downcast<STObject>();
+        return getMptID(mptNode.getAccountID(sfIssuer), mptNode.getFieldU32(sfSequence));
     }
 
     return std::nullopt;
 }
 
 void
-insertCFTokenIssuanceID(
+insertMPTokenIssuanceID(
     Json::Value& response,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
-    if (!canHaveCFTokenIssuanceID(transaction, transactionMeta))
+    if (!canHaveMPTokenIssuanceID(transaction, transactionMeta))
         return;
 
     std::optional<uint192> result = getIDFromCreatedIssuance(transactionMeta);
     if (result.has_value())
-        response[jss::cft_issuance_id] = to_string(result.value());
+        response[jss::mpt_issuance_id] = to_string(result.value());
 }
 
 }  // namespace RPC

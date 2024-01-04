@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 #define RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 
-#include <ripple/basics/CFTAmount.h>
+#include <ripple/basics/MPTAmount.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/LocalValue.h>
@@ -73,8 +73,8 @@ public:
     static const std::uint64_t cMaxNativeN = 100000000000000000ull;
     static const std::uint64_t cIssuedCurrency = 0x8000000000000000ull;
     static const std::uint64_t cPositive = 0x4000000000000000ull;
-    static const std::uint64_t cCFToken = 0x2000000000000000ull;
-    static const std::uint64_t cValueMask = ~(cPositive | cCFToken);
+    static const std::uint64_t cMPToken = 0x2000000000000000ull;
+    static const std::uint64_t cValueMask = ~(cPositive | cMPToken);
 
     static std::uint64_t const uRateOne;
 
@@ -151,7 +151,7 @@ public:
     // Legacy support for new-style amounts
     STAmount(IOUAmount const& amount, Issue const& issue);
     STAmount(XRPAmount const& amount);
-    STAmount(CFTAmount const& amount, Issue const& issue);
+    STAmount(MPTAmount const& amount, Issue const& issue);
     operator Number() const;
 
     //--------------------------------------------------------------------------
@@ -167,7 +167,7 @@ public:
     native() const noexcept;
 
     bool
-    isCFT() const noexcept;
+    isMPT() const noexcept;
 
     bool
     isIOU() const noexcept;
@@ -278,8 +278,8 @@ public:
     xrp() const;
     IOUAmount
     iou() const;
-    CFTAmount
-    cft() const;
+    MPTAmount
+    mpt() const;
 
 private:
     static std::unique_ptr<STAmount>
@@ -350,15 +350,15 @@ STAmount::native() const noexcept
 }
 
 inline bool
-STAmount::isCFT() const noexcept
+STAmount::isMPT() const noexcept
 {
-    return !mIsNative && mIssue.isCFT();
+    return !mIsNative && mIssue.isMPT();
 }
 
 inline bool
 STAmount::isIOU() const noexcept
 {
-    return !mIsNative && !mIssue.isCFT();
+    return !mIsNative && !mIssue.isMPT();
 }
 
 inline bool
@@ -412,8 +412,8 @@ inline STAmount::operator Number() const
 {
     if (mIsNative)
         return xrp();
-    if (mIssue.isCFT())
-        return cft();
+    if (mIssue.isMPT())
+        return mpt();
     return iou();
 }
 
@@ -582,9 +582,9 @@ isXRP(STAmount const& amount)
 }
 
 inline bool
-isCFT(STAmount const& amount)
+isMPT(STAmount const& amount)
 {
-    return isCFT(amount.issue());
+    return isMPT(amount.issue());
 }
 
 // Since `canonicalize` does not have access to a ledger, this is needed to put
