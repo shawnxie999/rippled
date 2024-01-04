@@ -189,8 +189,7 @@ MPTokenAuthorize::doApply()
                 false))
             return tecINTERNAL;
 
-        adjustOwnerCount(
-            view(), sleAcct, -1, j_);
+        adjustOwnerCount(view(), sleAcct, -1, j_);
 
         view().erase(sleMpt);
         return tesSUCCESS;
