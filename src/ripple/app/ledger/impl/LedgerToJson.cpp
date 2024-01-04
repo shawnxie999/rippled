@@ -160,11 +160,10 @@ fillJsonTx(
                     {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
             
             // If applicable, insert cft issuance id
-            if (txnType == ttCFTOKEN_ISSUANCE_CREATE)
-                RPC::insertCFTokenIssuanceID(
-                    txJson[jss::meta],
-                    txn,
-                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+            RPC::insertCFTokenIssuanceID(
+                txJson[jss::meta],
+                txn,
+                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
 
         if (!fill.ledger.open())
@@ -200,11 +199,10 @@ fillJsonTx(
                     {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
             
             // If applicable, insert cft issuance id
-            if (txnType == ttCFTOKEN_ISSUANCE_CREATE)
-                RPC::insertCFTokenIssuanceID(
-                    txJson[jss::metaData],
-                    txn,
-                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+            RPC::insertCFTokenIssuanceID(
+                txJson[jss::metaData],
+                txn,
+                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
     }
 
