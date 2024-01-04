@@ -37,9 +37,7 @@ MPTokenAuthorize::preflight(PreflightContext const& ctx)
     if (ctx.tx.getFlags() & tfMPTokenAuthorizeMask)
         return temINVALID_FLAG;
 
-    auto const accountID = ctx.tx[sfAccount];
-    auto const holderID = ctx.tx[~sfMPTokenHolder];
-    if (holderID && accountID == holderID)
+    if (ctx.tx[sfAccount] == ctx.tx[~sfMPTokenHolder])
         return temMALFORMED;
 
     return preflight2(ctx);
@@ -61,8 +59,6 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         return tecNO_DST;
 
     std::uint32_t const mptIssuanceFlags = sleMptIssuance->getFieldU32(sfFlags);
-
-    std::shared_ptr<SLE const> sleMpt;
 
     // If tx is submitted by issuer, they would either try to do the following
     // for allowlisting:
@@ -97,7 +93,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (holderID)
         return temMALFORMED;
 
-    sleMpt =
+    std::shared_ptr<SLE const> sleMpt =
         ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], accountID));
 
     // if holder wants to delete/unauthorize a mpt
@@ -110,11 +106,8 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
             return tecHAS_OBLIGATIONS;
     }
     // if holder wants to use and create a mpt
-    else
-    {
-        if (sleMpt)
-            return tecMPTOKEN_EXISTS;
-    }
+    else if (sleMpt)
+        return tecMPTOKEN_EXISTS;
 
     return tesSUCCESS;
 }
@@ -197,7 +190,7 @@ MPTokenAuthorize::doApply()
             return tecINTERNAL;
 
         adjustOwnerCount(
-            view(), sleAcct, -1, beast::Journal{beast::Journal::getNullSink()});
+            view(), sleAcct, -1, j_);
 
         view().erase(sleMpt);
         return tesSUCCESS;
@@ -236,7 +229,6 @@ MPTokenAuthorize::doApply()
     (*mptoken)[sfAccount] = account_;
     (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
     (*mptoken)[sfFlags] = 0;
-    (*mptoken)[sfMPTAmount] = 0;
     (*mptoken)[sfOwnerNode] = *ownerNode;
     (*mptoken)[sfMPTokenNode] = *mptNode;
     view().insert(mptoken);

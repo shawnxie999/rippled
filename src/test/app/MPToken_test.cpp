@@ -25,6 +25,7 @@ namespace ripple {
 
 class MPToken_test : public beast::unit_test::suite
 {
+    [[nodiscard]]
     bool
     checkMPTokenAmount(
         test::jtx::Env const& env,
@@ -40,6 +41,7 @@ class MPToken_test : public beast::unit_test::suite
         return amount == expectedAmount;
     }
 
+    [[nodiscard]]
     bool
     checkMPTokenIssuanceFlags(
         test::jtx::Env const& env,
@@ -54,6 +56,7 @@ class MPToken_test : public beast::unit_test::suite
         return expectedFlags == mptIssuanceFlags;
     }
 
+    [[nodiscard]]
     bool
     checkMPTokenFlags(
         test::jtx::Env const& env,

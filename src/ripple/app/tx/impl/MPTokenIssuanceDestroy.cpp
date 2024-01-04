@@ -78,7 +78,7 @@ MPTokenIssuanceDestroy::doApply()
         view(),
         view().peek(keylet::account(issuer)),
         -1,
-        beast::Journal{beast::Journal::getNullSink()});
+        j_);
 
     return tesSUCCESS;
 }

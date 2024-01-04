@@ -59,12 +59,6 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 }
 
 TER
-MPTokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
-{
-    return tesSUCCESS;
-}
-
-TER
 MPTokenIssuanceCreate::doApply()
 {
     auto const acct = view().peek(keylet::account(account_));
