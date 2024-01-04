@@ -492,7 +492,8 @@ mptoken(MPT const& mptID, AccountID const& holder) noexcept
 Keylet
 mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept
 {
-    return {ltMPTOKEN, indexHash(LedgerNameSpace::MPTOKEN, issuanceKey, holder)};
+    return {
+        ltMPTOKEN, indexHash(LedgerNameSpace::MPTOKEN, issuanceKey, holder)};
 }
 
 Keylet

@@ -55,9 +55,11 @@ getIDFromCreatedIssuance(TxMeta const& transactionMeta)
         if (node.getFieldU16(sfLedgerEntryType) != ltMPTOKEN_ISSUANCE ||
             node.getFName() != sfCreatedNode)
             continue;
-        
-        auto const& mptNode = node.peekAtField(sfNewFields).downcast<STObject>();
-        return getMptID(mptNode.getAccountID(sfIssuer), mptNode.getFieldU32(sfSequence));
+
+        auto const& mptNode =
+            node.peekAtField(sfNewFields).downcast<STObject>();
+        return getMptID(
+            mptNode.getAccountID(sfIssuer), mptNode.getFieldU32(sfSequence));
     }
 
     return std::nullopt;

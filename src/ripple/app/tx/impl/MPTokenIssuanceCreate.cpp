@@ -93,7 +93,7 @@ MPTokenIssuanceCreate::doApply()
         (*mptIssuance)[sfOutstandingAmount] = 0;
         (*mptIssuance)[sfOwnerNode] = *ownerNode;
         (*mptIssuance)[sfSequence] = ctx_.tx.getSeqProxy().value();
-        
+
         if (auto const max = ctx_.tx[~sfMaximumAmount])
             (*mptIssuance)[sfMaximumAmount] = *max;
 

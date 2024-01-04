@@ -25,10 +25,6 @@
 #include <ripple/app/tx/impl/AMMVote.h>
 #include <ripple/app/tx/impl/AMMWithdraw.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
-#include <ripple/app/tx/impl/MPTokenAuthorize.h>
-#include <ripple/app/tx/impl/MPTokenIssuanceCreate.h>
-#include <ripple/app/tx/impl/MPTokenIssuanceDestroy.h>
-#include <ripple/app/tx/impl/MPTokenIssuanceSet.h>
 #include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CashCheck.h>
@@ -41,6 +37,10 @@
 #include <ripple/app/tx/impl/DeleteAccount.h>
 #include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/Escrow.h>
+#include <ripple/app/tx/impl/MPTokenAuthorize.h>
+#include <ripple/app/tx/impl/MPTokenIssuanceCreate.h>
+#include <ripple/app/tx/impl/MPTokenIssuanceDestroy.h>
+#include <ripple/app/tx/impl/MPTokenIssuanceSet.h>
 #include <ripple/app/tx/impl/NFTokenAcceptOffer.h>
 #include <ripple/app/tx/impl/NFTokenBurn.h>
 #include <ripple/app/tx/impl/NFTokenCancelOffer.h>

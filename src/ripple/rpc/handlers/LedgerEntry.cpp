@@ -601,7 +601,8 @@ doLedgerEntry(RPC::JsonContext& context)
         else if (context.params.isMember(jss::mpt_issuance_id))
         {
             expectedType = ltMPTOKEN_ISSUANCE;
-            auto const unparsedMPTIssuanceID = context.params[jss::mpt_issuance_id];
+            auto const unparsedMPTIssuanceID =
+                context.params[jss::mpt_issuance_id];
             if (unparsedMPTIssuanceID.isString())
             {
                 uint192 mptIssuanceID;

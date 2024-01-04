@@ -1606,8 +1606,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::ledger_hash] = ledgerHash;
             Json::Value const jrr = env.rpc(
                 "json", "ledger_entry", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(
-                jrr[jss::node][sfIssuer.jsonName] == alice.human());
+            BEAST_EXPECT(jrr[jss::node][sfIssuer.jsonName] == alice.human());
         }
         {
             // Request an index that is not a MPTokenIssuacne.

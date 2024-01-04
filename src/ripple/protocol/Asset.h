@@ -64,18 +64,15 @@ public:
         return asset_;
     }
 
-    bool constexpr
-    isMPT() const
+    bool constexpr isMPT() const
     {
         return std::holds_alternative<MPT>(asset_);
     }
-    bool constexpr
-    isCurrency() const
+    bool constexpr isCurrency() const
     {
         return std::holds_alternative<Currency>(asset_);
     }
-    bool constexpr
-    isXRP() const
+    bool constexpr isXRP() const
     {
         return isCurrency() && ripple::isXRP(std::get<Currency>(asset_));
     }

@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 #define RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 
-#include <ripple/basics/MPTAmount.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/LocalValue.h>
+#include <ripple/basics/MPTAmount.h>
 #include <ripple/basics/Number.h>
 #include <ripple/basics/XRPAmount.h>
 #include <ripple/protocol/Issue.h>

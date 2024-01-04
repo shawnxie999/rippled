@@ -27,8 +27,8 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/MPTokenIssuanceID.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 
@@ -158,7 +158,7 @@ fillJsonTx(
                     fill.ledger,
                     txn,
                     {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
-            
+
             // If applicable, insert mpt issuance id
             RPC::insertMPTokenIssuanceID(
                 txJson[jss::meta],
@@ -197,7 +197,7 @@ fillJsonTx(
                     fill.ledger,
                     txn,
                     {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
-            
+
             // If applicable, insert mpt issuance id
             RPC::insertMPTokenIssuanceID(
                 txJson[jss::metaData],

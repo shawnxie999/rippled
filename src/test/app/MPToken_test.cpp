@@ -967,14 +967,13 @@ class MPToken_test : public beast::unit_test::suite
 
         auto const id = getMptID(alice.id(), env.seq(alice));
 
-        env(mpt::create(alice));  
+        env(mpt::create(alice));
         env.close();
-    
+
         std::string const txHash{
             env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
 
-        Json::Value const meta =
-            env.rpc("tx", txHash)[jss::result][jss::meta];
+        Json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
 
         // Expect mpt_issuance_id field
         BEAST_EXPECT(meta.isMember(jss::mpt_issuance_id));
@@ -987,28 +986,29 @@ class MPToken_test : public beast::unit_test::suite
         testcase("MPT Holders");
         using namespace test::jtx;
 
-        // a lambda that checks API correctness given different numbers of MPToken
-        auto checkMPTokens =[&](int expectCount,
-                                int expectMarkerCount,
-                                int line){
+        // a lambda that checks API correctness given different numbers of
+        // MPToken
+        auto checkMPTokens = [&](int expectCount,
+                                 int expectMarkerCount,
+                                 int line) {
             Env env{*this, features};
             Account const alice("alice");  // issuer
 
             env.fund(XRP(10000), alice);
             env.close();
-            
+
             auto const id = getMptID(alice.id(), env.seq(alice));
 
-            env(mpt::create(alice));  
+            env(mpt::create(alice));
             env.close();
-        
+
             // create accounts that will create MPTokens
             for (auto i = 0; i < expectCount; i++)
             {
                 Account const bob{std::string("bob") + std::to_string(i)};
                 env.fund(XRP(1000), bob);
                 env.close();
-                                    
+
                 // a holder creates a mptoken
                 env(mpt::authorize(bob, id, std::nullopt));
                 env.close();
@@ -1029,7 +1029,8 @@ class MPToken_test : public beast::unit_test::suite
 
                         if (!marker.empty())
                             params[jss::marker] = marker;
-                        return env.rpc("json", "mpt_holders", to_string(params));
+                        return env.rpc(
+                            "json", "mpt_holders", to_string(params));
                     }();
 
                     // If there are mptokens we get an error
@@ -1042,14 +1043,15 @@ class MPToken_test : public beast::unit_test::suite
                                 line))
                         {
                             if (expect(
-                                    mptHolders[jss::result].isMember(jss::error),
+                                    mptHolders[jss::result].isMember(
+                                        jss::error),
                                     "expected \"error\"",
                                     __FILE__,
                                     line))
                             {
                                 expect(
-                                    mptHolders[jss::result][jss::error].asString() ==
-                                        "objectNotFound",
+                                    mptHolders[jss::result][jss::error]
+                                            .asString() == "objectNotFound",
                                     "expected \"objectNotFound\"",
                                     __FILE__,
                                     line);
@@ -1127,11 +1129,11 @@ class MPToken_test : public beast::unit_test::suite
                     holderAddresses.size() == expectCount,
                     "Duplicate addresses returned?",
                     __FILE__,
-                    line);        
+                    line);
             }
         };
-        
-        // Test 1 MPToken 
+
+        // Test 1 MPToken
         checkMPTokens(1, 0, __LINE__);
 
         // Test 10 MPTokens
@@ -1181,8 +1183,9 @@ public:
 
         // Test parsed MPTokenIssuanceID in API response metadata
         // TODO: This test exercises the parsing logic of mptID in `tx`, but,
-        //       mptID is also parsed in different places like `account_tx`, `subscribe`, `ledger`.
-        //       We should create test for these occurances (lower prioirity).
+        //       mptID is also parsed in different places like `account_tx`,
+        //       `subscribe`, `ledger`. We should create test for these
+        //       occurances (lower prioirity).
         testTxJsonMetaFields(all);
 
         // Test mpt_holders

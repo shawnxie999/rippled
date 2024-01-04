@@ -42,10 +42,12 @@ appendMPTHolderJson(
     obj[jss::mptoken_index] = to_string(mpt->key());
     obj[jss::flags] = (*mpt)[sfFlags];
     obj[jss::account] = toBase58(mpt->getAccountID(sfAccount));
-    obj[jss::mpt_amount] = STUInt64{(*mpt)[sfMPTAmount]}.getJson(JsonOptions::none);
-    
-    if((*mpt)[sfLockedAmount])
-        obj[jss::locked_amount] = STUInt64{(*mpt)[sfLockedAmount]}.getJson(JsonOptions::none);
+    obj[jss::mpt_amount] =
+        STUInt64{(*mpt)[sfMPTAmount]}.getJson(JsonOptions::none);
+
+    if ((*mpt)[sfLockedAmount])
+        obj[jss::locked_amount] =
+            STUInt64{(*mpt)[sfLockedAmount]}.getJson(JsonOptions::none);
 }
 
 // {
@@ -151,10 +153,12 @@ doMPTHolders(RPC::JsonContext& context)
 
     uint192 mptIssuanceID;
 
-    if (!mptIssuanceID.parseHex(context.params[jss::mpt_issuance_id].asString()))
+    if (!mptIssuanceID.parseHex(
+            context.params[jss::mpt_issuance_id].asString()))
         return RPC::invalid_field_error(jss::mpt_issuance_id);
 
-    return enumerateMPTHolders(context, mptIssuanceID, keylet::mpt_dir(mptIssuanceID));
+    return enumerateMPTHolders(
+        context, mptIssuanceID, keylet::mpt_dir(mptIssuanceID));
 }
 
 }  // namespace ripple

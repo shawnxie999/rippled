@@ -885,7 +885,8 @@ public:
             jvMPTIssuance[jss::TransactionType] = jss::MPTokenIssuanceCreate;
             jvMPTIssuance[jss::Flags] = tfUniversal;
             jvMPTIssuance[jss::Account] = gw.human();
-            jvMPTIssuance[sfMPTokenMetadata.jsonName] = strHex(std::string{"metadata"});
+            jvMPTIssuance[sfMPTokenMetadata.jsonName] =
+                strHex(std::string{"metadata"});
             env(jvMPTIssuance);
             env.close();
 
@@ -893,10 +894,13 @@ public:
             Json::Value const resp = acct_objs(gw, jss::mpt_issuance);
             BEAST_EXPECT(acct_objs_is_size(resp, 1));
 
-            auto const& mptIssuance = resp[jss::result][jss::account_objects][0u];
+            auto const& mptIssuance =
+                resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(mptIssuance[jss::mpt_issuance_id] == to_string(id));
             BEAST_EXPECT(mptIssuance[sfIssuer.jsonName] == gw.human());
-            BEAST_EXPECT(mptIssuance[sfMPTokenMetadata.jsonName] == strHex(std::string{"metadata"}));
+            BEAST_EXPECT(
+                mptIssuance[sfMPTokenMetadata.jsonName] ==
+                strHex(std::string{"metadata"}));
         }
         {
             // alice creates MPToken that is going to be used by gw
@@ -916,7 +920,8 @@ public:
             Json::Value const resp = acct_objs(gw, jss::mptoken);
             BEAST_EXPECT(acct_objs_is_size(resp, 1));
             auto const& mptoken = resp[jss::result][jss::account_objects][0u];
-            BEAST_EXPECT(mptoken[sfMPTokenIssuanceID.jsonName] == to_string(issuanceID));
+            BEAST_EXPECT(
+                mptoken[sfMPTokenIssuanceID.jsonName] == to_string(issuanceID));
             BEAST_EXPECT(mptoken[sfAccount.jsonName] == gw.human());
         }
         // Make gw multisigning by adding a signerList.
