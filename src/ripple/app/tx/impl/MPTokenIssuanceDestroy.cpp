@@ -74,11 +74,7 @@ MPTokenIssuanceDestroy::doApply()
 
     view().erase(mpt);
 
-    adjustOwnerCount(
-        view(),
-        view().peek(keylet::account(issuer)),
-        -1,
-        beast::Journal{beast::Journal::getNullSink()});
+    adjustOwnerCount(view(), view().peek(keylet::account(issuer)), -1, j_);
 
     return tesSUCCESS;
 }

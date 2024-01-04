@@ -363,7 +363,7 @@ LedgerFormats::LedgerFormats()
         {
             {sfAccount,           soeREQUIRED},
             {sfMPTokenIssuanceID, soeREQUIRED},
-            {sfMPTAmount, soeREQUIRED},
+            {sfMPTAmount, soeDEFAULT},
             {sfLockedAmount, soeDEFAULT},
             {sfOwnerNode,            soeREQUIRED},
             {sfMPTokenNode,            soeREQUIRED},

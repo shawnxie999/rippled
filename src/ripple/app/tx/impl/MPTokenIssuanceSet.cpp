@@ -31,12 +31,12 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
-    // check flags
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     auto const txFlags = ctx.tx.getFlags();
 
+    // check flags
     if (txFlags & tfMPTokenIssuanceSetMask)
         return temINVALID_FLAG;
     // fails if both flags are set
@@ -68,17 +68,17 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     if ((*sleMptIssuance)[sfIssuer] != ctx.tx[sfAccount])
         return tecNO_PERMISSION;
 
-    auto const holderID = ctx.tx[~sfMPTokenHolder];
+    if (auto const holderID = ctx.tx[~sfMPTokenHolder])
+    {
+        // make sure holder account exists
+        if (!ctx.view.exists(keylet::account(*holderID)))
+            return tecNO_DST;
 
-    // make sure holder account exists
-    if (holderID && !ctx.view.exists(keylet::account(*holderID)))
-        return tecNO_DST;
-
-    // the mptoken must exist
-    if (holderID &&
-        !ctx.view.exists(
-            keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], *holderID)))
-        return tecOBJECT_NOT_FOUND;
+        // the mptoken must exist
+        if (!ctx.view.exists(
+                keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], *holderID)))
+            return tecOBJECT_NOT_FOUND;
+    }
 
     return tesSUCCESS;
 }
