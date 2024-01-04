@@ -74,11 +74,11 @@ Json::Value
 to_json(Issue const& is)
 {
     Json::Value jv;
-    if (is.asset().isCFT())
-        jv[jss::cft_issuance_id] = to_string(is.asset());
+    if (is.asset().isMPT())
+        jv[jss::mpt_issuance_id] = to_string(is.asset());
     else
         jv[jss::currency] = to_string(is.asset());
-    if (!isXRP(is.asset()) && !is.asset().isCFT())
+    if (!isXRP(is.asset()) && !is.asset().isMPT())
         jv[jss::issuer] = toBase58(is.account());
     return jv;
 }
@@ -92,10 +92,10 @@ issueFromJson(Json::Value const& v)
             "issueFromJson can only be specified with an 'object' Json value");
     }
 
-    bool const isCFT = v.isMember(jss::cft_issuance_id);
+    bool const isMPT = v.isMember(jss::mpt_issuance_id);
 
     Json::Value const assetStr =
-        isCFT ? v[jss::cft_issuance_id] : v[jss::currency];
+        isMPT ? v[jss::mpt_issuance_id] : v[jss::currency];
     Json::Value const issStr = v[jss::issuer];
 
     if (!assetStr.isString())

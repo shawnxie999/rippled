@@ -352,7 +352,7 @@ extern uint256 const featureXChainBridge;
 extern uint256 const fixDisallowIncomingV1;
 extern uint256 const featureDID;
 extern uint256 const fixFillOrKill;
-extern uint256 const featureCFTokensV1;
+extern uint256 const featureMPTokensV1;
 
 }  // namespace ripple
 

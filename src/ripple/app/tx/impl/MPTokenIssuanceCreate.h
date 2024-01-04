@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_CFTOKENISSUANCECREATE_H_INCLUDED
-#define RIPPLE_TX_CFTOKENISSUANCECREATE_H_INCLUDED
+#ifndef RIPPLE_TX_MPTOKENISSUANCECREATE_H_INCLUDED
+#define RIPPLE_TX_MPTOKENISSUANCECREATE_H_INCLUDED
 
 #include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
 
-class CFTokenIssuanceCreate : public Transactor
+class MPTokenIssuanceCreate : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit CFTokenIssuanceCreate(ApplyContext& ctx) : Transactor(ctx)
+    explicit MPTokenIssuanceCreate(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 

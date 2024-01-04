@@ -114,7 +114,7 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
                 sle->getFieldH256(sfRootIndex) == sle->key())
             {
                 Book book;
-                // TODO update for CFT once supported in the offers
+                // TODO update for MPT once supported in the offers
                 Currency currency;
                 AccountID account;
                 currency = static_cast<Currency>(

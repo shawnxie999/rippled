@@ -132,22 +132,22 @@ constexpr std::uint32_t const tfOnlyXRP                    = 0x00000002;
 constexpr std::uint32_t const tfTrustLine                  = 0x00000004;
 constexpr std::uint32_t const tfTransferable               = 0x00000008;
 
-// CFTokenIssuanceCreate flags:
+// MPTokenIssuanceCreate flags:
 // NOTE - there is intentionally no flag here for 0x01 because that
-// corresponds to lsfCFTLocked, which this transaction cannot mutate. 
-constexpr std::uint32_t const tfCFTCanLock                 = lsfCFTCanLock;
-constexpr std::uint32_t const tfCFTRequireAuth             = lsfCFTRequireAuth;
-constexpr std::uint32_t const tfCFTCanEscrow               = lsfCFTCanEscrow;
-constexpr std::uint32_t const tfCFTCanTrade                = lsfCFTCanTrade;
-constexpr std::uint32_t const tfCFTCanTransfer             = lsfCFTCanTransfer;
-constexpr std::uint32_t const tfCFTCanClawback             = lsfCFTCanClawback;
+// corresponds to lsfMPTLocked, which this transaction cannot mutate. 
+constexpr std::uint32_t const tfMPTCanLock                 = lsfMPTCanLock;
+constexpr std::uint32_t const tfMPTRequireAuth             = lsfMPTRequireAuth;
+constexpr std::uint32_t const tfMPTCanEscrow               = lsfMPTCanEscrow;
+constexpr std::uint32_t const tfMPTCanTrade                = lsfMPTCanTrade;
+constexpr std::uint32_t const tfMPTCanTransfer             = lsfMPTCanTransfer;
+constexpr std::uint32_t const tfMPTCanClawback             = lsfMPTCanClawback;
 
-// CFTokenAuthorize flags:
-constexpr std::uint32_t const tfCFTUnauthorize             = 0x00000001;
+// MPTokenAuthorize flags:
+constexpr std::uint32_t const tfMPTUnauthorize             = 0x00000001;
 
-// CFTokenIssuanceSet flags:
-constexpr std::uint32_t const tfCFTLock                   = 0x00000001;
-constexpr std::uint32_t const tfCFTUnlock                 = 0x00000002;
+// MPTokenIssuanceSet flags:
+constexpr std::uint32_t const tfMPTLock                   = 0x00000001;
+constexpr std::uint32_t const tfMPTUnlock                 = 0x00000002;
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
 // accounts allowed a TrustLine to be added to the issuer of that token
@@ -204,18 +204,18 @@ constexpr std::uint32_t tfDepositMask = ~(tfUniversal | tfDepositSubTx);
 constexpr std::uint32_t tfClearAccountCreateAmount     = 0x00010000;
 constexpr std::uint32_t tfBridgeModifyMask = ~(tfUniversal | tfClearAccountCreateAmount);
 
-// CFTokenIssuanceCreate flags:
-constexpr std::uint32_t const tfCFTokenIssuanceCreateMask  =
-  ~(tfCFTCanLock | tfCFTRequireAuth | tfCFTCanEscrow | tfCFTCanTrade | tfCFTCanTransfer | tfCFTCanClawback | tfUniversal);
+// MPTokenIssuanceCreate flags:
+constexpr std::uint32_t const tfMPTokenIssuanceCreateMask  =
+  ~(tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow | tfMPTCanTrade | tfMPTCanTransfer | tfMPTCanClawback | tfUniversal);
 
-// CFTokenIssuanceDestroy flags:
-constexpr std::uint32_t const tfCFTokenIssuanceDestroyMask  = ~tfUniversal;
+// MPTokenIssuanceDestroy flags:
+constexpr std::uint32_t const tfMPTokenIssuanceDestroyMask  = ~tfUniversal;
 
-// CFTokenAuthorize flags:
-constexpr std::uint32_t const tfCFTokenAuthorizeMask  = ~(tfCFTUnauthorize | tfUniversal);
+// MPTokenAuthorize flags:
+constexpr std::uint32_t const tfMPTokenAuthorizeMask  = ~(tfMPTUnauthorize | tfUniversal);
 
-// CFTokenIssuanceSet flags:
-constexpr std::uint32_t const tfCFTokenIssuanceSetMask  = ~(tfCFTLock | tfCFTUnlock | tfUniversal);
+// MPTokenIssuanceSet flags:
+constexpr std::uint32_t const tfMPTokenIssuanceSetMask  = ~(tfMPTLock | tfMPTUnlock | tfUniversal);
 // clang-format on
 
 }  // namespace ripple

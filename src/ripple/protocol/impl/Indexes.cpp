@@ -72,9 +72,9 @@ enum class LedgerNameSpace : std::uint16_t {
     XCHAIN_CLAIM_ID = 'Q',
     XCHAIN_CREATE_ACCOUNT_CLAIM_ID = 'K',
     DID = 'I',
-    CFTOKEN_ISSUANCE = '~',
-    CFTOKEN = 't',
-    CFT_DIR = 'k',
+    MPTOKEN_ISSUANCE = '~',
+    MPTOKEN = 't',
+    MPT_DIR = 'k',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -138,7 +138,7 @@ getTicketIndex(AccountID const& account, SeqProxy ticketSeq)
 }
 
 uint192
-getCftID(AccountID const& account, std::uint32_t sequence)
+getMptID(AccountID const& account, std::uint32_t sequence)
 {
     uint192 u;
     sequence = boost::endian::native_to_big(sequence);
@@ -458,54 +458,54 @@ did(AccountID const& account) noexcept
 }
 
 Keylet
-cftIssuance(AccountID const& issuer, std::uint32_t seq) noexcept
+mptIssuance(AccountID const& issuer, std::uint32_t seq) noexcept
 {
-    return cftIssuance(getCftID(issuer, seq));
+    return mptIssuance(getMptID(issuer, seq));
 }
 
 Keylet
-cftIssuance(ripple::CFT const& cft) noexcept
+mptIssuance(ripple::MPT const& mpt) noexcept
 {
-    return cftIssuance(cft.second, cft.first);
+    return mptIssuance(mpt.second, mpt.first);
 }
 
 Keylet
-cftIssuance(uint192 const& cft) noexcept
+mptIssuance(uint192 const& mpt) noexcept
 {
     return {
-        ltCFTOKEN_ISSUANCE, indexHash(LedgerNameSpace::CFTOKEN_ISSUANCE, cft)};
+        ltMPTOKEN_ISSUANCE, indexHash(LedgerNameSpace::MPTOKEN_ISSUANCE, mpt)};
 }
 
 Keylet
-cftoken(uint192 const& issuanceID, AccountID const& holder) noexcept
+mptoken(uint192 const& issuanceID, AccountID const& holder) noexcept
 {
-    return cftoken(cftIssuance(issuanceID).key, holder);
+    return mptoken(mptIssuance(issuanceID).key, holder);
 }
 
 Keylet
-cftoken(CFT const& cftID, AccountID const& holder) noexcept
+mptoken(MPT const& mptID, AccountID const& holder) noexcept
 {
-    return cftoken(
-        cftIssuance(getCftID(cftID.second, cftID.first)).key, holder);
+    return mptoken(
+        mptIssuance(getMptID(mptID.second, mptID.first)).key, holder);
 }
 
 Keylet
-cftoken(uint256 const& issuanceKey, AccountID const& holder) noexcept
+mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept
 {
-    return {ltCFTOKEN, indexHash(LedgerNameSpace::CFTOKEN, issuanceKey, holder)};
+    return {ltMPTOKEN, indexHash(LedgerNameSpace::MPTOKEN, issuanceKey, holder)};
 }
 
 Keylet
-cft_dir(uint192 const& id) noexcept
+mpt_dir(uint192 const& id) noexcept
 {
     return {
-        ltDIR_NODE, indexHash(LedgerNameSpace::CFT_DIR, cftIssuance(id).key)};
+        ltDIR_NODE, indexHash(LedgerNameSpace::MPT_DIR, mptIssuance(id).key)};
 }
 
 Keylet
-cft_dir(uint256 const& id) noexcept
+mpt_dir(uint256 const& id) noexcept
 {
-    return {ltDIR_NODE, indexHash(LedgerNameSpace::CFT_DIR, id)};
+    return {ltDIR_NODE, indexHash(LedgerNameSpace::MPT_DIR, id)};
 }
 }  // namespace keylet
 

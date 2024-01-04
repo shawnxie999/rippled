@@ -511,10 +511,10 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/AMMWithdraw.cpp
   src/ripple/app/tx/impl/ApplyContext.cpp
   src/ripple/app/tx/impl/BookTip.cpp
-  src/ripple/app/tx/impl/CFTokenIssuanceCreate.cpp
-  src/ripple/app/tx/impl/CFTokenIssuanceDestroy.cpp
-  src/ripple/app/tx/impl/CFTokenAuthorize.cpp
-  src/ripple/app/tx/impl/CFTokenIssuanceSet.cpp
+  src/ripple/app/tx/impl/MPTokenIssuanceCreate.cpp
+  src/ripple/app/tx/impl/MPTokenIssuanceDestroy.cpp
+  src/ripple/app/tx/impl/MPTokenAuthorize.cpp
+  src/ripple/app/tx/impl/MPTokenIssuanceSet.cpp
   src/ripple/app/tx/impl/CancelCheck.cpp
   src/ripple/app/tx/impl/CancelOffer.cpp
   src/ripple/app/tx/impl/CashCheck.cpp
@@ -683,7 +683,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/BlackList.cpp
   src/ripple/rpc/handlers/BookOffers.cpp
   src/ripple/rpc/handlers/CanDelete.cpp
-  src/ripple/rpc/handlers/CFTHolders.cpp
+  src/ripple/rpc/handlers/MPTHolders.cpp
   src/ripple/rpc/handlers/Connect.cpp
   src/ripple/rpc/handlers/ConsensusInfo.cpp
   src/ripple/rpc/handlers/CrawlShards.cpp
@@ -738,7 +738,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/ValidatorListSites.cpp
   src/ripple/rpc/handlers/Validators.cpp
   src/ripple/rpc/handlers/WalletPropose.cpp
-  src/ripple/rpc/impl/CFTokenIssuanceID.cpp
+  src/ripple/rpc/impl/MPTokenIssuanceID.cpp
   src/ripple/rpc/impl/DeliveredAmount.cpp
   src/ripple/rpc/impl/Handler.cpp
   src/ripple/rpc/impl/LegacyPathFind.cpp
@@ -788,7 +788,7 @@ if (tests)
     src/test/app/AMM_test.cpp
     src/test/app/AMMCalc_test.cpp
     src/test/app/AMMExtended_test.cpp
-    src/test/app/CFToken_test.cpp
+    src/test/app/MPToken_test.cpp
     src/test/app/Check_test.cpp
     src/test/app/Clawback_test.cpp
     src/test/app/CrossingLimits_test.cpp
@@ -937,7 +937,7 @@ if (tests)
     src/test/jtx/impl/Account.cpp
     src/test/jtx/impl/AMM.cpp
     src/test/jtx/impl/AMMTest.cpp
-    src/test/jtx/impl/cft.cpp
+    src/test/jtx/impl/mpt.cpp
     src/test/jtx/impl/Env.cpp
     src/test/jtx/impl/JSONRPCClient.cpp
     src/test/jtx/impl/TestHelpers.cpp

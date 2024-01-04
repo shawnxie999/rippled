@@ -392,8 +392,8 @@ LedgerEntryTypesMatch::visitEntry(
             case ltXCHAIN_OWNED_CLAIM_ID:
             case ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID:
             case ltDID:
-            case ltCFTOKEN_ISSUANCE:
-            case ltCFTOKEN:
+            case ltMPTOKEN_ISSUANCE:
+            case ltMPTOKEN:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -804,162 +804,162 @@ ValidClawback::finalize(
 //------------------------------------------------------------------------------
 
 void
-ValidCFTIssuance::visitEntry(
+ValidMPTIssuance::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
-    if (after && after->getType() == ltCFTOKEN_ISSUANCE)
+    if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
         if (isDelete)
-            cftIssuancesDeleted_++;
+            mptIssuancesDeleted_++;
         else if (!before)
-            cftIssuancesCreated_++;
+            mptIssuancesCreated_++;
     }
 
-    if (after && after->getType() == ltCFTOKEN)
+    if (after && after->getType() == ltMPTOKEN)
     {
         if (isDelete)
-            cftokensDeleted_++;
+            mptokensDeleted_++;
         else if (!before)
-            cftokensCreated_++;
+            mptokensCreated_++;
     }
 }
 
 bool
-ValidCFTIssuance::finalize(
+ValidMPTIssuance::finalize(
     STTx const& tx,
     TER const result,
     XRPAmount const _fee,
     ReadView const& _view,
     beast::Journal const& j)
 {
-    if (tx.getTxnType() == ttCFTOKEN_ISSUANCE_CREATE && result == tesSUCCESS)
+    if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_CREATE && result == tesSUCCESS)
     {
-        if (cftIssuancesCreated_ == 0)
+        if (mptIssuancesCreated_ == 0)
         {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance creation "
-                               "succeeded without creating a CFT issuance";
+            JLOG(j.fatal()) << "Invariant failed: MPT issuance creation "
+                               "succeeded without creating a MPT issuance";
         }
-        else if (cftIssuancesDeleted_ != 0)
+        else if (mptIssuancesDeleted_ != 0)
         {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance creation "
-                               "succeeded while removing CFT issuances";
+            JLOG(j.fatal()) << "Invariant failed: MPT issuance creation "
+                               "succeeded while removing MPT issuances";
         }
-        else if (cftIssuancesCreated_ > 1)
+        else if (mptIssuancesCreated_ > 1)
         {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance creation "
+            JLOG(j.fatal()) << "Invariant failed: MPT issuance creation "
                                "succeeded but created multiple issuances";
         }
 
-        return cftIssuancesCreated_ == 1 && cftIssuancesDeleted_ == 0;
+        return mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0;
     }
 
-    if (tx.getTxnType() == ttCFTOKEN_ISSUANCE_DESTROY && result == tesSUCCESS)
+    if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_DESTROY && result == tesSUCCESS)
     {
-        if (cftIssuancesDeleted_ == 0)
+        if (mptIssuancesDeleted_ == 0)
         {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance deletion "
-                               "succeeded without removing a CFT issuance";
+            JLOG(j.fatal()) << "Invariant failed: MPT issuance deletion "
+                               "succeeded without removing a MPT issuance";
         }
-        else if (cftIssuancesCreated_ > 0)
+        else if (mptIssuancesCreated_ > 0)
         {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance deletion "
-                               "succeeded while creating CFT issuances";
+            JLOG(j.fatal()) << "Invariant failed: MPT issuance deletion "
+                               "succeeded while creating MPT issuances";
         }
-        else if (cftIssuancesDeleted_ > 1)
+        else if (mptIssuancesDeleted_ > 1)
         {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance deletion "
+            JLOG(j.fatal()) << "Invariant failed: MPT issuance deletion "
                                "succeeded but deleted multiple issuances";
         }
 
-        return cftIssuancesCreated_ == 0 && cftIssuancesDeleted_ == 1;
+        return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 1;
     }
 
-    if (tx.getTxnType() == ttCFTOKEN_AUTHORIZE && result == tesSUCCESS)
+    if (tx.getTxnType() == ttMPTOKEN_AUTHORIZE && result == tesSUCCESS)
     {
-        bool const submittedByIssuer = tx.isFieldPresent(sfCFTokenHolder);
+        bool const submittedByIssuer = tx.isFieldPresent(sfMPTokenHolder);
 
-        if (cftIssuancesCreated_ > 0)
+        if (mptIssuancesCreated_ > 0)
         {
-            JLOG(j.fatal()) << "Invariant failed: CFT authorize "
-                               "succeeded but created CFT issuances";
+            JLOG(j.fatal()) << "Invariant failed: MPT authorize "
+                               "succeeded but created MPT issuances";
             return false;
         }
-        else if (cftIssuancesDeleted_ > 0)
+        else if (mptIssuancesDeleted_ > 0)
         {
-            JLOG(j.fatal()) << "Invariant failed: CFT authorize "
+            JLOG(j.fatal()) << "Invariant failed: MPT authorize "
                                "succeeded but deleted issuances";
             return false;
         }
         else if (
-            submittedByIssuer && (cftokensCreated_ > 0 || cftokensDeleted_ > 0))
+            submittedByIssuer && (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
         {
             JLOG(j.fatal())
-                << "Invariant failed: CFT authorize submitted by issuer "
-                   "succeeded but created/deleted cftokens";
+                << "Invariant failed: MPT authorize submitted by issuer "
+                   "succeeded but created/deleted mptokens";
             return false;
         }
         else if (
-            !submittedByIssuer && (cftokensCreated_ + cftokensDeleted_ != 1))
+            !submittedByIssuer && (mptokensCreated_ + mptokensDeleted_ != 1))
         {
-            // if the holder submitted this tx, then a cftoken must be either
+            // if the holder submitted this tx, then a mptoken must be either
             // created or deleted.
             JLOG(j.fatal())
-                << "Invariant failed: CFT authorize submitted by holder "
-                   "succeeded but created/deleted bad number of cftokens";
+                << "Invariant failed: MPT authorize submitted by holder "
+                   "succeeded but created/deleted bad number of mptokens";
             return false;
         }
 
         return true;
     }
 
-    if (tx.getTxnType() == ttCFTOKEN_ISSUANCE_SET && result == tesSUCCESS)
+    if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_SET && result == tesSUCCESS)
     {
-        if (cftIssuancesDeleted_ > 0)
+        if (mptIssuancesDeleted_ > 0)
         {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance set "
-                               "succeeded while removing CFT issuances";
+            JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
+                               "succeeded while removing MPT issuances";
         }
-        else if (cftIssuancesCreated_ > 0)
+        else if (mptIssuancesCreated_ > 0)
         {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance set "
-                               "succeeded while creating CFT issuances";
+            JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
+                               "succeeded while creating MPT issuances";
         }
-        else if (cftokensDeleted_ > 0)
+        else if (mptokensDeleted_ > 0)
         {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance set "
-                               "succeeded while removing CFTokens";
+            JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
+                               "succeeded while removing MPTokens";
         }
-        else if (cftokensCreated_ > 0)
+        else if (mptokensCreated_ > 0)
         {
-            JLOG(j.fatal()) << "Invariant failed: CFT issuance set "
-                               "succeeded while creating CFTokens";
+            JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
+                               "succeeded while creating MPTokens";
         }
 
-        return cftIssuancesCreated_ == 0 && cftIssuancesDeleted_ == 0 &&
-            cftokensCreated_ == 0 && cftokensDeleted_ == 0;
+        return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
+            mptokensCreated_ == 0 && mptokensDeleted_ == 0;
     }
 
-    if (cftIssuancesCreated_ != 0)
+    if (mptIssuancesCreated_ != 0)
     {
-        JLOG(j.fatal()) << "Invariant failed: a CFT issuance was created";
+        JLOG(j.fatal()) << "Invariant failed: a MPT issuance was created";
     }
-    else if (cftIssuancesDeleted_ != 0)
+    else if (mptIssuancesDeleted_ != 0)
     {
-        JLOG(j.fatal()) << "Invariant failed: a CFT issuance was deleted";
+        JLOG(j.fatal()) << "Invariant failed: a MPT issuance was deleted";
     }
-    else if (cftokensCreated_ != 0)
+    else if (mptokensCreated_ != 0)
     {
-        JLOG(j.fatal()) << "Invariant failed: a CFToken was created";
+        JLOG(j.fatal()) << "Invariant failed: a MPToken was created";
     }
-    else if (cftokensDeleted_ != 0)
+    else if (mptokensDeleted_ != 0)
     {
-        JLOG(j.fatal()) << "Invariant failed: a CFToken was deleted";
+        JLOG(j.fatal()) << "Invariant failed: a MPToken was deleted";
     }
 
-    return cftIssuancesCreated_ == 0 && cftIssuancesDeleted_ == 0 &&
-        cftokensCreated_ == 0 && cftokensDeleted_ == 0;
+    return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
+        mptokensCreated_ == 0 && mptokensDeleted_ == 0;
 }
 
 }  // namespace ripple

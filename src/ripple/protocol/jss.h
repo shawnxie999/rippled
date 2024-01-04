@@ -63,13 +63,13 @@ JSS(Asset2);           // in: AMM Asset2
 JSS(AuthAccount);      // in: AMM Auction Slot
 JSS(AuthAccounts);     // in: AMM Auction Slot
 JSS(Bridge);           // ledger type.
-JSS(CFToken);          // ledger type.
-JSS(CFTokenIssuance);  // ledger type.
-JSS(CFTokenIssuanceCreate);   // transaction type.
-JSS(CFTokenIssuanceDestroy);  // transaction type.
-JSS(CFTokenAuthorize);        // transaction type.
-JSS(CFTokenIssuanceSet);      // transaction type.
-JSS(CFTokenIssuanceID);       // in: CFTokenIssuanceDestroy, CFTokenAuthorize
+JSS(MPToken);          // ledger type.
+JSS(MPTokenIssuance);  // ledger type.
+JSS(MPTokenIssuanceCreate);   // transaction type.
+JSS(MPTokenIssuanceDestroy);  // transaction type.
+JSS(MPTokenAuthorize);        // transaction type.
+JSS(MPTokenIssuanceSet);      // transaction type.
+JSS(MPTokenIssuanceID);       // in: MPTokenIssuanceDestroy, MPTokenAuthorize
 JSS(Check);                   // ledger type.
 JSS(CheckCancel);             // transaction type.
 JSS(CheckCash);               // transaction type.
@@ -227,11 +227,11 @@ JSS(build_path);                  // in: TransactionSign
 JSS(build_version);               // out: NetworkOPs
 JSS(cancel_after);                // out: AccountChannels
 JSS(can_delete);                  // out: CanDelete
-JSS(cft_amount);                  // out: cft_holders
-JSS(cft_issuance);                // in: LedgerEntry, AccountObjects
-JSS(cft_issuance_id);             // in: Payment, cft_holders
-JSS(cftoken);                     // in: LedgerEntry, AccountObjects
-JSS(cftoken_index);               // out: cft_holders
+JSS(mpt_amount);                  // out: mpt_holders
+JSS(mpt_issuance);                // in: LedgerEntry, AccountObjects
+JSS(mpt_issuance_id);             // in: Payment, mpt_holders
+JSS(mptoken);                     // in: LedgerEntry, AccountObjects
+JSS(mptoken_index);               // out: mpt_holders
 JSS(changes);                     // out: BookChanges
 JSS(channel_id);                  // out: AccountChannels
 JSS(channels);                    // out: AccountChannels
@@ -363,7 +363,7 @@ JSS(high);                  // out: BookChanges
 JSS(highest_sequence);      // out: AccountInfo
 JSS(highest_ticket);        // out: AccountInfo
 JSS(historical_perminute);  // historical_perminute.
-JSS(holders);               // out: CFTHolders
+JSS(holders);               // out: MPTHolders
 JSS(hostid);                // out: NetworkOPs
 JSS(hotwallet);             // in: GatewayBalances
 JSS(id);                    // websocket.
@@ -451,7 +451,7 @@ JSS(load_fee);                    // out: LoadFeeTrackImp, NetworkOPs
 JSS(local);                       // out: resource/Logic.h
 JSS(local_txs);                   // out: GetCounts
 JSS(local_static_keys);           // out: ValidatorList
-JSS(locked_amount);               // out: CFTHolders
+JSS(locked_amount);               // out: MPTHolders
 JSS(low);                         // out: BookChanges
 JSS(lowest_sequence);             // out: AccountInfo
 JSS(lowest_ticket);               // out: AccountInfo

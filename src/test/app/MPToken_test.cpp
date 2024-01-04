@@ -23,49 +23,49 @@
 
 namespace ripple {
 
-class CFToken_test : public beast::unit_test::suite
+class MPToken_test : public beast::unit_test::suite
 {
     bool
-    checkCFTokenAmount(
+    checkMPTokenAmount(
         test::jtx::Env const& env,
-        ripple::uint256 const cftIssuanceid,
+        ripple::uint256 const mptIssuanceid,
         test::jtx::Account const& holder,
         std::uint64_t expectedAmount)
     {
-        auto const sleCft = env.le(keylet::cftoken(cftIssuanceid, holder));
-        if (!sleCft)
+        auto const sleMpt = env.le(keylet::mptoken(mptIssuanceid, holder));
+        if (!sleMpt)
             return false;
 
-        std::uint64_t const amount = (*sleCft)[sfCFTAmount];
+        std::uint64_t const amount = (*sleMpt)[sfMPTAmount];
         return amount == expectedAmount;
     }
 
     bool
-    checkCFTokenIssuanceFlags(
+    checkMPTokenIssuanceFlags(
         test::jtx::Env const& env,
-        ripple::uint256 const cftIssuanceid,
+        ripple::uint256 const mptIssuanceid,
         uint32_t const expectedFlags)
     {
-        auto const sleCftIssuance = env.le(keylet::cftIssuance(cftIssuanceid));
-        if (!sleCftIssuance)
+        auto const sleMptIssuance = env.le(keylet::mptIssuance(mptIssuanceid));
+        if (!sleMptIssuance)
             return false;
 
-        uint32_t const cftIssuanceFlags = sleCftIssuance->getFlags();
-        return expectedFlags == cftIssuanceFlags;
+        uint32_t const mptIssuanceFlags = sleMptIssuance->getFlags();
+        return expectedFlags == mptIssuanceFlags;
     }
 
     bool
-    checkCFTokenFlags(
+    checkMPTokenFlags(
         test::jtx::Env const& env,
-        ripple::uint256 const cftIssuanceid,
+        ripple::uint256 const mptIssuanceid,
         test::jtx::Account const& holder,
         uint32_t const expectedFlags)
     {
-        auto const sleCft = env.le(keylet::cftoken(cftIssuanceid, holder));
-        if (!sleCft)
+        auto const sleMpt = env.le(keylet::mptoken(mptIssuanceid, holder));
+        if (!sleMpt)
             return false;
-        uint32_t const cftFlags = sleCft->getFlags();
-        return cftFlags == expectedFlags;
+        uint32_t const mptFlags = sleMpt->getFlags();
+        return mptFlags == expectedFlags;
     }
 
     void
@@ -74,11 +74,11 @@ class CFToken_test : public beast::unit_test::suite
         testcase("Create Validate");
         using namespace test::jtx;
 
-        // test preflight of CFTokenIssuanceCreate
+        // test preflight of MPTokenIssuanceCreate
         {
-            // If the CFT amendment is not enabled, you should not be able to
-            // create CFTokenIssuances
-            Env env{*this, features - featureCFTokensV1};
+            // If the MPT amendment is not enabled, you should not be able to
+            // create MPTokenIssuances
+            Env env{*this, features - featureMPTokensV1};
             Account const alice("alice");  // issuer
 
             env.fund(XRP(10000), alice);
@@ -86,28 +86,28 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            env(cft::create(alice), ter(temDISABLED));
+            env(mpt::create(alice), ter(temDISABLED));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            env.enableFeature(featureCFTokensV1);
+            env.enableFeature(featureMPTokensV1);
 
-            env(cft::create(alice), txflags(0x00000001), ter(temINVALID_FLAG));
+            env(mpt::create(alice), txflags(0x00000001), ter(temINVALID_FLAG));
             env.close();
 
             // tries to set a txfee while not enabling in the flag
-            env(cft::create(alice, 100, 0, 1, "test"), ter(temMALFORMED));
+            env(mpt::create(alice, 100, 0, 1, "test"), ter(temMALFORMED));
             env.close();
 
             // tries to set a txfee while not enabling transfer
-            env(cft::create(alice, 100, 0, maxTransferFee + 1, "test"),
-                txflags(tfCFTCanTransfer),
-                ter(temBAD_CFTOKEN_TRANSFER_FEE));
+            env(mpt::create(alice, 100, 0, maxTransferFee + 1, "test"),
+                txflags(tfMPTCanTransfer),
+                ter(temBAD_MPTOKEN_TRANSFER_FEE));
             env.close();
 
             // empty metadata returns error
-            env(cft::create(alice, 100, 0, 0, ""), ter(temMALFORMED));
+            env(mpt::create(alice, 100, 0, 0, ""), ter(temMALFORMED));
             env.close();
         }
     }
@@ -120,8 +120,8 @@ class CFToken_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         {
-            // If the CFT amendment IS enabled, you should be able to create
-            // CFTokenIssuances
+            // If the MPT amendment IS enabled, you should be able to create
+            // MPTokenIssuances
             Env env{*this, features};
             Account const alice("alice");  // issuer
 
@@ -130,18 +130,18 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            auto const id = getCftID(alice, env.seq(alice));
-            env(cft::create(alice, 100, 1, 10, "123"),
+            auto const id = getMptID(alice, env.seq(alice));
+            env(mpt::create(alice, 100, 1, 10, "123"),
                 txflags(
-                    tfCFTCanLock | tfCFTRequireAuth | tfCFTCanEscrow |
-                    tfCFTCanTrade | tfCFTCanTransfer | tfCFTCanClawback));
+                    tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow |
+                    tfMPTCanTrade | tfMPTCanTransfer | tfMPTCanClawback));
             env.close();
 
-            BEAST_EXPECT(checkCFTokenIssuanceFlags(
+            BEAST_EXPECT(checkMPTokenIssuanceFlags(
                 env,
-                keylet::cftIssuance(id).key,
-                lsfCFTCanLock | lsfCFTRequireAuth | lsfCFTCanEscrow |
-                    lsfCFTCanTrade | lsfCFTCanTransfer | lsfCFTCanClawback));
+                keylet::mptIssuance(id).key,
+                lsfMPTCanLock | lsfMPTRequireAuth | lsfMPTCanEscrow |
+                    lsfMPTCanTrade | lsfMPTCanTransfer | lsfMPTCanClawback));
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
         }
@@ -153,9 +153,9 @@ class CFToken_test : public beast::unit_test::suite
         testcase("Destroy Validate");
 
         using namespace test::jtx;
-        // CFTokenIssuanceDestroy (preflight)
+        // MPTokenIssuanceDestroy (preflight)
         {
-            Env env{*this, features - featureCFTokensV1};
+            Env env{*this, features - featureMPTokensV1};
             Account const alice("alice");  // issuer
 
             env.fund(XRP(10000), alice);
@@ -163,21 +163,21 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            auto const id = getCftID(alice.id(), env.seq(alice));
-            env(cft::destroy(alice, id), ter(temDISABLED));
+            auto const id = getMptID(alice.id(), env.seq(alice));
+            env(mpt::destroy(alice, id), ter(temDISABLED));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            env.enableFeature(featureCFTokensV1);
+            env.enableFeature(featureMPTokensV1);
 
-            env(cft::destroy(alice, id),
+            env(mpt::destroy(alice, id),
                 txflags(0x00000001),
                 ter(temINVALID_FLAG));
             env.close();
         }
 
-        // CFTokenIssuanceDestroy (preclaim)
+        // MPTokenIssuanceDestroy (preclaim)
         {
             Env env{*this, features};
             Account const alice("alice");  // issuer
@@ -188,21 +188,21 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            auto const fakeID = getCftID(alice.id(), env.seq(alice));
+            auto const fakeID = getMptID(alice.id(), env.seq(alice));
 
-            env(cft::destroy(alice, fakeID), ter(tecOBJECT_NOT_FOUND));
+            env(mpt::destroy(alice, fakeID), ter(tecOBJECT_NOT_FOUND));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            auto const id = getCftID(alice.id(), env.seq(alice));
-            env(cft::create(alice));
+            auto const id = getMptID(alice.id(), env.seq(alice));
+            env(mpt::create(alice));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
-            // a non-issuer tries to destroy a cftissuance they didn't issue
-            env(cft::destroy(bob, id), ter(tecNO_PERMISSION));
+            // a non-issuer tries to destroy a mptissuance they didn't issue
+            env(mpt::destroy(bob, id), ter(tecNO_PERMISSION));
             env.close();
 
             // TODO: add test when OutstandingAmount is non zero
@@ -216,8 +216,8 @@ class CFToken_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        // If the CFT amendment IS enabled, you should be able to destroy
-        // CFTokenIssuances
+        // If the MPT amendment IS enabled, you should be able to destroy
+        // MPTokenIssuances
         Env env{*this, features};
         Account const alice("alice");  // issuer
 
@@ -226,13 +226,13 @@ class CFToken_test : public beast::unit_test::suite
 
         BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-        auto const id = getCftID(alice.id(), env.seq(alice));
-        env(cft::create(alice));
+        auto const id = getMptID(alice.id(), env.seq(alice));
+        env(mpt::create(alice));
         env.close();
 
         BEAST_EXPECT(env.ownerCount(alice) == 1);
 
-        env(cft::destroy(alice, id));
+        env(mpt::destroy(alice, id));
         env.close();
         BEAST_EXPECT(env.ownerCount(alice) == 0);
     }
@@ -243,9 +243,9 @@ class CFToken_test : public beast::unit_test::suite
         testcase("Validate authorize transaction");
 
         using namespace test::jtx;
-        // Validate fields in CFTokenAuthorize (preflight)
+        // Validate fields in MPTokenAuthorize (preflight)
         {
-            Env env{*this, features - featureCFTokensV1};
+            Env env{*this, features - featureMPTokensV1};
             Account const alice("alice");  // issuer
             Account const bob("bob");      // holder
 
@@ -254,31 +254,31 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            auto const id = getCftID(alice.id(), env.seq(alice));
+            auto const id = getMptID(alice.id(), env.seq(alice));
 
-            env(cft::authorize(bob, id, std::nullopt), ter(temDISABLED));
+            env(mpt::authorize(bob, id, std::nullopt), ter(temDISABLED));
             env.close();
 
-            env.enableFeature(featureCFTokensV1);
+            env.enableFeature(featureMPTokensV1);
 
-            env(cft::create(alice));
+            env(mpt::create(alice));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
-            env(cft::authorize(bob, id, std::nullopt),
+            env(mpt::authorize(bob, id, std::nullopt),
                 txflags(0x00000002),
                 ter(temINVALID_FLAG));
             env.close();
 
-            env(cft::authorize(bob, id, bob), ter(temMALFORMED));
+            env(mpt::authorize(bob, id, bob), ter(temMALFORMED));
             env.close();
 
-            env(cft::authorize(alice, id, alice), ter(temMALFORMED));
+            env(mpt::authorize(alice, id, alice), ter(temMALFORMED));
             env.close();
         }
 
-        // Try authorizing when CFTokenIssuance doesnt exist in CFTokenAuthorize
+        // Try authorizing when MPTokenIssuance doesnt exist in MPTokenAuthorize
         // (preclaim)
         {
             Env env{*this, features};
@@ -290,17 +290,17 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            auto const id = getCftID(alice.id(), env.seq(alice));
+            auto const id = getMptID(alice.id(), env.seq(alice));
 
-            env(cft::authorize(alice, id, bob), ter(tecOBJECT_NOT_FOUND));
+            env(mpt::authorize(alice, id, bob), ter(tecOBJECT_NOT_FOUND));
             env.close();
 
-            env(cft::authorize(bob, id, std::nullopt),
+            env(mpt::authorize(bob, id, std::nullopt),
                 ter(tecOBJECT_NOT_FOUND));
             env.close();
         }
 
-        // Test bad scenarios without allowlisting in CFTokenAuthorize
+        // Test bad scenarios without allowlisting in MPTokenAuthorize
         // (preclaim)
         {
             Env env{*this, features};
@@ -312,54 +312,54 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            auto const id = getCftID(alice.id(), env.seq(alice));
-            env(cft::create(alice));
+            auto const id = getMptID(alice.id(), env.seq(alice));
+            env(mpt::create(alice));
             env.close();
 
             BEAST_EXPECT(
-                checkCFTokenIssuanceFlags(env, keylet::cftIssuance(id).key, 0));
+                checkMPTokenIssuanceFlags(env, keylet::mptIssuance(id).key, 0));
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
             // bob submits a tx with a holder field
-            env(cft::authorize(bob, id, alice), ter(temMALFORMED));
+            env(mpt::authorize(bob, id, alice), ter(temMALFORMED));
             env.close();
 
-            env(cft::authorize(bob, id, bob), ter(temMALFORMED));
+            env(mpt::authorize(bob, id, bob), ter(temMALFORMED));
             env.close();
 
-            env(cft::authorize(alice, id, alice), ter(temMALFORMED));
+            env(mpt::authorize(alice, id, alice), ter(temMALFORMED));
             env.close();
 
-            // the cft does not enable allowlisting
-            env(cft::authorize(alice, id, bob), ter(tecNO_AUTH));
+            // the mpt does not enable allowlisting
+            env(mpt::authorize(alice, id, bob), ter(tecNO_AUTH));
             env.close();
 
-            // bob now holds a cftoken object
-            env(cft::authorize(bob, id, std::nullopt));
+            // bob now holds a mptoken object
+            env(mpt::authorize(bob, id, std::nullopt));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
-            // bob cannot create the cftoken the second time
-            env(cft::authorize(bob, id, std::nullopt), ter(tecCFTOKEN_EXISTS));
+            // bob cannot create the mptoken the second time
+            env(mpt::authorize(bob, id, std::nullopt), ter(tecMPTOKEN_EXISTS));
             env.close();
 
-            // TODO: check where cftoken balance is nonzero
+            // TODO: check where mptoken balance is nonzero
 
-            env(cft::authorize(bob, id, std::nullopt),
-                txflags(tfCFTUnauthorize));
+            env(mpt::authorize(bob, id, std::nullopt),
+                txflags(tfMPTUnauthorize));
             env.close();
 
-            env(cft::authorize(bob, id, std::nullopt),
-                txflags(tfCFTUnauthorize),
+            env(mpt::authorize(bob, id, std::nullopt),
+                txflags(tfMPTUnauthorize),
                 ter(tecNO_ENTRY));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 0);
         }
 
-        // Test bad scenarios with allow-listing in CFTokenAuthorize (preclaim)
+        // Test bad scenarios with allow-listing in MPTokenAuthorize (preclaim)
         {
             Env env{*this, features};
             Account const alice("alice");  // issuer
@@ -371,69 +371,69 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            auto const id = getCftID(alice.id(), env.seq(alice));
-            auto const cftIssuance = keylet::cftIssuance(id);
-            env(cft::create(alice), txflags(tfCFTRequireAuth));
+            auto const id = getMptID(alice.id(), env.seq(alice));
+            auto const mptIssuance = keylet::mptIssuance(id);
+            env(mpt::create(alice), txflags(tfMPTRequireAuth));
             env.close();
 
-            BEAST_EXPECT(checkCFTokenIssuanceFlags(
-                env, cftIssuance.key, lsfCFTRequireAuth));
+            BEAST_EXPECT(checkMPTokenIssuanceFlags(
+                env, mptIssuance.key, lsfMPTRequireAuth));
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
             // alice submits a tx without specifying a holder's account
-            env(cft::authorize(alice, id, std::nullopt), ter(temMALFORMED));
+            env(mpt::authorize(alice, id, std::nullopt), ter(temMALFORMED));
             env.close();
 
             // alice submits a tx to authorize a holder that hasn't created a
-            // cftoken yet
-            env(cft::authorize(alice, id, bob), ter(tecNO_ENTRY));
+            // mptoken yet
+            env(mpt::authorize(alice, id, bob), ter(tecNO_ENTRY));
             env.close();
 
             // alice specifys a holder acct that doesn't exist
-            env(cft::authorize(alice, id, cindy), ter(tecNO_DST));
+            env(mpt::authorize(alice, id, cindy), ter(tecNO_DST));
             env.close();
 
-            // bob now holds a cftoken object
-            env(cft::authorize(bob, id, std::nullopt));
+            // bob now holds a mptoken object
+            env(mpt::authorize(bob, id, std::nullopt));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
             BEAST_EXPECT(
-                checkCFTokenFlags(env, keylet::cftIssuance(id).key, bob, 0));
+                checkMPTokenFlags(env, keylet::mptIssuance(id).key, bob, 0));
 
             // alice tries to unauthorize bob.
             // although tx is successful,
             // but nothing happens because bob hasn't been authorized yet
-            env(cft::authorize(alice, id, bob), txflags(tfCFTUnauthorize));
+            env(mpt::authorize(alice, id, bob), txflags(tfMPTUnauthorize));
             env.close();
-            BEAST_EXPECT(checkCFTokenFlags(env, cftIssuance.key, bob, 0));
+            BEAST_EXPECT(checkMPTokenFlags(env, mptIssuance.key, bob, 0));
 
             // alice authorizes bob
-            // make sure bob's cftoken has set lsfCFTAuthorized
-            env(cft::authorize(alice, id, bob));
+            // make sure bob's mptoken has set lsfMPTAuthorized
+            env(mpt::authorize(alice, id, bob));
             env.close();
             BEAST_EXPECT(
-                checkCFTokenFlags(env, cftIssuance.key, bob, lsfCFTAuthorized));
+                checkMPTokenFlags(env, mptIssuance.key, bob, lsfMPTAuthorized));
 
             // alice tries authorizes bob again.
             // tx is successful, but bob is already authorized,
             // so no changes
-            env(cft::authorize(alice, id, bob));
+            env(mpt::authorize(alice, id, bob));
             env.close();
             BEAST_EXPECT(
-                checkCFTokenFlags(env, cftIssuance.key, bob, lsfCFTAuthorized));
+                checkMPTokenFlags(env, mptIssuance.key, bob, lsfMPTAuthorized));
 
-            // bob deletes his cftoken
-            env(cft::authorize(bob, id, std::nullopt),
-                txflags(tfCFTUnauthorize));
+            // bob deletes his mptoken
+            env(mpt::authorize(bob, id, std::nullopt),
+                txflags(tfMPTUnauthorize));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 0);
         }
 
-        // Test cftoken reserve requirement - first two cfts free (doApply)
+        // Test mptoken reserve requirement - first two mpts free (doApply)
         {
             Env env{*this, features};
             auto const acctReserve = env.current()->fees().accountReserve(0);
@@ -448,32 +448,32 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            auto const id1 = getCftID(alice.id(), env.seq(alice));
-            env(cft::create(alice));
+            auto const id1 = getMptID(alice.id(), env.seq(alice));
+            env(mpt::create(alice));
             env.close();
 
-            auto const id2 = getCftID(alice.id(), env.seq(alice));
-            env(cft::create(alice));
+            auto const id2 = getMptID(alice.id(), env.seq(alice));
+            env(mpt::create(alice));
             env.close();
 
-            auto const id3 = getCftID(alice.id(), env.seq(alice));
-            env(cft::create(alice));
+            auto const id3 = getMptID(alice.id(), env.seq(alice));
+            env(mpt::create(alice));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(alice) == 3);
 
-            // first cft for free
-            env(cft::authorize(bob, id1, std::nullopt));
+            // first mpt for free
+            env(mpt::authorize(bob, id1, std::nullopt));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
-            // second cft free
-            env(cft::authorize(bob, id2, std::nullopt));
+            // second mpt free
+            env(mpt::authorize(bob, id2, std::nullopt));
             env.close();
             BEAST_EXPECT(env.ownerCount(bob) == 2);
 
-            env(cft::authorize(bob, id3, std::nullopt),
+            env(mpt::authorize(bob, id3, std::nullopt),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
 
@@ -481,7 +481,7 @@ class CFToken_test : public beast::unit_test::suite
                 env.master, bob, drops(incReserve + incReserve + incReserve)));
             env.close();
 
-            env(cft::authorize(bob, id3, std::nullopt));
+            env(mpt::authorize(bob, id3, std::nullopt));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 3);
@@ -505,28 +505,28 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            // alice create cftissuance without allowisting
-            auto const id = getCftID(alice.id(), env.seq(alice));
-            auto const cftIssuance = keylet::cftIssuance(id);
-            env(cft::create(alice));
+            // alice create mptissuance without allowisting
+            auto const id = getMptID(alice.id(), env.seq(alice));
+            auto const mptIssuance = keylet::mptIssuance(id);
+            env(mpt::create(alice));
             env.close();
 
-            BEAST_EXPECT(checkCFTokenIssuanceFlags(env, cftIssuance.key, 0));
+            BEAST_EXPECT(checkMPTokenIssuanceFlags(env, mptIssuance.key, 0));
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
-            // bob creates a cftoken
-            env(cft::authorize(bob, id, std::nullopt));
+            // bob creates a mptoken
+            env(mpt::authorize(bob, id, std::nullopt));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
-            BEAST_EXPECT(checkCFTokenFlags(env, cftIssuance.key, bob, 0));
-            BEAST_EXPECT(checkCFTokenAmount(env, cftIssuance.key, bob, 0));
+            BEAST_EXPECT(checkMPTokenFlags(env, mptIssuance.key, bob, 0));
+            BEAST_EXPECT(checkMPTokenAmount(env, mptIssuance.key, bob, 0));
 
-            // bob deletes his cftoken
-            env(cft::authorize(bob, id, std::nullopt),
-                txflags(tfCFTUnauthorize));
+            // bob deletes his mptoken
+            env(mpt::authorize(bob, id, std::nullopt),
+                txflags(tfMPTUnauthorize));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 0);
@@ -543,45 +543,45 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            // alice creates a cftokenissuance that requires authorization
-            auto const id = getCftID(alice.id(), env.seq(alice));
-            auto const cftIssuance = keylet::cftIssuance(id);
-            env(cft::create(alice), txflags(tfCFTRequireAuth));
+            // alice creates a mptokenissuance that requires authorization
+            auto const id = getMptID(alice.id(), env.seq(alice));
+            auto const mptIssuance = keylet::mptIssuance(id);
+            env(mpt::create(alice), txflags(tfMPTRequireAuth));
             env.close();
 
-            BEAST_EXPECT(checkCFTokenIssuanceFlags(
-                env, cftIssuance.key, lsfCFTRequireAuth));
+            BEAST_EXPECT(checkMPTokenIssuanceFlags(
+                env, mptIssuance.key, lsfMPTRequireAuth));
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
-            // bob creates a cftoken
-            env(cft::authorize(bob, id, std::nullopt));
+            // bob creates a mptoken
+            env(mpt::authorize(bob, id, std::nullopt));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
-            BEAST_EXPECT(checkCFTokenFlags(env, cftIssuance.key, bob, 0));
-            BEAST_EXPECT(checkCFTokenAmount(env, cftIssuance.key, bob, 0));
+            BEAST_EXPECT(checkMPTokenFlags(env, mptIssuance.key, bob, 0));
+            BEAST_EXPECT(checkMPTokenAmount(env, mptIssuance.key, bob, 0));
 
             // alice authorizes bob
-            env(cft::authorize(alice, id, bob));
+            env(mpt::authorize(alice, id, bob));
             env.close();
 
-            // make sure bob's cftoken has lsfCFTAuthorized set
+            // make sure bob's mptoken has lsfMPTAuthorized set
             BEAST_EXPECT(
-                checkCFTokenFlags(env, cftIssuance.key, bob, lsfCFTAuthorized));
+                checkMPTokenFlags(env, mptIssuance.key, bob, lsfMPTAuthorized));
 
-            // Unauthorize bob's cftoken
-            env(cft::authorize(alice, id, bob), txflags(tfCFTUnauthorize));
+            // Unauthorize bob's mptoken
+            env(mpt::authorize(alice, id, bob), txflags(tfMPTUnauthorize));
             env.close();
 
-            // ensure bob's cftoken no longer has lsfCFTAuthorized set
-            BEAST_EXPECT(checkCFTokenFlags(env, cftIssuance.key, bob, 0));
+            // ensure bob's mptoken no longer has lsfMPTAuthorized set
+            BEAST_EXPECT(checkMPTokenFlags(env, mptIssuance.key, bob, 0));
 
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
-            env(cft::authorize(bob, id, std::nullopt),
-                txflags(tfCFTUnauthorize));
+            env(mpt::authorize(bob, id, std::nullopt),
+                txflags(tfMPTUnauthorize));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 0);
@@ -597,9 +597,9 @@ class CFToken_test : public beast::unit_test::suite
         testcase("Validate set transaction");
 
         using namespace test::jtx;
-        // Validate fields in CFTokenIssuanceSet (preflight)
+        // Validate fields in MPTokenIssuanceSet (preflight)
         {
-            Env env{*this, features - featureCFTokensV1};
+            Env env{*this, features - featureMPTokensV1};
             Account const alice("alice");  // issuer
             Account const bob("bob");      // holder
 
@@ -608,49 +608,49 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            auto const id = getCftID(alice.id(), env.seq(alice));
-            auto const cftIssuance = keylet::cftIssuance(id);
+            auto const id = getMptID(alice.id(), env.seq(alice));
+            auto const mptIssuance = keylet::mptIssuance(id);
 
-            env(cft::set(bob, id, std::nullopt), ter(temDISABLED));
+            env(mpt::set(bob, id, std::nullopt), ter(temDISABLED));
             env.close();
 
-            env.enableFeature(featureCFTokensV1);
+            env.enableFeature(featureMPTokensV1);
 
-            env(cft::create(alice));
+            env(mpt::create(alice));
             env.close();
 
-            BEAST_EXPECT(checkCFTokenIssuanceFlags(env, cftIssuance.key, 0));
+            BEAST_EXPECT(checkMPTokenIssuanceFlags(env, mptIssuance.key, 0));
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
             BEAST_EXPECT(env.ownerCount(bob) == 0);
 
-            env(cft::authorize(bob, id, std::nullopt));
+            env(mpt::authorize(bob, id, std::nullopt));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(bob) == 1);
 
             // test invalid flag
-            env(cft::set(alice, id, std::nullopt),
+            env(mpt::set(alice, id, std::nullopt),
                 txflags(0x00000008),
                 ter(temINVALID_FLAG));
             env.close();
 
             // set both lock and unlock flags at the same time will fail
-            env(cft::set(alice, id, std::nullopt),
-                txflags(tfCFTLock | tfCFTUnlock),
+            env(mpt::set(alice, id, std::nullopt),
+                txflags(tfMPTLock | tfMPTUnlock),
                 ter(temINVALID_FLAG));
             env.close();
 
             // if the holder is the same as the acct that submitted the tx, tx
             // fails
-            env(cft::set(alice, id, alice),
-                txflags(tfCFTLock),
+            env(mpt::set(alice, id, alice),
+                txflags(tfMPTLock),
                 ter(temMALFORMED));
             env.close();
         }
 
-        // Validate fields in CFTokenIssuanceSet (preclaim)
-        // test when a cftokenissuance has disabled locking
+        // Validate fields in MPTokenIssuanceSet (preclaim)
+        // test when a mptokenissuance has disabled locking
         {
             Env env{*this, features};
             Account const alice("alice");  // issuer
@@ -662,43 +662,43 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            auto const id = getCftID(alice.id(), env.seq(alice));
-            auto const cftIssuance = keylet::cftIssuance(id);
+            auto const id = getMptID(alice.id(), env.seq(alice));
+            auto const mptIssuance = keylet::mptIssuance(id);
 
-            env(cft::create(alice));  // no locking
+            env(mpt::create(alice));  // no locking
             env.close();
 
-            BEAST_EXPECT(checkCFTokenIssuanceFlags(env, cftIssuance.key, 0));
+            BEAST_EXPECT(checkMPTokenIssuanceFlags(env, mptIssuance.key, 0));
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
-            // alice tries to lock a cftissuance that has disabled locking
-            env(cft::set(alice, id, std::nullopt),
-                txflags(tfCFTLock),
+            // alice tries to lock a mptissuance that has disabled locking
+            env(mpt::set(alice, id, std::nullopt),
+                txflags(tfMPTLock),
                 ter(tecNO_PERMISSION));
             env.close();
 
-            // alice tries to unlock cftissuance that has disabled locking
-            env(cft::set(alice, id, std::nullopt),
-                txflags(tfCFTUnlock),
+            // alice tries to unlock mptissuance that has disabled locking
+            env(mpt::set(alice, id, std::nullopt),
+                txflags(tfMPTUnlock),
                 ter(tecNO_PERMISSION));
             env.close();
 
-            // issuer tries to lock a bob's cftoken that has disabled locking
-            env(cft::set(alice, id, bob),
-                txflags(tfCFTLock),
+            // issuer tries to lock a bob's mptoken that has disabled locking
+            env(mpt::set(alice, id, bob),
+                txflags(tfMPTLock),
                 ter(tecNO_PERMISSION));
             env.close();
 
-            // issuer tries to unlock a bob's cftoken that has disabled locking
-            env(cft::set(alice, id, bob),
-                txflags(tfCFTUnlock),
+            // issuer tries to unlock a bob's mptoken that has disabled locking
+            env(mpt::set(alice, id, bob),
+                txflags(tfMPTUnlock),
                 ter(tecNO_PERMISSION));
             env.close();
         }
 
-        // Validate fields in CFTokenIssuanceSet (preclaim)
-        // test when cftokenissuance has enabled locking
+        // Validate fields in MPTokenIssuanceSet (preclaim)
+        // test when mptokenissuance has enabled locking
         {
             Env env{*this, features};
             Account const alice("alice");  // issuer
@@ -710,40 +710,40 @@ class CFToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-            auto const badID = getCftID(alice.id(), env.seq(alice));
+            auto const badID = getMptID(alice.id(), env.seq(alice));
 
-            // alice trying to set when the cftissuance doesn't exist yet
-            env(cft::set(alice, badID, std::nullopt),
-                txflags(tfCFTLock),
+            // alice trying to set when the mptissuance doesn't exist yet
+            env(mpt::set(alice, badID, std::nullopt),
+                txflags(tfMPTLock),
                 ter(tecOBJECT_NOT_FOUND));
             env.close();
 
-            auto const id = getCftID(alice.id(), env.seq(alice));
-            auto const cftIssuance = keylet::cftIssuance(id);
+            auto const id = getMptID(alice.id(), env.seq(alice));
+            auto const mptIssuance = keylet::mptIssuance(id);
 
-            // create a cftokenissuance with locking
-            env(cft::create(alice), txflags(tfCFTCanLock));
+            // create a mptokenissuance with locking
+            env(mpt::create(alice), txflags(tfMPTCanLock));
             env.close();
 
             BEAST_EXPECT(
-                checkCFTokenIssuanceFlags(env, cftIssuance.key, lsfCFTCanLock));
+                checkMPTokenIssuanceFlags(env, mptIssuance.key, lsfMPTCanLock));
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
 
-            // a non-issuer acct tries to set the cftissuance
-            env(cft::set(bob, id, std::nullopt),
-                txflags(tfCFTLock),
+            // a non-issuer acct tries to set the mptissuance
+            env(mpt::set(bob, id, std::nullopt),
+                txflags(tfMPTLock),
                 ter(tecNO_PERMISSION));
             env.close();
 
-            // trying to set a holder who doesn't have a cftoken
-            env(cft::set(alice, id, bob),
-                txflags(tfCFTLock),
+            // trying to set a holder who doesn't have a mptoken
+            env(mpt::set(alice, id, bob),
+                txflags(tfMPTLock),
                 ter(tecOBJECT_NOT_FOUND));
             env.close();
 
             // trying to set a holder who doesn't exist
-            env(cft::set(alice, id, cindy), txflags(tfCFTLock), ter(tecNO_DST));
+            env(mpt::set(alice, id, cindy), txflags(tfMPTLock), ter(tecNO_DST));
             env.close();
         }
     }
@@ -765,123 +765,123 @@ class CFToken_test : public beast::unit_test::suite
 
         BEAST_EXPECT(env.ownerCount(alice) == 0);
 
-        auto const id = getCftID(alice.id(), env.seq(alice));
-        auto const cftIssuance = keylet::cftIssuance(id);
+        auto const id = getMptID(alice.id(), env.seq(alice));
+        auto const mptIssuance = keylet::mptIssuance(id);
 
-        // create a cftokenissuance with locking
-        env(cft::create(alice), txflags(tfCFTCanLock));
+        // create a mptokenissuance with locking
+        env(mpt::create(alice), txflags(tfMPTCanLock));
         env.close();
 
         BEAST_EXPECT(
-            checkCFTokenIssuanceFlags(env, cftIssuance.key, lsfCFTCanLock));
+            checkMPTokenIssuanceFlags(env, mptIssuance.key, lsfMPTCanLock));
 
         BEAST_EXPECT(env.ownerCount(alice) == 1);
         BEAST_EXPECT(env.ownerCount(bob) == 0);
 
-        env(cft::authorize(bob, id, std::nullopt));
+        env(mpt::authorize(bob, id, std::nullopt));
         env.close();
 
         BEAST_EXPECT(env.ownerCount(bob) == 1);
         env.close();
 
-        // both the cftissuance and cftoken are not locked
+        // both the mptissuance and mptoken are not locked
         BEAST_EXPECT(
-            checkCFTokenIssuanceFlags(env, cftIssuance.key, lsfCFTCanLock));
-        BEAST_EXPECT(checkCFTokenFlags(env, cftIssuance.key, bob, 0));
+            checkMPTokenIssuanceFlags(env, mptIssuance.key, lsfMPTCanLock));
+        BEAST_EXPECT(checkMPTokenFlags(env, mptIssuance.key, bob, 0));
 
-        // locks bob's cftoken
-        env(cft::set(alice, id, bob), txflags(tfCFTLock));
+        // locks bob's mptoken
+        env(mpt::set(alice, id, bob), txflags(tfMPTLock));
         env.close();
 
         BEAST_EXPECT(
-            checkCFTokenIssuanceFlags(env, cftIssuance.key, lsfCFTCanLock));
+            checkMPTokenIssuanceFlags(env, mptIssuance.key, lsfMPTCanLock));
         BEAST_EXPECT(
-            checkCFTokenFlags(env, cftIssuance.key, bob, lsfCFTLocked));
+            checkMPTokenFlags(env, mptIssuance.key, bob, lsfMPTLocked));
 
-        // trying to lock bob's cftoken again will still succeed
+        // trying to lock bob's mptoken again will still succeed
         // but no changes to the objects
-        env(cft::set(alice, id, bob), txflags(tfCFTLock));
+        env(mpt::set(alice, id, bob), txflags(tfMPTLock));
         env.close();
 
         // no changes to the objects
         BEAST_EXPECT(
-            checkCFTokenIssuanceFlags(env, cftIssuance.key, lsfCFTCanLock));
+            checkMPTokenIssuanceFlags(env, mptIssuance.key, lsfMPTCanLock));
         BEAST_EXPECT(
-            checkCFTokenFlags(env, cftIssuance.key, bob, lsfCFTLocked));
+            checkMPTokenFlags(env, mptIssuance.key, bob, lsfMPTLocked));
 
-        // alice locks the cftissuance
-        env(cft::set(alice, id, std::nullopt), txflags(tfCFTLock));
+        // alice locks the mptissuance
+        env(mpt::set(alice, id, std::nullopt), txflags(tfMPTLock));
         env.close();
 
-        // now both the cftissuance and cftoken are locked up
-        BEAST_EXPECT(checkCFTokenIssuanceFlags(
-            env, cftIssuance.key, lsfCFTCanLock | lsfCFTLocked));
+        // now both the mptissuance and mptoken are locked up
+        BEAST_EXPECT(checkMPTokenIssuanceFlags(
+            env, mptIssuance.key, lsfMPTCanLock | lsfMPTLocked));
         BEAST_EXPECT(
-            checkCFTokenFlags(env, cftIssuance.key, bob, lsfCFTLocked));
+            checkMPTokenFlags(env, mptIssuance.key, bob, lsfMPTLocked));
 
-        // alice tries to lock up both cftissuance and cftoken again
+        // alice tries to lock up both mptissuance and mptoken again
         // it will not change the flags and both will remain locked.
-        env(cft::set(alice, id, std::nullopt), txflags(tfCFTLock));
+        env(mpt::set(alice, id, std::nullopt), txflags(tfMPTLock));
         env.close();
-        env(cft::set(alice, id, bob), txflags(tfCFTLock));
+        env(mpt::set(alice, id, bob), txflags(tfMPTLock));
         env.close();
 
-        // now both the cftissuance and cftoken remain locked up
-        BEAST_EXPECT(checkCFTokenIssuanceFlags(
-            env, cftIssuance.key, lsfCFTCanLock | lsfCFTLocked));
+        // now both the mptissuance and mptoken remain locked up
+        BEAST_EXPECT(checkMPTokenIssuanceFlags(
+            env, mptIssuance.key, lsfMPTCanLock | lsfMPTLocked));
         BEAST_EXPECT(
-            checkCFTokenFlags(env, cftIssuance.key, bob, lsfCFTLocked));
+            checkMPTokenFlags(env, mptIssuance.key, bob, lsfMPTLocked));
 
-        // alice unlocks bob's cftoken
-        env(cft::set(alice, id, bob), txflags(tfCFTUnlock));
+        // alice unlocks bob's mptoken
+        env(mpt::set(alice, id, bob), txflags(tfMPTUnlock));
         env.close();
 
-        // only cftissuance is locked
-        BEAST_EXPECT(checkCFTokenIssuanceFlags(
-            env, cftIssuance.key, lsfCFTCanLock | lsfCFTLocked));
-        BEAST_EXPECT(checkCFTokenFlags(env, cftIssuance.key, bob, 0));
+        // only mptissuance is locked
+        BEAST_EXPECT(checkMPTokenIssuanceFlags(
+            env, mptIssuance.key, lsfMPTCanLock | lsfMPTLocked));
+        BEAST_EXPECT(checkMPTokenFlags(env, mptIssuance.key, bob, 0));
 
-        // locks up bob's cftoken again
-        env(cft::set(alice, id, bob), txflags(tfCFTLock));
+        // locks up bob's mptoken again
+        env(mpt::set(alice, id, bob), txflags(tfMPTLock));
         env.close();
 
-        // now both the cftissuance and cftokens are locked up
-        BEAST_EXPECT(checkCFTokenIssuanceFlags(
-            env, cftIssuance.key, lsfCFTCanLock | lsfCFTLocked));
+        // now both the mptissuance and mptokens are locked up
+        BEAST_EXPECT(checkMPTokenIssuanceFlags(
+            env, mptIssuance.key, lsfMPTCanLock | lsfMPTLocked));
         BEAST_EXPECT(
-            checkCFTokenFlags(env, cftIssuance.key, bob, lsfCFTLocked));
+            checkMPTokenFlags(env, mptIssuance.key, bob, lsfMPTLocked));
 
-        // alice unlocks cftissuance
-        env(cft::set(alice, id, std::nullopt), txflags(tfCFTUnlock));
+        // alice unlocks mptissuance
+        env(mpt::set(alice, id, std::nullopt), txflags(tfMPTUnlock));
         env.close();
 
-        // now cftissuance is unlocked
+        // now mptissuance is unlocked
         BEAST_EXPECT(
-            checkCFTokenIssuanceFlags(env, cftIssuance.key, lsfCFTCanLock));
+            checkMPTokenIssuanceFlags(env, mptIssuance.key, lsfMPTCanLock));
         BEAST_EXPECT(
-            checkCFTokenFlags(env, cftIssuance.key, bob, lsfCFTLocked));
+            checkMPTokenFlags(env, mptIssuance.key, bob, lsfMPTLocked));
 
-        // alice unlocks bob's cftoken
-        env(cft::set(alice, id, bob), txflags(tfCFTUnlock));
+        // alice unlocks bob's mptoken
+        env(mpt::set(alice, id, bob), txflags(tfMPTUnlock));
         env.close();
 
-        // both cftissuance and bob's cftoken are unlocked
+        // both mptissuance and bob's mptoken are unlocked
         BEAST_EXPECT(
-            checkCFTokenIssuanceFlags(env, cftIssuance.key, lsfCFTCanLock));
-        BEAST_EXPECT(checkCFTokenFlags(env, cftIssuance.key, bob, 0));
+            checkMPTokenIssuanceFlags(env, mptIssuance.key, lsfMPTCanLock));
+        BEAST_EXPECT(checkMPTokenFlags(env, mptIssuance.key, bob, 0));
 
-        // alice unlocks cftissuance and bob's cftoken again despite that
+        // alice unlocks mptissuance and bob's mptoken again despite that
         // they are already unlocked. Make sure this will not change the
         // flags
-        env(cft::set(alice, id, bob), txflags(tfCFTUnlock));
+        env(mpt::set(alice, id, bob), txflags(tfMPTUnlock));
         env.close();
-        env(cft::set(alice, id, std::nullopt), txflags(tfCFTUnlock));
+        env(mpt::set(alice, id, std::nullopt), txflags(tfMPTUnlock));
         env.close();
 
-        // both cftissuance and bob's cftoken remain unlocked
+        // both mptissuance and bob's mptoken remain unlocked
         BEAST_EXPECT(
-            checkCFTokenIssuanceFlags(env, cftIssuance.key, lsfCFTCanLock));
-        BEAST_EXPECT(checkCFTokenFlags(env, cftIssuance.key, bob, 0));
+            checkMPTokenIssuanceFlags(env, mptIssuance.key, lsfMPTCanLock));
+        BEAST_EXPECT(checkMPTokenFlags(env, mptIssuance.key, bob, 0));
     }
 
     void
@@ -901,33 +901,33 @@ class CFToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
             auto const seq = env.seq(alice);
-            auto const id = getCftID(alice.id(), seq);
-            auto const cft = ripple::CFT(seq, alice.id());
+            auto const id = getMptID(alice.id(), seq);
+            auto const mpt = ripple::MPT(seq, alice.id());
 
-            env(cft::create(alice));
+            env(mpt::create(alice));
             env.close();
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
             BEAST_EXPECT(env.ownerCount(bob) == 0);
 
-            // env(cft::authorize(alice, id.key, std::nullopt));
+            // env(mpt::authorize(alice, id.key, std::nullopt));
             // env.close();
 
-            env(cft::authorize(bob, id, std::nullopt));
+            env(mpt::authorize(bob, id, std::nullopt));
             env.close();
 
             env(pay(
-                alice, bob, ripple::test::jtx::CFT(alice.name(), cft)(100)));
+                alice, bob, ripple::test::jtx::MPT(alice.name(), mpt)(100)));
             env.close();
             BEAST_EXPECT(
-                checkCFTokenAmount(env, keylet::cftIssuance(id).key, bob, 100));
+                checkMPTokenAmount(env, keylet::mptIssuance(id).key, bob, 100));
         }
     }
 
     void
-    testCFTInvalidInTx(FeatureBitset features)
+    testMPTInvalidInTx(FeatureBitset features)
     {
-        testcase("CFT Amount Invalid in Transaction");
+        testcase("MPT Amount Invalid in Transaction");
         using namespace test::jtx;
         Env env{*this, features};
         Account const alice("alice");  // issuer
@@ -935,14 +935,14 @@ class CFToken_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        auto const cft = ripple::CFT(env.seq(alice), alice.id());
+        auto const mpt = ripple::MPT(env.seq(alice), alice.id());
 
-        env(cft::create(alice));
+        env(mpt::create(alice));
         env.close();
 
         env(offer(
                 alice,
-                ripple::test::jtx::CFT(alice.name(), cft)(100),
+                ripple::test::jtx::MPT(alice.name(), mpt)(100),
                 XRP(100)),
             ter(temINVALID));
         env.close();
@@ -953,7 +953,7 @@ class CFToken_test : public beast::unit_test::suite
     void
     testTxJsonMetaFields(FeatureBitset features)
     {
-        // checks synthetically parsed cftissuanceid from  `tx` response
+        // checks synthetically parsed mptissuanceid from  `tx` response
         // it checks the parsing logic
         testcase("Test synthetic fields from tx response");
 
@@ -965,9 +965,9 @@ class CFToken_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        auto const id = getCftID(alice.id(), env.seq(alice));
+        auto const id = getMptID(alice.id(), env.seq(alice));
 
-        env(cft::create(alice));  
+        env(mpt::create(alice));  
         env.close();
     
         std::string const txHash{
@@ -976,19 +976,19 @@ class CFToken_test : public beast::unit_test::suite
         Json::Value const meta =
             env.rpc("tx", txHash)[jss::result][jss::meta];
 
-        // Expect cft_issuance_id field
-        BEAST_EXPECT(meta.isMember(jss::cft_issuance_id));
-        BEAST_EXPECT(meta[jss::cft_issuance_id] == to_string(id));
+        // Expect mpt_issuance_id field
+        BEAST_EXPECT(meta.isMember(jss::mpt_issuance_id));
+        BEAST_EXPECT(meta[jss::mpt_issuance_id] == to_string(id));
     }
 
     void
-    testCFTHoldersAPI(FeatureBitset features)
+    testMPTHoldersAPI(FeatureBitset features)
     {
-        testcase("CFT Holders");
+        testcase("MPT Holders");
         using namespace test::jtx;
 
-        // a lambda that checks API correctness given different numbers of CFToken
-        auto checkCFTokens =[&](int expectCount,
+        // a lambda that checks API correctness given different numbers of MPToken
+        auto checkMPTokens =[&](int expectCount,
                                 int expectMarkerCount,
                                 int line){
             Env env{*this, features};
@@ -997,24 +997,24 @@ class CFToken_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice);
             env.close();
             
-            auto const id = getCftID(alice.id(), env.seq(alice));
+            auto const id = getMptID(alice.id(), env.seq(alice));
 
-            env(cft::create(alice));  
+            env(mpt::create(alice));  
             env.close();
         
-            // create accounts that will create CFTokens
+            // create accounts that will create MPTokens
             for (auto i = 0; i < expectCount; i++)
             {
                 Account const bob{std::string("bob") + std::to_string(i)};
                 env.fund(XRP(1000), bob);
                 env.close();
                                     
-                // a holder creates a cftoken
-                env(cft::authorize(bob, id, std::nullopt));
+                // a holder creates a mptoken
+                env(mpt::authorize(bob, id, std::nullopt));
                 env.close();
             }
 
-            // Checks cft_holder query responses
+            // Checks mpt_holder query responses
             {
                 int markerCount = 0;
                 Json::Value allHolders(Json::arrayValue);
@@ -1023,32 +1023,32 @@ class CFToken_test : public beast::unit_test::suite
                 // The do/while collects results until no marker is returned.
                 do
                 {
-                    Json::Value cftHolders = [&env, &id, &marker]() {
+                    Json::Value mptHolders = [&env, &id, &marker]() {
                         Json::Value params;
-                        params[jss::cft_issuance_id] = to_string(id);
+                        params[jss::mpt_issuance_id] = to_string(id);
 
                         if (!marker.empty())
                             params[jss::marker] = marker;
-                        return env.rpc("json", "cft_holders", to_string(params));
+                        return env.rpc("json", "mpt_holders", to_string(params));
                     }();
 
-                    // If there are cftokens we get an error
+                    // If there are mptokens we get an error
                     if (expectCount == 0)
                     {
                         if (expect(
-                                cftHolders.isMember(jss::result),
+                                mptHolders.isMember(jss::result),
                                 "expected \"result\"",
                                 __FILE__,
                                 line))
                         {
                             if (expect(
-                                    cftHolders[jss::result].isMember(jss::error),
+                                    mptHolders[jss::result].isMember(jss::error),
                                     "expected \"error\"",
                                     __FILE__,
                                     line))
                             {
                                 expect(
-                                    cftHolders[jss::result][jss::error].asString() ==
+                                    mptHolders[jss::result][jss::error].asString() ==
                                         "objectNotFound",
                                     "expected \"objectNotFound\"",
                                     __FILE__,
@@ -1060,12 +1060,12 @@ class CFToken_test : public beast::unit_test::suite
 
                     marker.clear();
                     if (expect(
-                            cftHolders.isMember(jss::result),
+                            mptHolders.isMember(jss::result),
                             "expected \"result\"",
                             __FILE__,
                             line))
                     {
-                        Json::Value& result = cftHolders[jss::result];
+                        Json::Value& result = mptHolders[jss::result];
 
                         if (result.isMember(jss::marker))
                         {
@@ -1098,7 +1098,7 @@ class CFToken_test : public beast::unit_test::suite
                     __FILE__,
                     line);
                 std::optional<int> globalFlags;
-                std::set<std::string> cftIndexes;
+                std::set<std::string> mptIndexes;
                 std::set<std::string> holderAddresses;
                 for (Json::Value const& holder : allHolders)
                 {
@@ -1114,12 +1114,12 @@ class CFToken_test : public beast::unit_test::suite
 
                     // The test conditions should produce unique indexes and
                     // amounts for all holders.
-                    cftIndexes.insert(holder[jss::cftoken_index].asString());
+                    mptIndexes.insert(holder[jss::mptoken_index].asString());
                     holderAddresses.insert(holder[jss::account].asString());
                 }
 
                 expect(
-                    cftIndexes.size() == expectCount,
+                    mptIndexes.size() == expectCount,
                     "Duplicate indexes returned?",
                     __FILE__,
                     line);
@@ -1131,23 +1131,23 @@ class CFToken_test : public beast::unit_test::suite
             }
         };
         
-        // Test 1 CFToken 
-        checkCFTokens(1, 0, __LINE__);
+        // Test 1 MPToken 
+        checkMPTokens(1, 0, __LINE__);
 
-        // Test 10 CFTokens
-        checkCFTokens(10, 0, __LINE__);
+        // Test 10 MPTokens
+        checkMPTokens(10, 0, __LINE__);
 
-        // Test 200 CFTokens
-        checkCFTokens(200, 0, __LINE__);
+        // Test 200 MPTokens
+        checkMPTokens(200, 0, __LINE__);
 
-        // Test 201 CFTokens
-        checkCFTokens(201, 1, __LINE__);
+        // Test 201 MPTokens
+        checkMPTokens(201, 1, __LINE__);
 
-        // Test 400 CFTokens
-        checkCFTokens(400, 1, __LINE__);
+        // Test 400 MPTokens
+        checkMPTokens(400, 1, __LINE__);
 
-        // Test 401 CFTokesn
-        checkCFTokens(401, 2, __LINE__);
+        // Test 401 MPTokesn
+        checkMPTokens(401, 2, __LINE__);
     }
 
 public:
@@ -1157,39 +1157,39 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
 
-        // CFTokenIssuanceCreate
+        // MPTokenIssuanceCreate
         testCreateValidation(all);
         testCreateEnabled(all);
 
-        // CFTokenIssuanceDestroy
+        // MPTokenIssuanceDestroy
         testDestroyValidation(all);
         testDestroyEnabled(all);
 
-        // CFTokenAuthorize
+        // MPTokenAuthorize
         testAuthorizeValidation(all);
         testAuthorizeEnabled(all);
 
-        // CFTokenIssuanceSet
+        // MPTokenIssuanceSet
         testSetValidation(all);
         testSetEnabled(all);
 
         // Test Direct Payment
         testPayment(all);
 
-        // Test CFT Amount is invalid in non-Payment Tx
-        testCFTInvalidInTx(all);
+        // Test MPT Amount is invalid in non-Payment Tx
+        testMPTInvalidInTx(all);
 
-        // Test parsed CFTokenIssuanceID in API response metadata
-        // TODO: This test exercises the parsing logic of cftID in `tx`, but,
-        //       cftID is also parsed in different places like `account_tx`, `subscribe`, `ledger`.
+        // Test parsed MPTokenIssuanceID in API response metadata
+        // TODO: This test exercises the parsing logic of mptID in `tx`, but,
+        //       mptID is also parsed in different places like `account_tx`, `subscribe`, `ledger`.
         //       We should create test for these occurances (lower prioirity).
         testTxJsonMetaFields(all);
 
-        // Test cft_holders
-        testCFTHoldersAPI(all);
+        // Test mpt_holders
+        testMPTHoldersAPI(all);
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(CFToken, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(MPToken, tx, ripple, 2);
 
 }  // namespace ripple

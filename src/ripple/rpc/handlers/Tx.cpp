@@ -33,7 +33,7 @@
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
-#include <ripple/rpc/CFTokenIssuanceID.h>
+#include <ripple/rpc/MPTokenIssuanceID.h>
 
 #include <charconv>
 #include <regex>
@@ -386,7 +386,7 @@ populateJsonResponse(
                 insertDeliveredAmount(
                     response[jss::meta], context, result.txn, *meta);
                 insertNFTSyntheticInJson(response, sttx, *meta);
-                RPC::insertCFTokenIssuanceID(response[jss::meta], sttx, *meta);
+                RPC::insertMPTokenIssuanceID(response[jss::meta], sttx, *meta);
             }
         }
         response[jss::validated] = result.validated;

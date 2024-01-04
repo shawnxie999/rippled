@@ -192,18 +192,18 @@ enum LedgerEntryType : std::uint16_t
     */
     ltDID = 0x0049,
 
-    /** A ledger object representing an individual CFToken asset type, but not
+    /** A ledger object representing an individual MPToken asset type, but not
      * any balances of that asset itself.
 
-        \sa keylet::cftIssuance
+        \sa keylet::mptIssuance
      */
-    ltCFTOKEN_ISSUANCE = 0x007e,
+    ltMPTOKEN_ISSUANCE = 0x007e,
 
-    /** A ledger object representing an individual CFToken balance.
+    /** A ledger object representing an individual MPToken balance.
 
-        \sa keylet::cftoken
+        \sa keylet::mptoken
      */
-    ltCFTOKEN = 0x007f,
+    ltMPTOKEN = 0x007f,
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 
@@ -316,17 +316,17 @@ enum LedgerSpecificFlags {
     // ltNFTOKEN_OFFER
     lsfSellNFToken = 0x00000001,
 
-    // ltCFTOKEN_ISSUANCE
-    lsfCFTLocked = 0x00000001, // Also used in ltCFTOKEN
-    lsfCFTCanLock = 0x00000002,
-    lsfCFTRequireAuth = 0x00000004,
-    lsfCFTCanEscrow = 0x00000008,
-    lsfCFTCanTrade = 0x00000010,
-    lsfCFTCanTransfer = 0x00000020,
-    lsfCFTCanClawback = 0x00000040,
+    // ltMPTOKEN_ISSUANCE
+    lsfMPTLocked = 0x00000001, // Also used in ltMPTOKEN
+    lsfMPTCanLock = 0x00000002,
+    lsfMPTRequireAuth = 0x00000004,
+    lsfMPTCanEscrow = 0x00000008,
+    lsfMPTCanTrade = 0x00000010,
+    lsfMPTCanTransfer = 0x00000020,
+    lsfMPTCanClawback = 0x00000040,
 
-    // ltCFTOKEN
-    lsfCFTAuthorized = 0x00000002,
+    // ltMPTOKEN
+    lsfMPTAuthorized = 0x00000002,
 };
 
 //------------------------------------------------------------------------------

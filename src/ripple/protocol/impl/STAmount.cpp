@@ -79,9 +79,9 @@ getSNValue(STAmount const& amount)
 }
 
 static std::int64_t
-getCFTValue(STAmount const& amount)
+getMPTValue(STAmount const& amount)
 {
-    if (!amount.isCFT())
+    if (!amount.isMPT())
         Throw<std::runtime_error>("amount is not native!");
 
     auto ret = static_cast<std::int64_t>(amount.mantissa());
@@ -97,22 +97,22 @@ getCFTValue(STAmount const& amount)
 static bool
 areComparable(STAmount const& v1, STAmount const& v2)
 {
-    return (v1.native() == v2.native() || v1.isCFT() == v2.isCFT()) &&
+    return (v1.native() == v2.native() || v1.isMPT() == v2.isMPT()) &&
         v1.issue().asset() == v2.issue().asset();
 }
 
 STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
 {
-    // TODO CFT make sure backward compatible
+    // TODO MPT make sure backward compatible
 
     std::uint64_t value = sit.get64();
-    // TODO must fix serialization for IOU, it incorrectly sets cCFToken
-    bool isCFT = (value & cCFToken) && !(value & cIssuedCurrency);
+    // TODO must fix serialization for IOU, it incorrectly sets cMPToken
+    bool isMPT = (value & cMPToken) && !(value & cIssuedCurrency);
 
-    // native or CFT
-    if ((value & cIssuedCurrency) == 0 || isCFT)
+    // native or MPT
+    if ((value & cIssuedCurrency) == 0 || isMPT)
     {
-        if (isCFT)
+        if (isMPT)
         {
             mIssue = std::make_pair(
                 sit.get32(), static_cast<AccountID>(sit.get160()));
@@ -124,7 +124,7 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
         {
             mValue = value & cValueMask;
             mOffset = 0;
-            mIsNative = !isCFT;
+            mIsNative = !isMPT;
             mIsNegative = false;
             return;
         }
@@ -135,7 +135,7 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
 
         mValue = value & cValueMask;
         mOffset = 0;
-        mIsNative = !isCFT;
+        mIsNative = !isMPT;
         mIsNegative = true;
         return;
     }
@@ -350,16 +350,16 @@ STAmount::STAmount(XRPAmount const& amount)
     canonicalize();
 }
 
-STAmount::STAmount(CFTAmount const& amount, Issue const& issue)
+STAmount::STAmount(MPTAmount const& amount, Issue const& issue)
     : mIssue(issue)
     , mOffset(0)
     , mIsNative(false)
     , mIsNegative(amount < beast::zero)
 {
     if (mIsNegative)
-        mValue = unsafe_cast<std::uint64_t>(-amount.cft());
+        mValue = unsafe_cast<std::uint64_t>(-amount.mpt());
     else
-        mValue = unsafe_cast<std::uint64_t>(amount.cft());
+        mValue = unsafe_cast<std::uint64_t>(amount.mpt());
 
     canonicalize();
 }
@@ -405,7 +405,7 @@ STAmount::xrp() const
 IOUAmount
 STAmount::iou() const
 {
-    if (mIsNative || isCFT())
+    if (mIsNative || isMPT())
         Throw<std::logic_error>("Cannot return native STAmount as IOUAmount");
 
     auto mantissa = static_cast<std::int64_t>(mValue);
@@ -417,18 +417,18 @@ STAmount::iou() const
     return {mantissa, exponent};
 }
 
-CFTAmount
-STAmount::cft() const
+MPTAmount
+STAmount::mpt() const
 {
-    if (!isCFT())
-        Throw<std::logic_error>("Cannot return STAmount as CFTAmount");
+    if (!isMPT())
+        Throw<std::logic_error>("Cannot return STAmount as MPTAmount");
 
-    auto value = static_cast<CFTAmount::cft_type>(mValue);
+    auto value = static_cast<MPTAmount::mpt_type>(mValue);
 
     if (mIsNegative)
         value = -value;
 
-    return CFTAmount{value};
+    return MPTAmount{value};
 }
 
 STAmount&
@@ -487,8 +487,8 @@ operator+(STAmount const& v1, STAmount const& v2)
     // TODO
     if (v1.native())
         return {v1.getFName(), getSNValue(v1) + getSNValue(v2)};
-    if (v1.isCFT())
-        return {v1.mIssue, v1.cft().cft() + v2.cft().cft()};
+    if (v1.isMPT())
+        return {v1.mIssue, v1.mpt().mpt() + v2.mpt().mpt()};
 
     if (getSTNumberSwitchover())
     {
@@ -597,8 +597,8 @@ STAmount::setJson(Json::Value& elem) const
         // It is an error for currency or issuer not to be specified for valid
         // json.
         elem[jss::value] = getText();
-        if (mIssue.isCFT())
-            elem[jss::cft_issuance_id] = to_string(mIssue.asset());
+        if (mIssue.isMPT())
+            elem[jss::mpt_issuance_id] = to_string(mIssue.asset());
         else
         {
             elem[jss::currency] = to_string(mIssue.asset());
@@ -649,7 +649,7 @@ STAmount::getText() const
     bool const scientific(
         (mOffset != 0) && ((mOffset < -25) || (mOffset > -5)));
 
-    if (mIsNative || mIssue.isCFT() || scientific)
+    if (mIsNative || mIssue.isMPT() || scientific)
     {
         ret.append(raw_value);
 
@@ -728,7 +728,7 @@ Json::Value STAmount::getJson(JsonOptions) const
 void
 STAmount::add(Serializer& s) const
 {
-    // TODO CFT make sure backward compatible
+    // TODO MPT make sure backward compatible
     if (mIsNative)
     {
         assert(mOffset == 0);
@@ -740,13 +740,13 @@ STAmount::add(Serializer& s) const
     }
     else
     {
-        if (mIssue.isCFT())
+        if (mIssue.isMPT())
         {
             if (mIsNegative)
-                s.add64(mValue | cCFToken);
+                s.add64(mValue | cMPToken);
             else
-                s.add64(mValue | cCFToken | cPositive);
-            s.add32(std::get<CFT>(mIssue.asset().asset()).first);
+                s.add64(mValue | cMPToken | cPositive);
+            s.add32(std::get<MPT>(mIssue.asset().asset()).first);
         }
         else
         {
@@ -802,7 +802,7 @@ STAmount::isDefault() const
 void
 STAmount::canonicalize()
 {
-    if (isXRP(*this) || mIssue.isCFT())
+    if (isXRP(*this) || mIssue.isMPT())
     {
         // native currency amounts should always have an offset of zero
         mIsNative = isXRP(*this);
@@ -836,9 +836,9 @@ STAmount::canonicalize()
             }
             else
             {
-                CFTAmount c{num};
-                mIsNegative = c.cft() < 0;
-                mValue = mIsNegative ? -c.cft() : c.cft();
+                MPTAmount c{num};
+                mIsNegative = c.mpt() < 0;
+                mValue = mIsNegative ? -c.mpt() : c.mpt();
             }
             mOffset = 0;
         }
@@ -1023,7 +1023,7 @@ amountFromJson(SField const& name, Json::Value const& v)
     Json::Value value;
     Json::Value asset;
     Json::Value issuer;
-    bool isCFT = false;
+    bool isMPT = false;
 
     if (v.isNull())
     {
@@ -1033,10 +1033,10 @@ amountFromJson(SField const& name, Json::Value const& v)
     else if (v.isObject())
     {
         value = v[jss::value];
-        if (v.isMember(jss::cft_issuance_id))
+        if (v.isMember(jss::mpt_issuance_id))
         {
-            isCFT = true;
-            asset = v[jss::cft_issuance_id];
+            isMPT = true;
+            asset = v[jss::mpt_issuance_id];
         }
         else
         {
@@ -1083,12 +1083,12 @@ amountFromJson(SField const& name, Json::Value const& v)
     }
     else
     {
-        if (isCFT)
+        if (isMPT)
         {
             // sequence (32 bits) + account (160 bits)
             uint192 u;
             if (!u.parseHex(asset.asString()))
-                Throw<std::runtime_error>("invalid CFTokenIssuanceID");
+                Throw<std::runtime_error>("invalid MPTokenIssuanceID");
             issue = u;
         }
         else
@@ -1283,7 +1283,7 @@ divide(STAmount const& num, STAmount const& den, Issue const& issue)
     int numOffset = num.exponent();
     int denOffset = den.exponent();
 
-    if (num.native() || num.isCFT())
+    if (num.native() || num.isMPT())
     {
         while (numVal < STAmount::cMinValue)
         {
@@ -1293,7 +1293,7 @@ divide(STAmount const& num, STAmount const& den, Issue const& issue)
         }
     }
 
-    if (den.native() || den.isCFT())
+    if (den.native() || den.isMPT())
     {
         while (denVal < STAmount::cMinValue)
         {
@@ -1335,14 +1335,14 @@ multiply(STAmount const& v1, STAmount const& v2, Issue const& issue)
 
         return STAmount(v1.getFName(), minV * maxV);
     }
-    if (v1.isCFT() && v2.isCFT() && issue.isCFT())
+    if (v1.isMPT() && v2.isMPT() && issue.isMPT())
     {
-        std::uint64_t const minV = getCFTValue(v1) < getCFTValue(v2)
-            ? getCFTValue(v1)
-            : getCFTValue(v2);
-        std::uint64_t const maxV = getCFTValue(v1) < getCFTValue(v2)
-            ? getCFTValue(v2)
-            : getCFTValue(v1);
+        std::uint64_t const minV = getMPTValue(v1) < getMPTValue(v2)
+            ? getMPTValue(v1)
+            : getMPTValue(v2);
+        std::uint64_t const maxV = getMPTValue(v1) < getMPTValue(v2)
+            ? getMPTValue(v2)
+            : getMPTValue(v1);
 
         if (minV > 3000000000ull)  // sqrt(cMaxNative)
             Throw<std::runtime_error>("Asset value overflow");
@@ -1361,8 +1361,8 @@ multiply(STAmount const& v1, STAmount const& v2, Issue const& issue)
     int offset1 = v1.exponent();
     int offset2 = v2.exponent();
 
-    // TODO CFT
-    if (v1.native() || v1.isCFT())
+    // TODO MPT
+    if (v1.native() || v1.isMPT())
     {
         while (value1 < STAmount::cMinValue)
         {
@@ -1371,7 +1371,7 @@ multiply(STAmount const& v1, STAmount const& v2, Issue const& issue)
         }
     }
 
-    if (v2.native() || v2.isCFT())
+    if (v2.native() || v2.isMPT())
     {
         while (value2 < STAmount::cMinValue)
         {
@@ -1550,7 +1550,7 @@ mulRoundImpl(
 
     bool const xrp = isXRP(issue);
 
-    // TODO CFT
+    // TODO MPT
     if (v1.native() && v2.native() && xrp)
     {
         std::uint64_t minV =
@@ -1566,14 +1566,14 @@ mulRoundImpl(
 
         return STAmount(v1.getFName(), minV * maxV);
     }
-    if (v1.isCFT() && v2.isCFT() && issue.isCFT())
+    if (v1.isMPT() && v2.isMPT() && issue.isMPT())
     {
-        std::uint64_t minV = (getCFTValue(v1) < getCFTValue(v2))
-            ? getCFTValue(v1)
-            : getCFTValue(v2);
-        std::uint64_t maxV = (getCFTValue(v1) < getCFTValue(v2))
-            ? getCFTValue(v2)
-            : getCFTValue(v1);
+        std::uint64_t minV = (getMPTValue(v1) < getMPTValue(v2))
+            ? getMPTValue(v1)
+            : getMPTValue(v2);
+        std::uint64_t maxV = (getMPTValue(v1) < getMPTValue(v2))
+            ? getMPTValue(v2)
+            : getMPTValue(v1);
 
         if (minV > 3000000000ull)  // sqrt(cMaxNative)
             Throw<std::runtime_error>("Asset value overflow");
@@ -1587,8 +1587,8 @@ mulRoundImpl(
     std::uint64_t value1 = v1.mantissa(), value2 = v2.mantissa();
     int offset1 = v1.exponent(), offset2 = v2.exponent();
 
-    // TODO CFT
-    if (v1.native() || v1.isCFT())
+    // TODO MPT
+    if (v1.native() || v1.isMPT())
     {
         while (value1 < STAmount::cMinValue)
         {
@@ -1597,8 +1597,8 @@ mulRoundImpl(
         }
     }
 
-    // TODO CFT
-    if (v2.native() || v2.isCFT())
+    // TODO MPT
+    if (v2.native() || v2.isMPT())
     {
         while (value2 < STAmount::cMinValue)
         {
@@ -1692,8 +1692,8 @@ divRoundImpl(
     std::uint64_t numVal = num.mantissa(), denVal = den.mantissa();
     int numOffset = num.exponent(), denOffset = den.exponent();
 
-    // TODO CFT
-    if (num.native() || num.isCFT())
+    // TODO MPT
+    if (num.native() || num.isMPT())
     {
         while (numVal < STAmount::cMinValue)
         {
@@ -1702,8 +1702,8 @@ divRoundImpl(
         }
     }
 
-    // TODO CFT
-    if (den.native() || den.isCFT())
+    // TODO MPT
+    if (den.native() || den.isMPT())
     {
         while (denVal < STAmount::cMinValue)
         {
@@ -1729,7 +1729,7 @@ divRoundImpl(
 
     if (resultNegative != roundUp)
         canonicalizeRound(
-            isXRP(issue) || issue.isCFT(), amount, offset, roundUp);
+            isXRP(issue) || issue.isMPT(), amount, offset, roundUp);
 
     STAmount result = [&]() {
         // If appropriate, tell Number the rounding mode we are using.
@@ -1743,7 +1743,7 @@ divRoundImpl(
 
     if (roundUp && !resultNegative && !result)
     {
-        if (isXRP(issue) || issue.isCFT())
+        if (isXRP(issue) || issue.isMPT())
         {
             // return the smallest value above zero
             amount = 1;
