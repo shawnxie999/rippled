@@ -1582,6 +1582,45 @@ class LedgerRPC_test : public beast::unit_test::suite
     }
 
     void
+    testLedgerEntryCFTIssuanceID()
+    {
+        testcase("ledger_entry Request CFTokenIssuance");
+        using namespace test::jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this};
+        Account const alice{"alice"};
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto const id = getCftID(alice, env.seq(alice));
+        env(cft::create(alice));
+        env.close();
+
+        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+
+        {
+            // Request the CFTokenIssuance using its ID.
+            Json::Value jvParams;
+            jvParams[jss::cft_issuance_id] = to_string(id);
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfIssuer.jsonName] == alice.human());
+        }
+        {
+            // Request an index that is not a CFTokenIssuacne.
+            Json::Value jvParams;
+            jvParams[jss::cft_issuance_id] = ledgerHash;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+    }
+
+    void
     testLedgerEntryInvalidParams(unsigned int apiVersion)
     {
         testcase(
@@ -2304,6 +2343,7 @@ public:
         testQueue();
         testLedgerAccountsOption();
         testLedgerEntryDID();
+        testLedgerEntryCFTIssuanceID();
 
         test::jtx::forAllApiVersions(std::bind_front(
             &LedgerRPC_test::testLedgerEntryInvalidParams, this));
