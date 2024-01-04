@@ -1582,9 +1582,9 @@ class LedgerRPC_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryCFTIssuanceID()
+    testLedgerEntryMPTIssuanceID()
     {
-        testcase("ledger_entry Request CFTokenIssuance");
+        testcase("ledger_entry Request MPTokenIssuance");
         using namespace test::jtx;
         using namespace std::literals::chrono_literals;
         Env env{*this};
@@ -1593,16 +1593,16 @@ class LedgerRPC_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        auto const id = getCftID(alice, env.seq(alice));
-        env(cft::create(alice));
+        auto const id = getMptID(alice, env.seq(alice));
+        env(mpt::create(alice));
         env.close();
 
         std::string const ledgerHash{to_string(env.closed()->info().hash)};
 
         {
-            // Request the CFTokenIssuance using its ID.
+            // Request the MPTokenIssuance using its ID.
             Json::Value jvParams;
-            jvParams[jss::cft_issuance_id] = to_string(id);
+            jvParams[jss::mpt_issuance_id] = to_string(id);
             jvParams[jss::ledger_hash] = ledgerHash;
             Json::Value const jrr = env.rpc(
                 "json", "ledger_entry", to_string(jvParams))[jss::result];
@@ -1610,9 +1610,9 @@ class LedgerRPC_test : public beast::unit_test::suite
                 jrr[jss::node][sfIssuer.jsonName] == alice.human());
         }
         {
-            // Request an index that is not a CFTokenIssuacne.
+            // Request an index that is not a MPTokenIssuacne.
             Json::Value jvParams;
-            jvParams[jss::cft_issuance_id] = ledgerHash;
+            jvParams[jss::mpt_issuance_id] = ledgerHash;
             jvParams[jss::ledger_hash] = ledgerHash;
             Json::Value const jrr = env.rpc(
                 "json", "ledger_entry", to_string(jvParams))[jss::result];
@@ -2343,7 +2343,7 @@ public:
         testQueue();
         testLedgerAccountsOption();
         testLedgerEntryDID();
-        testLedgerEntryCFTIssuanceID();
+        testLedgerEntryMPTIssuanceID();
 
         test::jtx::forAllApiVersions(std::bind_front(
             &LedgerRPC_test::testLedgerEntryInvalidParams, this));

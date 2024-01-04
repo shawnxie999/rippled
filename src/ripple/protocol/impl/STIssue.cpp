@@ -82,10 +82,10 @@ Json::Value STIssue::getJson(JsonOptions) const
 void
 STIssue::add(Serializer& s) const
 {
-    // TODO add BACKWARDS compatible serialization once CFT is supported
-    assert(!issue_.isCFT());
-    if (issue_.isCFT())
-        Throw<std::logic_error>("CFT is not supported in STIssue");
+    // TODO add BACKWARDS compatible serialization once MPT is supported
+    assert(!issue_.isMPT());
+    if (issue_.isMPT())
+        Throw<std::logic_error>("MPT is not supported in STIssue");
     s.addBitString(static_cast<Currency>(issue_.asset()));
     if (!isXRP(issue_.asset()))
         s.addBitString(issue_.account());

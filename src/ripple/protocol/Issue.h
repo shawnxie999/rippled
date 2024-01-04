@@ -37,7 +37,7 @@ class Issue
 {
 private:
     // using IOU = std::pair<Currency, AccountID>;
-    // std::variant<CFT, IOU> issue_;
+    // std::variant<MPT, IOU> issue_;
     Asset asset_{};
     std::optional<AccountID> account_{std::nullopt};
 
@@ -55,7 +55,7 @@ public:
         *this = std::make_pair(asset, account);
     }
 
-    Issue(CFT const& u) : asset_(u)
+    Issue(MPT const& u) : asset_(u)
     {
         account_ = std::nullopt;
     }
@@ -70,9 +70,9 @@ public:
     Issue&
     operator=(std::pair<Asset, AccountID> const& pair)
     {
-        if (pair.first.isCFT())
+        if (pair.first.isMPT())
         {
-            if (pair.second != std::get<CFT>(pair.first.asset()).second)
+            if (pair.second != std::get<MPT>(pair.first.asset()).second)
                 Throw<std::logic_error>("Issue, invalid Asset/Account");
             account_ = std::nullopt;
         }
@@ -84,21 +84,21 @@ public:
         return *this;
     }
     Issue&
-    operator=(CFT const& cft)
+    operator=(MPT const& mpt)
     {
-        asset_ = cft;
+        asset_ = mpt;
         account_ = std::nullopt;
         return *this;
     }
     Issue&
-    operator=(uint192 const& cftid)
+    operator=(uint192 const& mptid)
     {
         std::uint32_t sequence;
-        std::memcpy(&sequence, cftid.data(), sizeof(sequence));
+        std::memcpy(&sequence, mptid.data(), sizeof(sequence));
         sequence = boost::endian::big_to_native(sequence);
         AccountID account;
         std::memcpy(
-            account.begin(), cftid.begin() + sizeof(sequence), sizeof(account));
+            account.begin(), mptid.begin() + sizeof(sequence), sizeof(account));
         asset_ = std::make_pair(sequence, account);
         account_ = std::nullopt;
         return *this;
@@ -114,7 +114,7 @@ public:
     {
         if (asset_.isCurrency())
             return *account_;
-        return std::get<CFT>(asset_.asset()).second;
+        return std::get<MPT>(asset_.asset()).second;
     }
 
     void
@@ -124,8 +124,8 @@ public:
             account_ = issuer;
         else
         {
-            if (issuer != static_cast<CFT>(asset_).second)
-                Throw<std::logic_error>("Invalid issuer for CFT");
+            if (issuer != static_cast<MPT>(asset_).second)
+                Throw<std::logic_error>("Invalid issuer for MPT");
         }
     }
 
@@ -133,15 +133,15 @@ public:
     getText() const;
 
     bool
-    isCFT() const
+    isMPT() const
     {
-        return asset_.isCFT();
+        return asset_.isMPT();
     }
 
     friend bool
-    isCFT(Issue const& i)
+    isMPT(Issue const& i)
     {
-        return i.isCFT();
+        return i.isMPT();
     }
 };
 
@@ -191,7 +191,7 @@ operator<=>(Issue const& lhs, Issue const& rhs)
     if (auto const c{lhs.asset().asset() <=> rhs.asset().asset()}; c != 0)
         return c;
 
-    if (isXRP(lhs.asset()) || isCFT(lhs))
+    if (isXRP(lhs.asset()) || isMPT(lhs))
         return std::weak_ordering::equivalent;
 
     return lhs.account() <=> rhs.account();
@@ -215,11 +215,11 @@ noIssue()
     static Issue issue{noCurrency(), noAccount()};
     return issue;
 }
-/** Returns an asset specifier that represents no account and no cft. */
+/** Returns an asset specifier that represents no account and no mpt. */
 inline Issue const&
-noCftIssue()
+noMptIssue()
 {
-    static Issue issue{noCFT()};
+    static Issue issue{noMPT()};
     return issue;
 }
 

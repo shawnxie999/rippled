@@ -286,8 +286,8 @@ getAccountObjects(
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
                 auto sleJson = sleNode->getJson(JsonOptions::none);
-                if (sleNode->getType() == ltCFTOKEN_ISSUANCE)
-                    sleJson[jss::cft_issuance_id] = to_string(getCftID(sleNode->getAccountID(sfIssuer), (*sleNode)[sfSequence]));
+                if (sleNode->getType() == ltMPTOKEN_ISSUANCE)
+                    sleJson[jss::mpt_issuance_id] = to_string(getMptID(sleNode->getAccountID(sfIssuer), (*sleNode)[sfSequence]));
                     
                 jvObjects.append(sleJson);
             }
@@ -961,8 +961,8 @@ chooseLedgerEntryType(Json::Value const& params)
                  {jss::xchain_owned_create_account_claim_id,
                   ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
                  {jss::did, ltDID},
-                 {jss::cft_issuance, ltCFTOKEN_ISSUANCE},
-                 {jss::cftoken, ltCFTOKEN}}};
+                 {jss::mpt_issuance, ltMPTOKEN_ISSUANCE},
+                 {jss::mptoken, ltMPTOKEN}}};
 
         auto const& p = params[jss::type];
         if (!p.isString())

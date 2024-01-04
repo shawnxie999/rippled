@@ -72,7 +72,7 @@
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/steady_timer.hpp>
-#include <ripple/rpc/CFTokenIssuanceID.h>
+#include <ripple/rpc/MPTokenIssuanceID.h>
 
 #include <algorithm>
 #include <mutex>
@@ -3118,7 +3118,7 @@ NetworkOPsImp::transJson(
         jvObj[jss::meta] = meta->get().getJson(JsonOptions::none);
         RPC::insertDeliveredAmount(
             jvObj[jss::meta], *ledger, transaction, meta->get());
-        RPC::insertCFTokenIssuanceID(
+        RPC::insertMPTokenIssuanceID(
             jvObj[jss::meta], transaction, meta->get());
     }
 

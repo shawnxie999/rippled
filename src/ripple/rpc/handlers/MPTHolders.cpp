@@ -32,37 +32,37 @@
 namespace ripple {
 
 static void
-appendCFTHolderJson(
+appendMPTHolderJson(
     Application const& app,
-    std::shared_ptr<SLE const> const& cft,
+    std::shared_ptr<SLE const> const& mpt,
     Json::Value& holders)
 {
     Json::Value& obj(holders.append(Json::objectValue));
 
-    obj[jss::cftoken_index] = to_string(cft->key());
-    obj[jss::flags] = (*cft)[sfFlags];
-    obj[jss::account] = toBase58(cft->getAccountID(sfAccount));
-    obj[jss::cft_amount] = STUInt64{(*cft)[sfCFTAmount]}.getJson(JsonOptions::none);
+    obj[jss::mptoken_index] = to_string(mpt->key());
+    obj[jss::flags] = (*mpt)[sfFlags];
+    obj[jss::account] = toBase58(mpt->getAccountID(sfAccount));
+    obj[jss::mpt_amount] = STUInt64{(*mpt)[sfMPTAmount]}.getJson(JsonOptions::none);
     
-    if((*cft)[sfLockedAmount])
-        obj[jss::locked_amount] = STUInt64{(*cft)[sfLockedAmount]}.getJson(JsonOptions::none);
+    if((*mpt)[sfLockedAmount])
+        obj[jss::locked_amount] = STUInt64{(*mpt)[sfLockedAmount]}.getJson(JsonOptions::none);
 }
 
 // {
-//   cft_issuance_id: <token hash>
+//   mpt_issuance_id: <token hash>
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 //   limit: integer                 // optional
 //   marker: opaque                 // optional, resume previous query
 // }
 static Json::Value
-enumerateCFTHolders(
+enumerateMPTHolders(
     RPC::JsonContext& context,
-    uint192 const& cftIssuanceID,
+    uint192 const& mptIssuanceID,
     Keylet const& directory)
 {
     unsigned int limit;
-    if (auto err = readLimitField(limit, RPC::Tuning::cftHolders, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::mptHolders, context))
         return *err;
 
     std::shared_ptr<ReadView const> ledger;
@@ -74,7 +74,7 @@ enumerateCFTHolders(
         return rpcError(rpcOBJECT_NOT_FOUND);
 
     Json::Value result;
-    result[jss::cft_issuance_id] = to_string(cftIssuanceID);
+    result[jss::mpt_issuance_id] = to_string(mptIssuanceID);
 
     Json::Value& jsonHolders(result[jss::holders] = Json::arrayValue);
 
@@ -95,13 +95,13 @@ enumerateCFTHolders(
         if (!startAfter.parseHex(marker.asString()))
             return rpcError(rpcINVALID_PARAMS);
 
-        auto const sle = ledger->read(keylet::cftoken(startAfter));
+        auto const sle = ledger->read(keylet::mptoken(startAfter));
 
-        if (!sle || cftIssuanceID != sle->getFieldH192(sfCFTokenIssuanceID))
+        if (!sle || mptIssuanceID != sle->getFieldH192(sfMPTokenIssuanceID))
             return rpcError(rpcINVALID_PARAMS);
 
-        startHint = sle->getFieldU64(sfCFTokenNode);
-        appendCFTHolderJson(context.app, sle, jsonHolders);
+        startHint = sle->getFieldU64(sfMPTokenNode);
+        appendMPTHolderJson(context.app, sle, jsonHolders);
         holders.reserve(reserve);
     }
     else
@@ -116,10 +116,10 @@ enumerateCFTHolders(
             startAfter,
             startHint,
             reserve,
-            [&holders](std::shared_ptr<SLE const> const& cftoken) {
-                if (cftoken->getType() == ltCFTOKEN)
+            [&holders](std::shared_ptr<SLE const> const& mptoken) {
+                if (mptoken->getType() == ltMPTOKEN)
                 {
-                    holders.emplace_back(cftoken);
+                    holders.emplace_back(mptoken);
                     return true;
                 }
 
@@ -136,25 +136,25 @@ enumerateCFTHolders(
         holders.pop_back();
     }
 
-    for (auto const& cft : holders)
-        appendCFTHolderJson(context.app, cft, jsonHolders);
+    for (auto const& mpt : holders)
+        appendMPTHolderJson(context.app, mpt, jsonHolders);
 
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;
 }
 
 Json::Value
-doCFTHolders(RPC::JsonContext& context)
+doMPTHolders(RPC::JsonContext& context)
 {
-    if (!context.params.isMember(jss::cft_issuance_id))
-        return RPC::missing_field_error(jss::cft_issuance_id);
+    if (!context.params.isMember(jss::mpt_issuance_id))
+        return RPC::missing_field_error(jss::mpt_issuance_id);
 
-    uint192 cftIssuanceID;
+    uint192 mptIssuanceID;
 
-    if (!cftIssuanceID.parseHex(context.params[jss::cft_issuance_id].asString()))
-        return RPC::invalid_field_error(jss::cft_issuance_id);
+    if (!mptIssuanceID.parseHex(context.params[jss::mpt_issuance_id].asString()))
+        return RPC::invalid_field_error(jss::mpt_issuance_id);
 
-    return enumerateCFTHolders(context, cftIssuanceID, keylet::cft_dir(cftIssuanceID));
+    return enumerateMPTHolders(context, mptIssuanceID, keylet::mpt_dir(mptIssuanceID));
 }
 
 }  // namespace ripple

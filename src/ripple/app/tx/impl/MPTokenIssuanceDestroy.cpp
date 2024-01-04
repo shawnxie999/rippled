@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/CFTokenIssuanceDestroy.h>
+#include <ripple/app/tx/impl/MPTokenIssuanceDestroy.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/TxFlags.h>
@@ -26,53 +26,53 @@
 namespace ripple {
 
 NotTEC
-CFTokenIssuanceDestroy::preflight(PreflightContext const& ctx)
+MPTokenIssuanceDestroy::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureCFTokensV1))
+    if (!ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
     // check flags
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.tx.getFlags() & tfCFTokenIssuanceDestroyMask)
+    if (ctx.tx.getFlags() & tfMPTokenIssuanceDestroyMask)
         return temINVALID_FLAG;
 
     return preflight2(ctx);
 }
 
 TER
-CFTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
+MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 {
     // ensure that issuance exists
-    auto const sleCFT =
-        ctx.view.read(keylet::cftIssuance(ctx.tx[sfCFTokenIssuanceID]));
-    if (!sleCFT)
+    auto const sleMPT =
+        ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    if (!sleMPT)
         return tecOBJECT_NOT_FOUND;
 
     // ensure it is issued by the tx submitter
-    if ((*sleCFT)[sfIssuer] != ctx.tx[sfAccount])
+    if ((*sleMPT)[sfIssuer] != ctx.tx[sfAccount])
         return tecNO_PERMISSION;
 
     // ensure it has no outstanding balances
-    if ((*sleCFT)[~sfOutstandingAmount] != 0)
+    if ((*sleMPT)[~sfOutstandingAmount] != 0)
         return tecHAS_OBLIGATIONS;
 
     return tesSUCCESS;
 }
 
 TER
-CFTokenIssuanceDestroy::doApply()
+MPTokenIssuanceDestroy::doApply()
 {
-    auto const cft =
-        view().peek(keylet::cftIssuance(ctx_.tx[sfCFTokenIssuanceID]));
-    auto const issuer = (*cft)[sfIssuer];
+    auto const mpt =
+        view().peek(keylet::mptIssuance(ctx_.tx[sfMPTokenIssuanceID]));
+    auto const issuer = (*mpt)[sfIssuer];
 
     if (!view().dirRemove(
-            keylet::ownerDir(issuer), (*cft)[sfOwnerNode], cft->key(), false))
+            keylet::ownerDir(issuer), (*mpt)[sfOwnerNode], mpt->key(), false))
         return tefBAD_LEDGER;
 
-    view().erase(cft);
+    view().erase(mpt);
 
     adjustOwnerCount(
         view(),

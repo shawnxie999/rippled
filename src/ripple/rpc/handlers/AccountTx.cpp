@@ -37,7 +37,7 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/Role.h>
-#include <ripple/rpc/CFTokenIssuanceID.h>
+#include <ripple/rpc/MPTokenIssuanceID.h>
 
 #include <grpcpp/grpcpp.h>
 
@@ -362,7 +362,7 @@ populateJsonResponse(
                         insertDeliveredAmount(
                             jvObj[jss::meta], context, txn, *txnMeta);
                         insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
-                        RPC::insertCFTokenIssuanceID(jvObj[jss::meta], sttx, *txnMeta);
+                        RPC::insertMPTokenIssuanceID(jvObj[jss::meta], sttx, *txnMeta);
                     }
                     else
                         assert(false && "Missing transaction medatata");

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/CFTokenIssuanceSet.h>
+#include <ripple/app/tx/impl/MPTokenIssuanceSet.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/TxFlags.h>
@@ -26,9 +26,9 @@
 namespace ripple {
 
 NotTEC
-CFTokenIssuanceSet::preflight(PreflightContext const& ctx)
+MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureCFTokensV1))
+    if (!ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
     // check flags
@@ -37,14 +37,14 @@ CFTokenIssuanceSet::preflight(PreflightContext const& ctx)
 
     auto const txFlags = ctx.tx.getFlags();
 
-    if (txFlags & tfCFTokenIssuanceSetMask)
+    if (txFlags & tfMPTokenIssuanceSetMask)
         return temINVALID_FLAG;
     // fails if both flags are set
-    else if ((txFlags & tfCFTLock) && (txFlags & tfCFTUnlock))
+    else if ((txFlags & tfMPTLock) && (txFlags & tfMPTUnlock))
         return temINVALID_FLAG;
 
     auto const accountID = ctx.tx[sfAccount];
-    auto const holderID = ctx.tx[~sfCFTokenHolder];
+    auto const holderID = ctx.tx[~sfMPTokenHolder];
     if (holderID && accountID == holderID)
         return temMALFORMED;
 
@@ -52,49 +52,49 @@ CFTokenIssuanceSet::preflight(PreflightContext const& ctx)
 }
 
 TER
-CFTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
+MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 {
     // ensure that issuance exists
-    auto const sleCftIssuance =
-        ctx.view.read(keylet::cftIssuance(ctx.tx[sfCFTokenIssuanceID]));
-    if (!sleCftIssuance)
+    auto const sleMptIssuance =
+        ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    // if the cft has disabled locking
-    if (!((*sleCftIssuance)[sfFlags] & lsfCFTCanLock))
+    // if the mpt has disabled locking
+    if (!((*sleMptIssuance)[sfFlags] & lsfMPTCanLock))
         return tecNO_PERMISSION;
 
     // ensure it is issued by the tx submitter
-    if ((*sleCftIssuance)[sfIssuer] != ctx.tx[sfAccount])
+    if ((*sleMptIssuance)[sfIssuer] != ctx.tx[sfAccount])
         return tecNO_PERMISSION;
 
-    auto const holderID = ctx.tx[~sfCFTokenHolder];
+    auto const holderID = ctx.tx[~sfMPTokenHolder];
 
     // make sure holder account exists
     if (holderID && !ctx.view.exists(keylet::account(*holderID)))
         return tecNO_DST;
 
-    // the cftoken must exist
+    // the mptoken must exist
     if (holderID &&
         !ctx.view.exists(
-            keylet::cftoken(ctx.tx[sfCFTokenIssuanceID], *holderID)))
+            keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], *holderID)))
         return tecOBJECT_NOT_FOUND;
 
     return tesSUCCESS;
 }
 
 TER
-CFTokenIssuanceSet::doApply()
+MPTokenIssuanceSet::doApply()
 {
-    auto const cftIssuanceID = ctx_.tx[sfCFTokenIssuanceID];
+    auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const txFlags = ctx_.tx.getFlags();
-    auto const holderID = ctx_.tx[~sfCFTokenHolder];
+    auto const holderID = ctx_.tx[~sfMPTokenHolder];
     std::shared_ptr<SLE> sle;
 
     if (holderID)
-        sle = view().peek(keylet::cftoken(cftIssuanceID, *holderID));
+        sle = view().peek(keylet::mptoken(mptIssuanceID, *holderID));
     else
-        sle = view().peek(keylet::cftIssuance(cftIssuanceID));
+        sle = view().peek(keylet::mptIssuance(mptIssuanceID));
 
     if (!sle)
         return tecINTERNAL;
@@ -102,10 +102,10 @@ CFTokenIssuanceSet::doApply()
     std::uint32_t const flagsIn = sle->getFieldU32(sfFlags);
     std::uint32_t flagsOut = flagsIn;
 
-    if (txFlags & tfCFTLock)
-        flagsOut |= lsfCFTLocked;
-    else if (txFlags & tfCFTUnlock)
-        flagsOut &= ~lsfCFTLocked;
+    if (txFlags & tfMPTLock)
+        flagsOut |= lsfMPTLocked;
+    else if (txFlags & tfMPTUnlock)
+        flagsOut &= ~lsfMPTLocked;
 
     if (flagsIn != flagsOut)
         sle->setFieldU32(sfFlags, flagsOut);

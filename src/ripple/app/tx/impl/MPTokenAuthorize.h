@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_CFTOKENISSUANCEDESTROY_H_INCLUDED
-#define RIPPLE_TX_CFTOKENISSUANCEDESTROY_H_INCLUDED
+#ifndef RIPPLE_TX_MPTOKENAUTHORIZE_H_INCLUDED
+#define RIPPLE_TX_MPTOKENAUTHORIZE_H_INCLUDED
 
 #include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
 
-class CFTokenIssuanceDestroy : public Transactor
+class MPTokenAuthorize : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit CFTokenIssuanceDestroy(ApplyContext& ctx) : Transactor(ctx)
+    explicit MPTokenAuthorize(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 

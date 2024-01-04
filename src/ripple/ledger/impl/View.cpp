@@ -206,7 +206,7 @@ isFrozen(
     Asset const& asset,
     AccountID const& issuer)
 {
-    if (isXRP(asset) || asset.isCFT())
+    if (isXRP(asset) || asset.isMPT())
         return false;
     auto sle = view.read(keylet::account(issuer));
     if (sle && sle->isFlag(lsfGlobalFreeze))
@@ -237,13 +237,13 @@ accountHolds(
         return {xrpLiquid(view, account, 0, j)};
     }
 
-    if (asset.isCFT())
+    if (asset.isMPT())
     {
         Issue iss{asset, issuer};
-        if (auto const sle = view.read(keylet::cftoken(asset, account)))
+        if (auto const sle = view.read(keylet::mptoken(asset, account)))
             return STAmount{
                 iss,
-                sle->getFieldU64(sfCFTAmount) -
+                sle->getFieldU64(sfMPTAmount) -
                     sle->getFieldU64(sfLockedAmount)};
         return STAmount{iss, 0};
     }
@@ -496,9 +496,9 @@ forEachItemAfter(
 }
 
 Rate
-transferRateCFT(ReadView const& view, CFT const& id)
+transferRateMPT(ReadView const& view, MPT const& id)
 {
-    auto const sle = view.read(keylet::cftIssuance(id));
+    auto const sle = view.read(keylet::mptIssuance(id));
 
     // fee is 0-50,000 (0-50%), rate is 1,000,000,000-2,000,000,000
     if (sle && sle->isFieldPresent(sfTransferFee))
@@ -1132,8 +1132,8 @@ rippleSend(
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
         auto const ter = [&]() {
-            if (saAmount.isCFT())
-                return rippleCFTCredit(
+            if (saAmount.isMPT())
+                return rippleMPTCredit(
                     view, uSenderID, uReceiverID, saAmount, j);
             return rippleCredit(
                 view, uSenderID, uReceiverID, saAmount, false, j);
@@ -1145,18 +1145,18 @@ rippleSend(
     }
 
     // Sending 3rd party IOUs: transit.
-    if (saAmount.isCFT())
+    if (saAmount.isMPT())
     {
         if (auto const sle =
-                view.read(keylet::cftIssuance(saAmount.getAsset())))
+                view.read(keylet::mptIssuance(saAmount.getAsset())))
         {
             saActual = (waiveFee == WaiveTransferFee::Yes)
                 ? saAmount
                 : multiply(
                       saAmount,
-                      transferRateCFT(
-                          view, static_cast<CFT>(saAmount.getAsset())));
-            return rippleCFTCredit(view, uSenderID, uReceiverID, saActual, j);
+                      transferRateMPT(
+                          view, static_cast<MPT>(saAmount.getAsset())));
+            return rippleMPTCredit(view, uSenderID, uReceiverID, saActual, j);
         }
         return tecINTERNAL;
     }
@@ -1554,14 +1554,14 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
 {
     if (isXRP(issue) || issue.account() == account)
         return tesSUCCESS;
-    if (issue.isCFT())
+    if (issue.isMPT())
     {
-        auto const cftID = keylet::cftIssuance(issue.asset());
-        if (auto const sle = view.read(cftID);
-            sle && sle->getFieldU32(sfFlags) & lsfCFTRequireAuth)
+        auto const mptID = keylet::mptIssuance(issue.asset());
+        if (auto const sle = view.read(mptID);
+            sle && sle->getFieldU32(sfFlags) & lsfMPTRequireAuth)
         {
-            auto const cftokenID = keylet::cftoken(cftID.key, account);
-            if (auto const tokSle = view.read(cftokenID))
+            auto const mptokenID = keylet::mptoken(mptID.key, account);
+            if (auto const tokSle = view.read(mptokenID))
             {
                 // TODO no lsfAuthorized as in specs
             }
@@ -1709,21 +1709,21 @@ deleteAMMTrustLine(
 }
 
 TER
-rippleCFTCredit(
+rippleMPTCredit(
     ApplyView& view,
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
     STAmount saAmount,
     beast::Journal j)
 {
-    auto const cftID = keylet::cftIssuance(saAmount.getAsset());
+    auto const mptID = keylet::mptIssuance(saAmount.getAsset());
     if (uSenderID == saAmount.getIssuer())
     {
-        if (auto sle = view.peek(cftID))
+        if (auto sle = view.peek(mptID))
         {
             sle->setFieldU64(
                 sfOutstandingAmount,
-                sle->getFieldU64(sfOutstandingAmount) + saAmount.cft().cft());
+                sle->getFieldU64(sfOutstandingAmount) + saAmount.mpt().mpt());
             view.update(sle);
         }
         else
@@ -1731,23 +1731,23 @@ rippleCFTCredit(
     }
     else
     {
-        auto const cftokenID = keylet::cftoken(cftID.key, uSenderID);
-        if (auto sle = view.peek(cftokenID))
+        auto const mptokenID = keylet::mptoken(mptID.key, uSenderID);
+        if (auto sle = view.peek(mptokenID))
         {
             sle->setFieldU64(
-                sfCFTAmount,
-                sle->getFieldU64(sfCFTAmount) - saAmount.cft().cft());
+                sfMPTAmount,
+                sle->getFieldU64(sfMPTAmount) - saAmount.mpt().mpt());
             view.update(sle);
         }
     }
 
     if (uReceiverID == saAmount.getIssuer())
     {
-        if (auto sle = view.peek(cftID))
+        if (auto sle = view.peek(mptID))
         {
             sle->setFieldU64(
                 sfOutstandingAmount,
-                sle->getFieldU64(sfOutstandingAmount) - saAmount.cft().cft());
+                sle->getFieldU64(sfOutstandingAmount) - saAmount.mpt().mpt());
             view.update(sle);
         }
         else
@@ -1755,12 +1755,12 @@ rippleCFTCredit(
     }
     else
     {
-        auto const cftokenID = keylet::cftoken(cftID.key, uReceiverID);
-        if (auto sle = view.peek(cftokenID))
+        auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
+        if (auto sle = view.peek(mptokenID))
         {
             sle->setFieldU64(
-                sfCFTAmount,
-                sle->getFieldU64(sfCFTAmount) + saAmount.cft().cft());
+                sfMPTAmount,
+                sle->getFieldU64(sfMPTAmount) + saAmount.mpt().mpt());
             view.update(sle);
         }
     }
