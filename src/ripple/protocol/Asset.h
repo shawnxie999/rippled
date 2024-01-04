@@ -110,7 +110,7 @@ public:
         return std::get_if<T>(asset_);
     }
 
-    operator Currency const&() const
+    operator Currency const &() const
     {
         assert(std::holds_alternative<Currency>(asset_));
         if (!std::holds_alternative<Currency>(asset_))
@@ -118,7 +118,7 @@ public:
         return std::get<Currency>(asset_);
     }
 
-    operator MPT const&() const
+    operator MPT const &() const
     {
         assert(std::holds_alternative<MPT>(asset_));
         if (!std::holds_alternative<MPT>(asset_))
