@@ -55,6 +55,8 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
+    // TODO: check if maximumAmount is within 63 bit range
+
     return preflight2(ctx);
 }
 

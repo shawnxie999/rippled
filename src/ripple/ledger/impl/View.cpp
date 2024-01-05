@@ -1736,6 +1736,14 @@ rippleMPTCredit(
         auto const mptokenID = keylet::mptoken(mptID.key, uSenderID);
         if (auto sle = view.peek(mptokenID))
         {
+            // Ensure sender is authorized if the MPT requires auth.
+            // It's possible that the issuer unauthorized a token holder
+            // who is holding some MPT
+            if (auto const sleIssuance = view.peek(mptID);
+                (sleIssuance->getFlags() & lsfMPTRequireAuth) &&
+                !(sle->getFlags() & lsfMPTAuthorized))
+                return tecNO_AUTH;
+
             auto const amt = sle->getFieldU64(sfMPTAmount);
             auto const pay = saAmount.mpt().mpt();
             if (amt >= pay)
@@ -1773,6 +1781,12 @@ rippleMPTCredit(
         auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
         if (auto sle = view.peek(mptokenID))
         {
+            // Ensure receiver is authorized if the MPT requires auth
+            if (auto const sleIssuance = view.peek(mptID);
+                (sleIssuance->getFlags() & lsfMPTRequireAuth) &&
+                !(sle->getFlags() & lsfMPTAuthorized))
+                return tecNO_AUTH;
+
             sle->setFieldU64(
                 sfMPTAmount,
                 sle->getFieldU64(sfMPTAmount) + saAmount.mpt().mpt());

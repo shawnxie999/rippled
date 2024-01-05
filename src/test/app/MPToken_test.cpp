@@ -210,6 +210,7 @@ class MPToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
             auto const id = getMptID(alice.id(), env.seq(alice));
+            auto const mpt = ripple::MPT(env.seq(alice), alice.id());
             env(mpt::create(alice));
             env.close();
 
@@ -219,7 +220,27 @@ class MPToken_test : public beast::unit_test::suite
             env(mpt::destroy(bob, id), ter(tecNO_PERMISSION));
             env.close();
 
-            // TODO: add test when OutstandingAmount is non zero
+            // Make sure that issuer can't delete issuance when it still has
+            // outstanding balance
+            {
+                // bob now holds a mptoken object
+                env(mpt::authorize(bob, id, std::nullopt));
+                env.close();
+
+                BEAST_EXPECT(env.ownerCount(bob) == 1);
+
+                // alice pays bob 100 tokens
+                env(
+                    pay(alice,
+                        bob,
+                        ripple::test::jtx::MPT(alice.name(), mpt)(100)));
+                env.close();
+                BEAST_EXPECT(checkMPTokenAmount(
+                    env, keylet::mptIssuance(id).key, bob, 100));
+
+                env(mpt::destroy(alice, id), ter(tecHAS_OBLIGATIONS));
+                env.close();
+            }
         }
     }
 
@@ -327,6 +348,7 @@ class MPToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
             auto const id = getMptID(alice.id(), env.seq(alice));
+            auto const mpt = ripple::MPT(env.seq(alice), alice.id());
             env(mpt::create(alice));
             env.close();
 
@@ -359,7 +381,33 @@ class MPToken_test : public beast::unit_test::suite
             env(mpt::authorize(bob, id, std::nullopt), ter(tecMPTOKEN_EXISTS));
             env.close();
 
-            // TODO: check where mptoken balance is nonzero
+            // Check that bob cannot delete CFToken when his balance is non-zero
+            {
+                // alice pays bob 100 tokens
+                env(
+                    pay(alice,
+                        bob,
+                        ripple::test::jtx::MPT(alice.name(), mpt)(100)));
+                env.close();
+                BEAST_EXPECT(checkMPTokenAmount(
+                    env, keylet::mptIssuance(id).key, bob, 100));
+
+                // bob tries to delete his CFToken, but fails since he still
+                // holds tokens
+                env(mpt::authorize(bob, id, std::nullopt),
+                    txflags(tfMPTUnauthorize),
+                    ter(tecHAS_OBLIGATIONS));
+                env.close();
+
+                // bob pays back alice 100 tokens
+                env(
+                    pay(bob,
+                        alice,
+                        ripple::test::jtx::MPT(alice.name(), mpt)(100)));
+                env.close();
+                BEAST_EXPECT(checkMPTokenAmount(
+                    env, keylet::mptIssuance(id).key, bob, 0));
+            }
 
             env(mpt::authorize(bob, id, std::nullopt),
                 txflags(tfMPTUnauthorize));
@@ -600,9 +648,6 @@ class MPToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(bob) == 0);
         }
-
-        // TODO: test allowlisting cases where bob tries to send tokens
-        //       without being authorized.
     }
 
     void
@@ -960,6 +1005,94 @@ class MPToken_test : public beast::unit_test::suite
                 checkMPTokenAmount(env, keylet::mptIssuance(id).key, bob, 50));
             BEAST_EXPECT(checkMPTokenAmount(
                 env, keylet::mptIssuance(id).key, carol, 50));
+            BEAST_EXPECT(checkMPTokenOutstandingAmount(
+                env, keylet::mptIssuance(id).key, 100));
+        }
+
+        // If allowlisting is enabled, Payment fails if the receiver is not
+        // authorized
+        {
+            Env env{*this, features};
+            Account const alice("alice");  // issuer
+            Account const bob("bob");      // holder
+
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+            auto const seq = env.seq(alice);
+            auto const id = getMptID(alice.id(), seq);
+            auto const mpt = ripple::MPT(seq, alice.id());
+
+            env(mpt::create(alice), txflags(tfMPTRequireAuth));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 1);
+            BEAST_EXPECT(env.ownerCount(bob) == 0);
+
+            env(mpt::authorize(bob, id, std::nullopt));
+            env.close();
+
+            env(pay(alice, bob, ripple::test::jtx::MPT(alice.name(), mpt)(100)),
+                ter(tecNO_AUTH));
+            env.close();
+            BEAST_EXPECT(
+                checkMPTokenAmount(env, keylet::mptIssuance(id).key, bob, 0));
+            BEAST_EXPECT(checkMPTokenOutstandingAmount(
+                env, keylet::mptIssuance(id).key, 0));
+        }
+
+        // If allowlisting is enabled, Payment fails if the sender is not
+        // authorized
+        {
+            Env env{*this, features};
+            Account const alice("alice");  // issuer
+            Account const bob("bob");      // holder
+
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+            auto const seq = env.seq(alice);
+            auto const id = getMptID(alice.id(), seq);
+            auto const mpt = ripple::MPT(seq, alice.id());
+
+            env(mpt::create(alice), txflags(tfMPTRequireAuth));
+            env.close();
+
+            BEAST_EXPECT(env.ownerCount(alice) == 1);
+            BEAST_EXPECT(env.ownerCount(bob) == 0);
+
+            // bob creates an empty MPToken
+            env(mpt::authorize(bob, id, std::nullopt));
+            env.close();
+
+            // alice authorizes bob to hold funds
+            env(mpt::authorize(alice, id, bob));
+            env.close();
+
+            // alice sends 100 MPT to bob
+            env(pay(
+                alice, bob, ripple::test::jtx::MPT(alice.name(), mpt)(100)));
+            env.close();
+            BEAST_EXPECT(
+                checkMPTokenAmount(env, keylet::mptIssuance(id).key, bob, 100));
+            BEAST_EXPECT(checkMPTokenOutstandingAmount(
+                env, keylet::mptIssuance(id).key, 100));
+
+            // alice UNAUTHORIZES bob
+            env(mpt::authorize(alice, id, bob), txflags(tfMPTUnauthorize));
+            env.close();
+
+            // bob fails to send back to alice because he is no longer authorize
+            // to move his funds!
+            env(pay(bob, alice, ripple::test::jtx::MPT(bob.name(), mpt)(100)),
+                ter(tecNO_AUTH));
+            env.close();
+            BEAST_EXPECT(
+                checkMPTokenAmount(env, keylet::mptIssuance(id).key, bob, 100));
             BEAST_EXPECT(checkMPTokenOutstandingAmount(
                 env, keylet::mptIssuance(id).key, 100));
         }
