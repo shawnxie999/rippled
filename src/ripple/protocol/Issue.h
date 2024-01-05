@@ -50,9 +50,10 @@ public:
     {
     }
 
-    Issue(Asset const& asset, AccountID const& account)
+    Issue(Currency const& currency, AccountID const& account)
     {
-        *this = std::make_pair(asset, account);
+        asset_ = currency;
+        account_ = account;
     }
 
     Issue(MPT const& u) : asset_(u)
@@ -68,19 +69,10 @@ public:
         return *this;
     }
     Issue&
-    operator=(std::pair<Asset, AccountID> const& pair)
+    operator=(std::pair<Currency, AccountID> const& pair)
     {
-        if (pair.first.isMPT())
-        {
-            if (pair.second != std::get<MPT>(pair.first.asset()).second)
-                Throw<std::logic_error>("Issue, invalid Asset/Account");
-            account_ = std::nullopt;
-        }
-        else
-        {
-            account_ = pair.second;
-        }
         asset_ = pair.first;
+        account_ = pair.second;
         return *this;
     }
     Issue&
@@ -123,10 +115,7 @@ public:
         if (asset_.isCurrency())
             account_ = issuer;
         else
-        {
-            if (issuer != static_cast<MPT>(asset_).second)
-                Throw<std::logic_error>("Invalid issuer for MPT");
-        }
+            Throw<std::logic_error>("Invalid issuer for MPT");
     }
 
     std::string
