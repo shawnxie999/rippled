@@ -41,6 +41,20 @@ class MPToken_test : public beast::unit_test::suite
     }
 
     [[nodiscard]] bool
+    checkMPTokenOutstandingAmount(
+        test::jtx::Env const& env,
+        ripple::uint256 const mptIssuanceid,
+        std::uint64_t expectedAmount)
+    {
+        auto const sleMpt = env.le(keylet::mptIssuance(mptIssuanceid));
+        if (!sleMpt)
+            return false;
+
+        std::uint64_t const amount = (*sleMpt)[sfOutstandingAmount];
+        return amount == expectedAmount;
+    }
+
+    [[nodiscard]] bool
     checkMPTokenIssuanceFlags(
         test::jtx::Env const& env,
         ripple::uint256 const mptIssuanceid,
@@ -894,8 +908,9 @@ class MPToken_test : public beast::unit_test::suite
             Env env{*this, features};
             Account const alice("alice");  // issuer
             Account const bob("bob");      // holder
+            Account const carol("carol");  // holder
 
-            env.fund(XRP(10000), alice, bob);
+            env.fund(XRP(10000), alice, bob, carol);
             env.close();
 
             BEAST_EXPECT(env.ownerCount(alice) == 0);
@@ -909,18 +924,44 @@ class MPToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.ownerCount(alice) == 1);
             BEAST_EXPECT(env.ownerCount(bob) == 0);
+            BEAST_EXPECT(env.ownerCount(carol) == 0);
 
             // env(mpt::authorize(alice, id.key, std::nullopt));
             // env.close();
 
             env(mpt::authorize(bob, id, std::nullopt));
             env.close();
+            env(mpt::authorize(carol, id, std::nullopt));
+            env.close();
 
+            // issuer to holder
             env(pay(
                 alice, bob, ripple::test::jtx::MPT(alice.name(), mpt)(100)));
             env.close();
             BEAST_EXPECT(
                 checkMPTokenAmount(env, keylet::mptIssuance(id).key, bob, 100));
+            BEAST_EXPECT(checkMPTokenOutstandingAmount(
+                env, keylet::mptIssuance(id).key, 100));
+
+            // holder to issuer
+            env(pay(bob, alice, ripple::test::jtx::MPT(bob.name(), mpt)(100)));
+            env.close();
+            BEAST_EXPECT(
+                checkMPTokenAmount(env, keylet::mptIssuance(id).key, bob, 0));
+            BEAST_EXPECT(checkMPTokenOutstandingAmount(
+                env, keylet::mptIssuance(id).key, 0));
+
+            // holder to holder
+            env(pay(
+                alice, bob, ripple::test::jtx::MPT(alice.name(), mpt)(100)));
+            env(pay(bob, carol, ripple::test::jtx::MPT(alice.name(), mpt)(50)));
+            env.close();
+            BEAST_EXPECT(
+                checkMPTokenAmount(env, keylet::mptIssuance(id).key, bob, 50));
+            BEAST_EXPECT(checkMPTokenAmount(
+                env, keylet::mptIssuance(id).key, carol, 50));
+            BEAST_EXPECT(checkMPTokenOutstandingAmount(
+                env, keylet::mptIssuance(id).key, 100));
         }
     }
 

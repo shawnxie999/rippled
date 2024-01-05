@@ -239,12 +239,14 @@ accountHolds(
 
     if (asset.isMPT())
     {
-        Issue iss{asset, issuer};
+        Issue iss{asset};
         if (auto const sle = view.read(keylet::mptoken(asset, account)))
-            return STAmount{
-                iss,
-                sle->getFieldU64(sfMPTAmount) -
-                    sle->getFieldU64(sfLockedAmount)};
+        {
+            auto const amt = sle->getFieldU64(sfMPTAmount);
+            auto const locked = sle->getFieldU64(sfLockedAmount);
+            if (amt > locked)
+                return STAmount{iss, amt - locked};
+        }
         return STAmount{iss, 0};
     }
 
@@ -1734,10 +1736,18 @@ rippleMPTCredit(
         auto const mptokenID = keylet::mptoken(mptID.key, uSenderID);
         if (auto sle = view.peek(mptokenID))
         {
-            sle->setFieldU64(
-                sfMPTAmount,
-                sle->getFieldU64(sfMPTAmount) - saAmount.mpt().mpt());
-            view.update(sle);
+            auto const amt = sle->getFieldU64(sfMPTAmount);
+            auto const pay = saAmount.mpt().mpt();
+            if (amt >= pay)
+            {
+                if (amt == pay)
+                    sle->makeFieldAbsent(sfMPTAmount);
+                else
+                    sle->setFieldU64(sfMPTAmount, amt - pay);
+                view.update(sle);
+            }
+            else
+                return tecINSUFFICIENT_FUNDS;
         }
     }
 
@@ -1745,10 +1755,15 @@ rippleMPTCredit(
     {
         if (auto sle = view.peek(mptID))
         {
-            sle->setFieldU64(
-                sfOutstandingAmount,
-                sle->getFieldU64(sfOutstandingAmount) - saAmount.mpt().mpt());
-            view.update(sle);
+            auto const outstanding = sle->getFieldU64(sfOutstandingAmount);
+            auto const redeem = saAmount.mpt().mpt();
+            if (outstanding >= redeem)
+            {
+                sle->setFieldU64(sfOutstandingAmount, outstanding - redeem);
+                view.update(sle);
+            }
+            else
+                return tecINSUFFICIENT_FUNDS;
         }
         else
             return tecINTERNAL;

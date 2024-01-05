@@ -78,11 +78,15 @@ Payment::preflight(PreflightContext const& ctx)
     else if (saDstAmount.native())
         maxSourceAmount = saDstAmount;
     else
+    {
+        auto const& asset = saDstAmount.getAsset();
+        auto const iss = asset.isMPT() ? Issue{asset} : Issue{asset, account};
         maxSourceAmount = STAmount(
-            {saDstAmount.getAsset(), account},
+            iss,
             saDstAmount.mantissa(),
             saDstAmount.exponent(),
             saDstAmount < beast::zero);
+    }
 
     auto const& uSrcCurrency = maxSourceAmount.getAsset();
     auto const& uDstCurrency = saDstAmount.getAsset();
@@ -314,11 +318,15 @@ Payment::doApply()
     else if (saDstAmount.native())
         maxSourceAmount = saDstAmount;
     else
+    {
+        auto const& asset = saDstAmount.getAsset();
+        auto const iss = asset.isMPT() ? Issue{asset} : Issue{asset, account_};
         maxSourceAmount = STAmount(
-            {saDstAmount.getAsset(), account_},
+            iss,
             saDstAmount.mantissa(),
             saDstAmount.exponent(),
             saDstAmount < beast::zero);
+    }
 
     JLOG(j_.trace()) << "maxSourceAmount=" << maxSourceAmount.getFullText()
                      << " saDstAmount=" << saDstAmount.getFullText();
