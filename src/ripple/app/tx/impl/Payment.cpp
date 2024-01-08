@@ -441,7 +441,8 @@ Payment::doApply()
             ter != tesSUCCESS)
             return ter;
 
-        if (auto const ter = requireAuth(view(), saDstAmount.issue(), uDstAccountID);
+        if (auto const ter =
+                requireAuth(view(), saDstAmount.issue(), uDstAccountID);
             ter != tesSUCCESS)
             return ter;
 
