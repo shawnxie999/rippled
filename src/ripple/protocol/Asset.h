@@ -126,7 +126,7 @@ public:
         return std::get<MPT>(asset_);
     }
 
-    friend bool
+    friend constexpr bool
     comparable(Asset const& a1, Asset const& a2)
     {
         return std::holds_alternative<Currency>(a1.asset_) ==
