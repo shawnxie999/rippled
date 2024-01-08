@@ -1563,10 +1563,10 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
             sle && sle->getFieldU32(sfFlags) & lsfMPTRequireAuth)
         {
             auto const mptokenID = keylet::mptoken(mptID.key, account);
-            if (auto const tokSle = view.read(mptokenID))
-            {
-                // TODO no lsfAuthorized as in specs
-            }
+            if (auto const tokSle = view.read(mptokenID);
+                (sle->getFlags() & lsfMPTRequireAuth) &&
+                !(tokSle->getFlags() & lsfMPTAuthorized))
+                return TER{tecNO_AUTH};
         }
         return tesSUCCESS;
     }

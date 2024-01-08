@@ -437,6 +437,15 @@ Payment::doApply()
     }
     else if (saDstAmount.isMPT())
     {
+        if (auto const ter = requireAuth(view(), saDstAmount.issue(), account_);
+            ter != tesSUCCESS)
+            return ter;
+
+        if (auto const ter =
+                requireAuth(view(), saDstAmount.issue(), uDstAccountID);
+            ter != tesSUCCESS)
+            return ter;
+
         PaymentSandbox pv(&view());
         auto const res =
             rippleMPTCredit(pv, account_, uDstAccountID, saDstAmount, j_);
