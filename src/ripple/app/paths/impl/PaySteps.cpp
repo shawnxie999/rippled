@@ -186,11 +186,11 @@ toStrand(
     }
 
     Issue curIssue = [&] {
-        auto const& asset =
-            sendMaxIssue ? sendMaxIssue->asset() : deliver.asset();
-        if (isXRP(asset))
+        auto const& currency = static_cast<Currency>(
+            sendMaxIssue ? sendMaxIssue->asset() : deliver.asset());
+        if (isXRP(currency))
             return xrpIssue();
-        return Issue{asset, src};
+        return Issue{currency, src};
     }();
 
     auto hasCurrency = [](STPathElement const pe) {
@@ -304,11 +304,10 @@ toStrand(
 
         if (cur->hasCurrency())
         {
-            Currency currency;
-            currency = cur->getCurrency();
-            if (isXRP(currency))
-                curIssue.setIssuer(xrpAccount());
-            curIssue = std::make_pair(currency, curIssue.account());
+            Currency const currency = cur->getCurrency();
+            AccountID const account =
+                isXRP(currency) ? xrpAccount() : curIssue.account();
+            curIssue = std::make_pair(currency, account);
         }
 
         if (cur->isAccount() && next->isAccount())
@@ -422,11 +421,11 @@ toStrand(
 
         auto curAcc = src;
         auto curIss = [&] {
-            auto& asset =
-                sendMaxIssue ? sendMaxIssue->asset() : deliver.asset();
-            if (isXRP(asset))
+            auto const& currency = static_cast<Currency>(
+                sendMaxIssue ? sendMaxIssue->asset() : deliver.asset());
+            if (isXRP(currency))
                 return xrpIssue();
-            return Issue{asset, src};
+            return Issue{currency, src};
         }();
 
         for (auto const& s : result)

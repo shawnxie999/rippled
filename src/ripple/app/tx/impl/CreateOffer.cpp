@@ -1185,7 +1185,6 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     bool const bookExisted = static_cast<bool>(sb.peek(dir));
 
     auto const bookNode = sb.dirAppend(dir, offer_index, [&](SLE::ref sle) {
-        // TODO add MPT once offers are supported for MPT
         sle->setFieldH160(
             sfTakerPaysCurrency,
             static_cast<Currency>(saTakerPays.issue().asset()));

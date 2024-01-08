@@ -91,7 +91,6 @@ Payment::preflight(PreflightContext const& ctx)
     auto const& uSrcCurrency = maxSourceAmount.getAsset();
     auto const& uDstCurrency = saDstAmount.getAsset();
 
-    // isZero() is XRP.  FIX!
     bool const bXRPDirect = uSrcCurrency.isXRP() && uDstCurrency.isXRP();
     bool const bMPTDirect = uSrcCurrency.isMPT() && uDstCurrency.isMPT();
     bool const bDirect = bXRPDirect || bMPTDirect;
@@ -448,7 +447,7 @@ Payment::doApply()
 
         PaymentSandbox pv(&view());
         auto const res =
-            rippleMPTCredit(pv, account_, uDstAccountID, saDstAmount, j_);
+            accountSend(pv, account_, uDstAccountID, saDstAmount, j_);
         pv.apply(ctx_.rawView());
         return res;
     }
