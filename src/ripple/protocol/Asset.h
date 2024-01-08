@@ -132,42 +132,42 @@ public:
         return std::holds_alternative<Currency>(a1.asset_) ==
             std::holds_alternative<Currency>(a2.asset_);
     }
-    friend bool
+    friend constexpr bool
     operator==(Currency const& c, Asset const& a) noexcept
     {
         return a.isCurrency() && c == (Currency&)a;
     }
-    friend bool
+    friend constexpr bool
     operator==(Asset const& a, Currency const& c) noexcept
     {
         return c == a;
     }
-    friend bool
+    friend constexpr bool
     operator==(Asset const& a1, Asset const& a2) noexcept
     {
         return comparable(a1, a2) && a1.asset_ == a2.asset_;
     }
-    friend bool
+    friend constexpr bool
     operator!=(Asset const& a1, Asset const& a2) noexcept
     {
         return !(a1 == a2);
     }
-    friend bool
+    friend constexpr bool
     operator<(Asset const& a1, Asset const& a2) noexcept
     {
         return comparable(a1, a2) && a1.asset_ < a2.asset_;
     }
-    friend bool
+    friend constexpr bool
     operator>(Asset const& a1, Asset const& a2) noexcept
     {
         return a2 < a1;
     }
-    friend bool
+    friend constexpr bool
     operator<=(Asset const& a1, Asset const& a2) noexcept
     {
         return !(a2 < a1);
     }
-    friend bool
+    friend constexpr bool
     operator>=(Asset const& a1, Asset const& a2) noexcept
     {
         return !(a1 < a2);
