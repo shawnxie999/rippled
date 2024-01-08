@@ -1563,10 +1563,8 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
             sle && sle->getFieldU32(sfFlags) & lsfMPTRequireAuth)
         {
             auto const mptokenID = keylet::mptoken(mptID.key, account);
-            if (auto const tokSle = view.read(mptokenID))
-            {
-                // TODO no lsfAuthorized as in specs
-            }
+            if (auto const tokSle = view.read(mptokenID); (sle->getFlags() & lsfMPTRequireAuth) && !(tokSle->getFlags() & lsfMPTAuthorized))
+                return TER{tecNO_AUTH};
         }
         return tesSUCCESS;
     }
@@ -1718,6 +1716,14 @@ rippleMPTCredit(
     STAmount saAmount,
     beast::Journal j)
 {
+    if (auto const ter = requireAuth(view, saAmount.issue(), uSenderID);
+        ter != tesSUCCESS)
+        return ter;
+
+    if (auto const ter = requireAuth(view, saAmount.issue(), uReceiverID);
+        ter != tesSUCCESS)
+        return ter;
+
     auto const mptID = keylet::mptIssuance(saAmount.getAsset());
     if (uSenderID == saAmount.getIssuer())
     {
@@ -1736,14 +1742,6 @@ rippleMPTCredit(
         auto const mptokenID = keylet::mptoken(mptID.key, uSenderID);
         if (auto sle = view.peek(mptokenID))
         {
-            // Ensure sender is authorized if the MPT requires auth.
-            // It's possible that the issuer unauthorized a token holder
-            // who is holding some MPT
-            if (auto const sleIssuance = view.peek(mptID);
-                (sleIssuance->getFlags() & lsfMPTRequireAuth) &&
-                !(sle->getFlags() & lsfMPTAuthorized))
-                return tecNO_AUTH;
-
             auto const amt = sle->getFieldU64(sfMPTAmount);
             auto const pay = saAmount.mpt().mpt();
             if (amt >= pay)
@@ -1781,12 +1779,6 @@ rippleMPTCredit(
         auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
         if (auto sle = view.peek(mptokenID))
         {
-            // Ensure receiver is authorized if the MPT requires auth
-            if (auto const sleIssuance = view.peek(mptID);
-                (sleIssuance->getFlags() & lsfMPTRequireAuth) &&
-                !(sle->getFlags() & lsfMPTAuthorized))
-                return tecNO_AUTH;
-
             sle->setFieldU64(
                 sfMPTAmount,
                 sle->getFieldU64(sfMPTAmount) + saAmount.mpt().mpt());
