@@ -1718,14 +1718,6 @@ rippleMPTCredit(
     STAmount saAmount,
     beast::Journal j)
 {
-    if (auto const ter = requireAuth(view, saAmount.issue(), uSenderID);
-        ter != tesSUCCESS)
-        return ter;
-
-    if (auto const ter = requireAuth(view, saAmount.issue(), uReceiverID);
-        ter != tesSUCCESS)
-        return ter;
-
     auto const mptID = keylet::mptIssuance(saAmount.getAsset());
     if (uSenderID == saAmount.getIssuer())
     {
