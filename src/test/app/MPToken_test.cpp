@@ -129,7 +129,8 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
 
             // MaximumAmount larger than 63 bit returns errpr
-            env(mpt::create(alice, 0xFFFFFFFFFFFFFFF0ull, 0, 0, "test"), ter(temMALFORMED));
+            env(mpt::create(alice, 0xFFFFFFFFFFFFFFF0ull, 0, 0, "test"),
+                ter(temMALFORMED));
             env.close();
         }
     }

@@ -27,8 +27,9 @@ namespace jtx {
 
 namespace mpt {
 
-static std::array<std::uint8_t, 8> 
-uint64ToByteArray(std::uint64_t value) {
+static std::array<std::uint8_t, 8>
+uint64ToByteArray(std::uint64_t value)
+{
     value = boost::endian::native_to_big(value);
     std::array<std::uint8_t, 8> result;
     std::memcpy(result.data(), &value, sizeof(value));
