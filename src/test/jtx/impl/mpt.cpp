@@ -27,6 +27,15 @@ namespace jtx {
 
 namespace mpt {
 
+static std::array<std::uint8_t, 8>
+uint64ToByteArray(std::uint64_t value)
+{
+    value = boost::endian::native_to_big(value);
+    std::array<std::uint8_t, 8> result;
+    std::memcpy(result.data(), &value, sizeof(value));
+    return result;
+}
+
 Json::Value
 create(jtx::Account const& account)
 {
@@ -39,7 +48,7 @@ create(jtx::Account const& account)
 Json::Value
 create(
     jtx::Account const& account,
-    std::uint32_t const maxAmt,
+    std::uint64_t const maxAmt,
     std::uint8_t const assetScale,
     std::uint16_t transferFee,
     std::string metadata)
@@ -47,10 +56,12 @@ create(
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfTransactionType.jsonName] = jss::MPTokenIssuanceCreate;
-    jv[sfMaximumAmount.jsonName] = maxAmt;
     jv[sfAssetScale.jsonName] = assetScale;
     jv[sfTransferFee.jsonName] = transferFee;
     jv[sfMPTokenMetadata.jsonName] = strHex(metadata);
+
+    // convert maxAmt to hex string, since json doesn't accept 64-bit int
+    jv[sfMaximumAmount.jsonName] = strHex(uint64ToByteArray(maxAmt));
     return jv;
 }
 
