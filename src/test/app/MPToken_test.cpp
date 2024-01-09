@@ -153,7 +153,7 @@ class MPToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.ownerCount(alice) == 0);
 
             auto const id = getMptID(alice, env.seq(alice));
-            env(mpt::create(alice, 100, 1, 10, "123"),
+            env(mpt::create(alice, 0x7FFFFFFFFFFFFFFF, 1, 10, "123"),
                 txflags(
                     tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow |
                     tfMPTCanTrade | tfMPTCanTransfer | tfMPTCanClawback));
