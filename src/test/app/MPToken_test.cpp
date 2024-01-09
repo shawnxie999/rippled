@@ -123,6 +123,14 @@ class MPToken_test : public beast::unit_test::suite
             // empty metadata returns error
             env(mpt::create(alice, 100, 0, 0, ""), ter(temMALFORMED));
             env.close();
+
+            // MaximumAmout of 0 returns error
+            env(mpt::create(alice, 0, 1, 1, "test"), ter(temMALFORMED));
+            env.close();
+
+            // MaximumAmount larger than 63 bit returns errpr
+            env(mpt::create(alice, 0xFFFFFFFFFFFFFFF0ull, 0, 0, "test"), ter(temMALFORMED));
+            env.close();
         }
     }
 
