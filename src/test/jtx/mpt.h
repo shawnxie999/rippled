@@ -90,7 +90,7 @@ class MPTTester
     std::unordered_map<std::string, AccountP> const holders_;
     std::optional<std::uint32_t> sequence_;
     std::optional<uint192> id_;
-    std::optional<uint256> issuanceID_;
+    std::optional<uint256> issuanceKey_;
     std::optional<ripple::MPT> mpt_;
     bool close_;
 
@@ -139,8 +139,8 @@ public:
     uint256 const&
     issuanceKey() const
     {
-        assert(issuanceID_);
-        return *issuanceID_;
+        assert(issuanceKey_);
+        return *issuanceKey_;
     }
 
     uint192 const&
@@ -178,7 +178,7 @@ private:
             {
                 sequence_.reset();
                 id_.reset();
-                issuanceID_.reset();
+                issuanceKey_.reset();
                 mpt_.reset();
             }
         }
