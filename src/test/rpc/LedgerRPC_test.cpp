@@ -1590,19 +1590,16 @@ class LedgerRPC_test : public beast::unit_test::suite
         Env env{*this};
         Account const alice{"alice"};
 
-        env.fund(XRP(10000), alice);
-        env.close();
+        MPTTester mptAlice(env, alice);
 
-        auto const id = getMptID(alice, env.seq(alice));
-        env(mpt::create(alice));
-        env.close();
+        mptAlice.create();
 
         std::string const ledgerHash{to_string(env.closed()->info().hash)};
 
         {
             // Request the MPTokenIssuance using its ID.
             Json::Value jvParams;
-            jvParams[jss::mpt_issuance_id] = to_string(id);
+            jvParams[jss::mpt_issuance_id] = to_string(mptAlice.issuanceID());
             jvParams[jss::ledger_hash] = ledgerHash;
             Json::Value const jrr = env.rpc(
                 "json", "ledger_entry", to_string(jvParams))[jss::result];

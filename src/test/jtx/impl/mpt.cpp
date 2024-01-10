@@ -25,8 +25,6 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-namespace mpt {
-
 static std::array<std::uint8_t, 8>
 uint64ToByteArray(std::uint64_t value)
 {
@@ -36,77 +34,190 @@ uint64ToByteArray(std::uint64_t value)
     return result;
 }
 
-Json::Value
-create(jtx::Account const& account)
+std::unordered_map<std::string, AccountP>
+MPTTester::makeHolders(std::vector<AccountP> const& holders)
 {
-    Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfTransactionType.jsonName] = jss::MPTokenIssuanceCreate;
-    return jv;
+    std::unordered_map<std::string, AccountP> accounts;
+    for (auto const& h : holders)
+    {
+        assert(h && holders_.find(h->human()) == accounts.cend());
+        accounts.emplace(h->human(), h);
+    }
+    return accounts;
 }
 
-Json::Value
-create(
-    jtx::Account const& account,
-    std::uint64_t const maxAmt,
-    std::uint8_t const assetScale,
-    std::uint16_t transferFee,
-    std::string metadata)
+MPTTester::MPTTester(Env& env, Account const& issuer, MPTConstr const& arg)
+    : env_(env)
+    , issuer_(issuer)
+    , holders_(makeHolders(arg.holders))
+    , close_(arg.close)
 {
+    if (arg.fund)
+    {
+        env_.fund(arg.xrp, issuer_);
+        for (auto it : holders_)
+            env_.fund(arg.xrpHolders, *it.second);
+    }
+    if (close_)
+        env.close();
+    if (arg.fund)
+    {
+        env_.require(owners(issuer_, 0));
+        for (auto it : holders_)
+        {
+            assert(issuer_.id() != it.second->id());
+            env_.require(owners(*it.second, 0));
+        }
+    }
+}
+
+void
+MPTTester::create(const MPTCreate& arg)
+{
+    if (sequence_)
+        Throw<std::runtime_error>("MPT can't be reused");
+    sequence_ = env_.seq(issuer_);
+    id_ = getMptID(issuer_.id(), *sequence_);
+    issuanceKey_ = keylet::mptIssuance(*id_).key;
+    mpt_ = std::make_pair(*sequence_, issuer_.id());
     Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
+    jv[sfAccount.jsonName] = issuer_.human();
     jv[sfTransactionType.jsonName] = jss::MPTokenIssuanceCreate;
-    jv[sfAssetScale.jsonName] = assetScale;
-    jv[sfTransferFee.jsonName] = transferFee;
-    jv[sfMPTokenMetadata.jsonName] = strHex(metadata);
+    if (arg.assetScale)
+        jv[sfAssetScale.jsonName] = *arg.assetScale;
+    if (arg.transferFee)
+        jv[sfTransferFee.jsonName] = *arg.transferFee;
+    if (arg.metadata)
+        jv[sfMPTokenMetadata.jsonName] = strHex(*arg.metadata);
 
     // convert maxAmt to hex string, since json doesn't accept 64-bit int
-    jv[sfMaximumAmount.jsonName] = strHex(uint64ToByteArray(maxAmt));
-    return jv;
+    if (arg.maxAmt)
+        jv[sfMaximumAmount.jsonName] = strHex(uint64ToByteArray(*arg.maxAmt));
+    submit(arg, jv);
 }
 
-Json::Value
-destroy(jtx::Account const& account, uint192 const& id)
+void
+MPTTester::destroy(MPTDestroy const& arg)
 {
     Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
-    jv[sfMPTokenIssuanceID.jsonName] = to_string(id);
+    if (arg.issuer)
+        jv[sfAccount.jsonName] = arg.issuer->human();
+    else
+        jv[sfAccount.jsonName] = issuer_.human();
+    if (arg.id)
+        jv[sfMPTokenIssuanceID.jsonName] = to_string(*arg.id);
+    else
+        jv[sfMPTokenIssuanceID.jsonName] = to_string(*id_);
     jv[sfTransactionType.jsonName] = jss::MPTokenIssuanceDestroy;
-    return jv;
+    submit(arg, jv);
 }
 
-Json::Value
-authorize(
-    jtx::Account const& account,
-    uint192 const& issuanceID,
-    std::optional<jtx::Account> const& holder)
+Account const&
+MPTTester::holder(std::string const& holder_) const
+{
+    auto const& it = holders_.find(holder_);
+    assert(it != holders_.cend());
+    if (it == holders_.cend())
+        Throw<std::runtime_error>("Holder is not found");
+    return *it->second;
+}
+
+void
+MPTTester::authorize(MPTAuthorize const& arg)
 {
     Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
+    if (arg.account)
+        jv[sfAccount.jsonName] = arg.account->human();
+    else
+        jv[sfAccount.jsonName] = issuer_.human();
     jv[sfTransactionType.jsonName] = jss::MPTokenAuthorize;
-    jv[sfMPTokenIssuanceID.jsonName] = to_string(issuanceID);
-    if (holder)
-        jv[sfMPTokenHolder.jsonName] = holder->human();
-
-    return jv;
+    jv[sfMPTokenIssuanceID.jsonName] = to_string(*id_);
+    if (arg.holder)
+        jv[sfMPTokenHolder.jsonName] = arg.holder->human();
+    submit(arg, jv);
 }
 
-Json::Value
-set(jtx::Account const& account,
-    uint192 const& issuanceID,
-    std::optional<jtx::Account> const& holder)
+void
+MPTTester::set(MPTSet const& arg)
 {
     Json::Value jv;
-    jv[sfAccount.jsonName] = account.human();
+    if (arg.account)
+        jv[sfAccount.jsonName] = arg.account->human();
+    else
+        jv[sfAccount.jsonName] = issuer_.human();
     jv[sfTransactionType.jsonName] = jss::MPTokenIssuanceSet;
-    jv[sfMPTokenIssuanceID.jsonName] = to_string(issuanceID);
-    if (holder)
-        jv[sfMPTokenHolder.jsonName] = holder->human();
-
-    return jv;
+    if (arg.id)
+        jv[sfMPTokenIssuanceID.jsonName] = to_string(*arg.id);
+    else
+        jv[sfMPTokenIssuanceID.jsonName] = to_string(*id_);
+    if (arg.holder)
+        jv[sfMPTokenHolder.jsonName] = arg.holder->human();
+    submit(arg, jv);
 }
 
-}  // namespace mpt
+bool
+MPTTester::forObject(
+    std::function<bool(SLEP const& sle)> const& cb,
+    AccountP holder_) const
+{
+    auto const key = [&]() {
+        if (holder_)
+            return keylet::mptoken(*issuanceKey_, holder_->id());
+        return keylet::mptIssuance(*issuanceKey_);
+    }();
+    if (auto const sle = env_.le(key))
+        return cb(sle);
+    return false;
+}
+
+[[nodiscard]] bool
+MPTTester::checkMPTokenAmount(
+    Account const& holder_,
+    std::uint64_t expectedAmount) const
+{
+    return forObject(
+        [&](SLEP const& sle) { return expectedAmount == (*sle)[sfMPTAmount]; },
+        &holder_);
+}
+
+[[nodiscard]] bool
+MPTTester::checkMPTokenOutstandingAmount(std::uint64_t expectedAmount) const
+{
+    return forObject([&](SLEP const& sle) {
+        return expectedAmount == (*sle)[sfOutstandingAmount];
+    });
+}
+
+[[nodiscard]] bool
+MPTTester::checkFlags(uint32_t const expectedFlags, AccountP holder_) const
+{
+    return forObject(
+        [&](SLEP const& sle) { return expectedFlags == sle->getFlags(); },
+        holder_);
+}
+
+void
+MPTTester::pay(
+    Account const& src,
+    Account const& dest,
+    std::uint64_t amount,
+    std::optional<TER> err)
+{
+    assert(mpt_);
+    if (err)
+        env_(jtx::pay(src, dest, mpt(amount)), ter(*err));
+    else
+        env_(jtx::pay(src, dest, mpt(amount)));
+    if (close_)
+        env_.close();
+}
+
+PrettyAmount
+MPTTester::mpt(std::uint64_t amount) const
+{
+    assert(mpt_);
+    return ripple::test::jtx::MPT(issuer_.name(), *mpt_)(amount);
+}
 
 }  // namespace jtx
 }  // namespace test
