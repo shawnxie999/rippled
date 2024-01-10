@@ -163,14 +163,13 @@ class MPToken_test : public beast::unit_test::suite
                  .assetScale = 1,
                  .transferFee = 10,
                  .metadata = "123",
+                 .ownerCount = 1,
                  .flags = tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow |
                      tfMPTCanTrade | tfMPTCanTransfer | tfMPTCanClawback});
 
             BEAST_EXPECT(mptAlice.checkFlags(
                 lsfMPTCanLock | lsfMPTRequireAuth | lsfMPTCanEscrow |
                 lsfMPTCanTrade | lsfMPTCanTransfer | lsfMPTCanClawback));
-
-            BEAST_EXPECT(env.ownerCount(alice) == 1);
         }
     }
 
@@ -212,9 +211,7 @@ class MPToken_test : public beast::unit_test::suite
             // outstanding balance
             {
                 // bob now holds a mptoken object
-                mptAlice.authorize({.account = &bob});
-
-                BEAST_EXPECT(env.ownerCount(bob) == 1);
+                mptAlice.authorize({.account = &bob, .holderCount = 1});
 
                 // alice pays bob 100 tokens
                 mptAlice.pay(alice, bob, 100);
@@ -305,9 +302,7 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.authorize({.holder = &bob, .err = tecNO_AUTH});
 
             // bob now holds a mptoken object
-            mptAlice.authorize({.account = &bob});
-
-            BEAST_EXPECT(env.ownerCount(bob) == 1);
+            mptAlice.authorize({.account = &bob, .holderCount = 1});
 
             // bob cannot create the mptoken the second time
             mptAlice.authorize({.account = &bob, .err = tecMPTOKEN_EXISTS});
@@ -336,9 +331,8 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.authorize(
                 {.account = &bob,
                  .flags = tfMPTUnauthorize,
+                 .holderCount = 0,
                  .err = tecNO_ENTRY});
-
-            BEAST_EXPECT(env.ownerCount(bob) == 0);
         }
 
         // Test bad scenarios with allow-listing in MPTokenAuthorize (preclaim)
@@ -364,9 +358,7 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.authorize({.holder = &cindy, .err = tecNO_DST});
 
             // bob now holds a mptoken object
-            mptAlice.authorize({.account = &bob});
-
-            BEAST_EXPECT(env.ownerCount(bob) == 1);
+            mptAlice.authorize({.account = &bob, .holderCount = 1});
 
             BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
 
@@ -388,9 +380,8 @@ class MPToken_test : public beast::unit_test::suite
             BEAST_EXPECT(mptAlice.checkFlags(lsfMPTAuthorized, &bob));
 
             // bob deletes his mptoken
-            mptAlice.authorize({.account = &bob, .flags = tfMPTUnauthorize});
-
-            BEAST_EXPECT(env.ownerCount(bob) == 0);
+            mptAlice.authorize(
+                {.account = &bob, .holderCount = 0, .flags = tfMPTUnauthorize});
         }
 
         // Test mptoken reserve requirement - first two mpts free (doApply)
@@ -410,18 +401,13 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice2.create();
 
             MPTTester mptAlice3(env, alice, {.fund = false});
-            mptAlice3.create();
-
-            BEAST_EXPECT(env.ownerCount(alice) == 3);
+            mptAlice3.create({.ownerCount = 3});
 
             // first mpt for free
-            mptAlice1.authorize({.account = &bob});
-
-            BEAST_EXPECT(env.ownerCount(bob) == 1);
+            mptAlice1.authorize({.account = &bob, .holderCount = 1});
 
             // second mpt free
-            mptAlice2.authorize({.account = &bob});
-            BEAST_EXPECT(env.ownerCount(bob) == 2);
+            mptAlice2.authorize({.account = &bob, .holderCount = 2});
 
             mptAlice3.authorize(
                 {.account = &bob, .err = tecINSUFFICIENT_RESERVE});
@@ -430,9 +416,7 @@ class MPToken_test : public beast::unit_test::suite
                 env.master, bob, drops(incReserve + incReserve + incReserve)));
             env.close();
 
-            mptAlice3.authorize({.account = &bob});
-
-            BEAST_EXPECT(env.ownerCount(bob) == 3);
+            mptAlice3.authorize({.account = &bob, .holderCount = 3});
         }
     }
 
@@ -451,24 +435,19 @@ class MPToken_test : public beast::unit_test::suite
             // alice create mptissuance without allowisting
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
-            mptAlice.create();
+            mptAlice.create({.ownerCount = 1});
 
             BEAST_EXPECT(mptAlice.checkFlags(0));
 
-            BEAST_EXPECT(env.ownerCount(alice) == 1);
-
             // bob creates a mptoken
-            mptAlice.authorize({.account = &bob});
-
-            BEAST_EXPECT(env.ownerCount(bob) == 1);
+            mptAlice.authorize({.account = &bob, .holderCount = 1});
 
             BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
             BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 0));
 
             // bob deletes his mptoken
-            mptAlice.authorize({.account = &bob, .flags = tfMPTUnauthorize});
-
-            BEAST_EXPECT(env.ownerCount(bob) == 0);
+            mptAlice.authorize(
+                {.account = &bob, .holderCount = 0, .flags = tfMPTUnauthorize});
         }
 
         // With allowlisting
@@ -478,16 +457,12 @@ class MPToken_test : public beast::unit_test::suite
             // alice creates a mptokenissuance that requires authorization
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
-            mptAlice.create({.flags = tfMPTRequireAuth});
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTRequireAuth});
 
             BEAST_EXPECT(mptAlice.checkFlags(lsfMPTRequireAuth));
 
-            BEAST_EXPECT(env.ownerCount(alice) == 1);
-
             // bob creates a mptoken
-            mptAlice.authorize({.account = &bob});
-
-            BEAST_EXPECT(env.ownerCount(bob) == 1);
+            mptAlice.authorize({.account = &bob, .holderCount = 1});
 
             BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
             BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 0));
@@ -500,16 +475,16 @@ class MPToken_test : public beast::unit_test::suite
 
             // Unauthorize bob's mptoken
             mptAlice.authorize(
-                {.account = &alice, .holder = &bob, .flags = tfMPTUnauthorize});
+                {.account = &alice,
+                 .holder = &bob,
+                 .holderCount = 1,
+                 .flags = tfMPTUnauthorize});
 
             // ensure bob's mptoken no longer has lsfMPTAuthorized set
             BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
 
-            BEAST_EXPECT(env.ownerCount(bob) == 1);
-
-            mptAlice.authorize({.account = &bob, .flags = tfMPTUnauthorize});
-
-            BEAST_EXPECT(env.ownerCount(bob) == 0);
+            mptAlice.authorize(
+                {.account = &bob, .holderCount = 0, .flags = tfMPTUnauthorize});
         }
     }
 
@@ -531,16 +506,11 @@ class MPToken_test : public beast::unit_test::suite
 
             env.enableFeature(featureMPTokensV1);
 
-            mptAlice.create();
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
 
             BEAST_EXPECT(mptAlice.checkFlags(0));
 
-            BEAST_EXPECT(env.ownerCount(alice) == 1);
-            BEAST_EXPECT(env.ownerCount(bob) == 0);
-
-            mptAlice.authorize({.account = &bob});
-
-            BEAST_EXPECT(env.ownerCount(bob) == 1);
+            mptAlice.authorize({.account = &bob, .holderCount = 1});
 
             // test invalid flag
             mptAlice.set(
@@ -652,16 +622,12 @@ class MPToken_test : public beast::unit_test::suite
         MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
         // create a mptokenissuance with locking
-        mptAlice.create({.flags = tfMPTCanLock});
+        mptAlice.create(
+            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanLock});
 
         BEAST_EXPECT(mptAlice.checkFlags(lsfMPTCanLock));
 
-        BEAST_EXPECT(env.ownerCount(alice) == 1);
-        BEAST_EXPECT(env.ownerCount(bob) == 0);
-
-        mptAlice.authorize({.account = &bob});
-
-        BEAST_EXPECT(env.ownerCount(bob) == 1);
+        mptAlice.authorize({.account = &bob, .holderCount = 1});
 
         // both the mptissuance and mptoken are not locked
         BEAST_EXPECT(mptAlice.checkFlags(lsfMPTCanLock));
@@ -750,11 +716,7 @@ class MPToken_test : public beast::unit_test::suite
 
             MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
 
-            mptAlice.create();
-
-            BEAST_EXPECT(env.ownerCount(alice) == 1);
-            BEAST_EXPECT(env.ownerCount(bob) == 0);
-            BEAST_EXPECT(env.ownerCount(carol) == 0);
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
 
             // env(mpt::authorize(alice, id.key, std::nullopt));
             // env.close();
@@ -787,10 +749,8 @@ class MPToken_test : public beast::unit_test::suite
 
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
-            mptAlice.create({.flags = tfMPTRequireAuth});
-
-            BEAST_EXPECT(env.ownerCount(alice) == 1);
-            BEAST_EXPECT(env.ownerCount(bob) == 0);
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTRequireAuth});
 
             mptAlice.authorize({.account = &bob});
 
@@ -806,10 +766,8 @@ class MPToken_test : public beast::unit_test::suite
 
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
-            mptAlice.create({.flags = tfMPTRequireAuth});
-
-            BEAST_EXPECT(env.ownerCount(alice) == 1);
-            BEAST_EXPECT(env.ownerCount(bob) == 0);
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTRequireAuth});
 
             // bob creates an empty MPToken
             mptAlice.authorize({.account = &bob});

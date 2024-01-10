@@ -50,6 +50,7 @@ struct MPTCreate
     std::optional<std::uint16_t> transferFee = std::nullopt;
     std::optional<std::string> metadata = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
     bool fund = true;
     std::uint32_t flags = 0;
     std::optional<TER> err = std::nullopt;
@@ -60,6 +61,7 @@ struct MPTDestroy
     AccountP issuer = nullptr;
     std::optional<uint192> id = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
     std::uint32_t flags = 0;
     std::optional<TER> err = std::nullopt;
 };
@@ -69,6 +71,7 @@ struct MPTAuthorize
     AccountP account = nullptr;
     AccountP holder = nullptr;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
     std::uint32_t flags = 0;
     std::optional<TER> err = std::nullopt;
 };
@@ -79,6 +82,7 @@ struct MPTSet
     AccountP holder = nullptr;
     std::optional<uint192> id = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
     std::uint32_t flags = 0;
     std::optional<TER> err = std::nullopt;
 };
@@ -186,6 +190,11 @@ private:
             env_.close();
         if (arg.ownerCount)
             env_.require(owners(issuer_, *arg.ownerCount));
+        if (arg.holderCount)
+        {
+            for (auto it : holders_)
+                env_.require(owners(*it.second, *arg.holderCount));
+        }
     }
 
     std::unordered_map<std::string, AccountP>
