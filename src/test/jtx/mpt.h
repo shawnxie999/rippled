@@ -70,6 +70,7 @@ struct MPTAuthorize
 {
     AccountP account = nullptr;
     AccountP holder = nullptr;
+    std::optional<uint192> id = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::uint32_t flags = 0;
@@ -92,7 +93,6 @@ class MPTTester
     Env& env_;
     Account const& issuer_;
     std::unordered_map<std::string, AccountP> const holders_;
-    std::optional<std::uint32_t> sequence_;
     std::optional<uint192> id_;
     std::optional<uint256> issuanceKey_;
     std::optional<ripple::MPT> mpt_;
@@ -180,7 +180,6 @@ private:
         {
             if (env_.ter() != tesSUCCESS)
             {
-                sequence_.reset();
                 id_.reset();
                 issuanceKey_.reset();
                 mpt_.reset();

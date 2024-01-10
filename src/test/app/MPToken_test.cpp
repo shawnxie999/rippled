@@ -185,11 +185,13 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features - featureMPTokensV1};
             MPTTester mptAlice(env, alice);
-            mptAlice.destroy({.ownerCount = 0, .err = temDISABLED});
+            auto const id = getMptID(alice, env.seq(alice));
+            mptAlice.destroy({.ownerCount = 0, .id = id, .err = temDISABLED});
 
             env.enableFeature(featureMPTokensV1);
 
-            mptAlice.destroy({.flags = 0x00000001, .err = temINVALID_FLAG});
+            mptAlice.destroy(
+                {.flags = 0x00000001, .id = id, .err = temINVALID_FLAG});
         }
 
         // MPTokenIssuanceDestroy (preclaim)
@@ -253,7 +255,10 @@ class MPToken_test : public beast::unit_test::suite
             Env env{*this, features - featureMPTokensV1};
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
-            mptAlice.authorize({.account = &bob, .err = temDISABLED});
+            mptAlice.authorize(
+                {.account = &bob,
+                 .id = getMptID(alice, env.seq(alice)),
+                 .err = temDISABLED});
 
             env.enableFeature(featureMPTokensV1);
 
@@ -273,10 +278,13 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            auto const id = getMptID(alice, env.seq(alice));
 
-            mptAlice.authorize({.holder = &bob, .err = tecOBJECT_NOT_FOUND});
+            mptAlice.authorize(
+                {.holder = &bob, .id = id, .err = tecOBJECT_NOT_FOUND});
 
-            mptAlice.authorize({.account = &bob, .err = tecOBJECT_NOT_FOUND});
+            mptAlice.authorize(
+                {.account = &bob, .id = id, .err = tecOBJECT_NOT_FOUND});
         }
 
         // Test bad scenarios without allowlisting in MPTokenAuthorize
@@ -330,8 +338,8 @@ class MPToken_test : public beast::unit_test::suite
 
             mptAlice.authorize(
                 {.account = &bob,
-                 .flags = tfMPTUnauthorize,
                  .holderCount = 0,
+                 .flags = tfMPTUnauthorize,
                  .err = tecNO_ENTRY});
         }
 
@@ -502,7 +510,10 @@ class MPToken_test : public beast::unit_test::suite
             Env env{*this, features - featureMPTokensV1};
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
-            mptAlice.set({.account = &bob, .err = temDISABLED});
+            mptAlice.set(
+                {.account = &bob,
+                 .id = getMptID(alice, env.seq(alice)),
+                 .err = temDISABLED});
 
             env.enableFeature(featureMPTokensV1);
 

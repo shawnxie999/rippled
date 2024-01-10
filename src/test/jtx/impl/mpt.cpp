@@ -74,12 +74,11 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTConstr const& arg)
 void
 MPTTester::create(const MPTCreate& arg)
 {
-    if (sequence_)
+    if (issuanceKey_)
         Throw<std::runtime_error>("MPT can't be reused");
-    sequence_ = env_.seq(issuer_);
-    id_ = getMptID(issuer_.id(), *sequence_);
+    mpt_ = std::make_pair(env_.seq(issuer_), issuer_.id());
+    id_ = getMptID(issuer_.id(), mpt_->first);
     issuanceKey_ = keylet::mptIssuance(*id_).key;
-    mpt_ = std::make_pair(*sequence_, issuer_.id());
     Json::Value jv;
     jv[sfAccount.jsonName] = issuer_.human();
     jv[sfTransactionType.jsonName] = jss::MPTokenIssuanceCreate;
@@ -107,7 +106,10 @@ MPTTester::destroy(MPTDestroy const& arg)
     if (arg.id)
         jv[sfMPTokenIssuanceID.jsonName] = to_string(*arg.id);
     else
+    {
+        assert(id_);
         jv[sfMPTokenIssuanceID.jsonName] = to_string(*id_);
+    }
     jv[sfTransactionType.jsonName] = jss::MPTokenIssuanceDestroy;
     submit(arg, jv);
 }
@@ -131,7 +133,13 @@ MPTTester::authorize(MPTAuthorize const& arg)
     else
         jv[sfAccount.jsonName] = issuer_.human();
     jv[sfTransactionType.jsonName] = jss::MPTokenAuthorize;
-    jv[sfMPTokenIssuanceID.jsonName] = to_string(*id_);
+    if (arg.id)
+        jv[sfMPTokenIssuanceID.jsonName] = to_string(*arg.id);
+    else
+    {
+        assert(id_);
+        jv[sfMPTokenIssuanceID.jsonName] = to_string(*id_);
+    }
     if (arg.holder)
         jv[sfMPTokenHolder.jsonName] = arg.holder->human();
     submit(arg, jv);
@@ -149,7 +157,10 @@ MPTTester::set(MPTSet const& arg)
     if (arg.id)
         jv[sfMPTokenIssuanceID.jsonName] = to_string(*arg.id);
     else
+    {
+        assert(id_);
         jv[sfMPTokenIssuanceID.jsonName] = to_string(*id_);
+    }
     if (arg.holder)
         jv[sfMPTokenHolder.jsonName] = arg.holder->human();
     submit(arg, jv);
@@ -160,6 +171,7 @@ MPTTester::forObject(
     std::function<bool(SLEP const& sle)> const& cb,
     AccountP holder_) const
 {
+    assert(issuanceKey_);
     auto const key = [&]() {
         if (holder_)
             return keylet::mptoken(*issuanceKey_, holder_->id());
