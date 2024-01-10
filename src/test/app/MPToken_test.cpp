@@ -186,12 +186,12 @@ class MPToken_test : public beast::unit_test::suite
             Env env{*this, features - featureMPTokensV1};
             MPTTester mptAlice(env, alice);
             auto const id = getMptID(alice, env.seq(alice));
-            mptAlice.destroy({.ownerCount = 0, .id = id, .err = temDISABLED});
+            mptAlice.destroy({.id = id, .ownerCount = 0, .err = temDISABLED});
 
             env.enableFeature(featureMPTokensV1);
 
             mptAlice.destroy(
-                {.flags = 0x00000001, .id = id, .err = temINVALID_FLAG});
+                {.id = id, .flags = 0x00000001, .err = temINVALID_FLAG});
         }
 
         // MPTokenIssuanceDestroy (preclaim)
