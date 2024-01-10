@@ -99,6 +99,16 @@ public:
     {
         return asset_;
     }
+
+    // Used by Clio, should avoid in rippled
+    Currency constexpr const&
+    currency() const
+    {
+        if (!asset_.isCurrency())
+            Throw<std::logic_error>("Invalid currency for IOU");
+        return std::get<Currency>(asset_.asset()); 
+    }
+
     AccountID const&
     account() const
     {

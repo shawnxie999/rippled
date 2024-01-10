@@ -385,6 +385,14 @@ STAmount::getAsset() const
     return mIssue.asset();
 }
 
+inline Currency const&
+STAmount::getCurrency() const
+{
+    if (!isIOU())
+        Throw<std::logic_error>("Invalid currency for IOU")
+    return mIssue.asset();
+}
+
 inline AccountID const&
 STAmount::getIssuer() const
 {
