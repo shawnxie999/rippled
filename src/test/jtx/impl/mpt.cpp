@@ -34,6 +34,18 @@ uint64ToByteArray(std::uint64_t value)
     return result;
 }
 
+void
+mptflags::operator()(Env& env) const
+{
+    env.test.expect(tester_.checkFlags(flags_));
+}
+
+void
+mptpay::operator()(Env& env) const
+{
+    env.test.expect(amount_ == tester_.getAmount(account_));
+}
+
 std::unordered_map<std::string, AccountP>
 MPTTester::makeHolders(std::vector<AccountP> const& holders)
 {
@@ -92,7 +104,14 @@ MPTTester::create(const MPTCreate& arg)
     // convert maxAmt to hex string, since json doesn't accept 64-bit int
     if (arg.maxAmt)
         jv[sfMaximumAmount.jsonName] = strHex(uint64ToByteArray(*arg.maxAmt));
-    submit(arg, jv);
+    if (submit(arg, jv) != tesSUCCESS)
+    {
+        id_.reset();
+        issuanceKey_.reset();
+        mpt_.reset();
+    }
+    else if (arg.flags)
+        env_.require(mptflags(*this, *arg.flags));
 }
 
 void
@@ -216,12 +235,31 @@ MPTTester::pay(
     std::optional<TER> err)
 {
     assert(mpt_);
+    auto const srcAmt = getAmount(src);
+    auto const destAmt = getAmount(dest);
     if (err)
         env_(jtx::pay(src, dest, mpt(amount)), ter(*err));
     else
         env_(jtx::pay(src, dest, mpt(amount)));
+    if (env_.ter() != tesSUCCESS)
+        amount = 0;
     if (close_)
         env_.close();
+    if (src == issuer_)
+    {
+        env_.require(mptpay(*this, src, srcAmt + amount));
+        env_.require(mptpay(*this, dest, destAmt + amount));
+    }
+    else if (dest == issuer_)
+    {
+        env_.require(mptpay(*this, src, srcAmt - amount));
+        env_.require(mptpay(*this, dest, destAmt - amount));
+    }
+    else
+    {
+        env_.require(mptpay(*this, src, srcAmt - amount));
+        env_.require(mptpay(*this, dest, destAmt + amount));
+    }
 }
 
 PrettyAmount
@@ -229,6 +267,23 @@ MPTTester::mpt(std::uint64_t amount) const
 {
     assert(mpt_);
     return ripple::test::jtx::MPT(issuer_.name(), *mpt_)(amount);
+}
+
+std::uint64_t
+MPTTester::getAmount(Account const& account) const
+{
+    if (account == issuer_)
+    {
+        if (auto const sle = env_.le(keylet::mptIssuance(*issuanceKey_)))
+            return sle->getFieldU64(sfOutstandingAmount);
+    }
+    else
+    {
+        if (auto const sle =
+                env_.le(keylet::mptoken(*issuanceKey_, account.id())))
+            return sle->getFieldU64(sfMPTAmount);
+    }
+    return 0;
 }
 
 }  // namespace jtx

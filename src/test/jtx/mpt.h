@@ -34,6 +34,43 @@ namespace {
 using AccountP = Account const*;
 }
 
+class MPTTester;
+
+// Check flags settings on MPT create
+class mptflags
+{
+private:
+    MPTTester& tester_;
+    std::uint32_t flags_;
+
+public:
+    mptflags(MPTTester& tester, std::uint32_t flags)
+        : tester_(tester), flags_(flags)
+    {
+    }
+
+    void
+    operator()(Env& env) const;
+};
+
+// Check mptissuance or mptoken amount balances on payment
+class mptpay
+{
+private:
+    MPTTester const& tester_;
+    Account const& account_;
+    std::uint64_t const amount_;
+
+public:
+    mptpay(MPTTester& tester, Account const& account, std::uint64_t amount)
+        : tester_(tester), account_(account), amount_(amount)
+    {
+    }
+
+    void
+    operator()(Env& env) const;
+};
+
 struct MPTConstr
 {
     std::vector<AccountP> holders = {};
@@ -52,7 +89,7 @@ struct MPTCreate
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     bool fund = true;
-    std::uint32_t flags = 0;
+    std::optional<std::uint32_t> flags = {0};
     std::optional<TER> err = std::nullopt;
 };
 
@@ -62,7 +99,7 @@ struct MPTDestroy
     std::optional<uint192> id = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
-    std::uint32_t flags = 0;
+    std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -73,7 +110,7 @@ struct MPTAuthorize
     std::optional<uint192> id = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
-    std::uint32_t flags = 0;
+    std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -84,7 +121,7 @@ struct MPTSet
     std::optional<uint192> id = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
-    std::uint32_t flags = 0;
+    std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -154,6 +191,9 @@ public:
         return *id_;
     }
 
+    std::uint64_t
+    getAmount(Account const& account) const;
+
 private:
     using SLEP = std::shared_ptr<SLE const>;
     bool
@@ -162,29 +202,21 @@ private:
         AccountP holder = nullptr) const;
 
     template <typename A>
-    void
+    TER
     submit(A const& arg, Json::Value const& jv)
     {
         if (arg.err)
         {
-            if (arg.flags)
-                env_(jv, txflags(arg.flags), ter(*arg.err));
+            if (arg.flags && arg.flags > 0)
+                env_(jv, txflags(*arg.flags), ter(*arg.err));
             else
                 env_(jv, ter(*arg.err));
         }
-        else if (arg.flags)
-            env_(jv, txflags(arg.flags));
+        else if (arg.flags && arg.flags > 0)
+            env_(jv, txflags(*arg.flags));
         else
             env_(jv);
-        if constexpr (std::is_same_v<A, MPTCreate>)
-        {
-            if (env_.ter() != tesSUCCESS)
-            {
-                id_.reset();
-                issuanceKey_.reset();
-                mpt_.reset();
-            }
-        }
+        auto const err = env_.ter();
         if (close_)
             env_.close();
         if (arg.ownerCount)
@@ -194,6 +226,7 @@ private:
             for (auto it : holders_)
                 env_.require(owners(*it.second, *arg.holderCount));
         }
+        return err;
     }
 
     std::unordered_map<std::string, AccountP>
