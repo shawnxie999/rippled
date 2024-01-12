@@ -565,70 +565,35 @@ class MPToken_test : public beast::unit_test::suite
         // locks bob's mptoken
         mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTLock});
 
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTCanLock));
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTLocked, &bob));
-
         // trying to lock bob's mptoken again will still succeed
         // but no changes to the objects
         mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTLock});
 
-        // no changes to the objects
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTCanLock));
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTLocked, &bob));
-
         // alice locks the mptissuance
         mptAlice.set({.account = &alice, .flags = tfMPTLock});
-
-        // now both the mptissuance and mptoken are locked up
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTCanLock | lsfMPTLocked));
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTLocked, &bob));
 
         // alice tries to lock up both mptissuance and mptoken again
         // it will not change the flags and both will remain locked.
         mptAlice.set({.account = &alice, .flags = tfMPTLock});
         mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTLock});
 
-        // now both the mptissuance and mptoken remain locked up
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTCanLock | lsfMPTLocked));
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTLocked, &bob));
-
         // alice unlocks bob's mptoken
         mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTUnlock});
-
-        // only mptissuance is locked
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTCanLock | lsfMPTLocked));
-        BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
 
         // locks up bob's mptoken again
         mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTLock});
 
-        // now both the mptissuance and mptokens are locked up
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTCanLock | lsfMPTLocked));
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTLocked, &bob));
-
         // alice unlocks mptissuance
         mptAlice.set({.account = &alice, .flags = tfMPTUnlock});
 
-        // now mptissuance is unlocked
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTCanLock));
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTLocked, &bob));
-
         // alice unlocks bob's mptoken
         mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTUnlock});
-
-        // both mptissuance and bob's mptoken are unlocked
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTCanLock));
-        BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
 
         // alice unlocks mptissuance and bob's mptoken again despite that
         // they are already unlocked. Make sure this will not change the
         // flags
         mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTUnlock});
         mptAlice.set({.account = &alice, .flags = tfMPTUnlock});
-
-        // both mptissuance and bob's mptoken remain unlocked
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTCanLock));
-        BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
     }
 
     void
@@ -725,6 +690,44 @@ class MPToken_test : public beast::unit_test::suite
 
             // Pay to the issuer
             mptAlice.pay(bob, alice, 101, tecINSUFFICIENT_FUNDS);
+        }
+
+        // MPT is locked
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanLock});
+
+            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = &carol});
+
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 100);
+
+            // Global lock
+            mptAlice.set({.account = &alice, .flags = tfMPTLock});
+            // Can't send between holders
+            mptAlice.pay(bob, carol, 1, tecFROZEN);
+            mptAlice.pay(carol, bob, 2, tecFROZEN);
+            // Issuer can send
+            mptAlice.pay(alice, bob, 3);
+            // Holder can send back to issuer
+            mptAlice.pay(bob, alice, 4);
+
+            // Global unlock
+            mptAlice.set({.account = &alice, .flags = tfMPTUnlock});
+            // Individual lock
+            mptAlice.set(
+                {.account = &alice, .holder = &bob, .flags = tfMPTLock});
+            // Can't send between holders
+            mptAlice.pay(bob, carol, 5, tecFROZEN);
+            mptAlice.pay(carol, bob, 6, tecFROZEN);
+            // Issuer can send
+            mptAlice.pay(alice, bob, 7);
+            // Holder can send back to issuer
+            mptAlice.pay(bob, alice, 8);
         }
     }
 

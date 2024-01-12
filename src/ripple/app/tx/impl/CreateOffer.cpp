@@ -136,8 +136,6 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     auto const& uPaysIssuerID = saTakerPays.getIssuer();
     auto const& uPaysCurrency = saTakerPays.getAsset();
 
-    auto const& uGetsIssuerID = saTakerGets.getIssuer();
-
     auto const cancelSequence = ctx.tx[~sfOfferSequence];
 
     auto const sleCreator = ctx.view.read(keylet::account(id));
