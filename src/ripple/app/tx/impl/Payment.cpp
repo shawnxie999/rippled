@@ -445,6 +445,17 @@ Payment::doApply()
             ter != tesSUCCESS)
             return ter;
 
+        auto const& issue = saDstAmount.issue();
+        auto const& issuer = issue.account();
+        // If globally/individually locked then
+        //   can't send between holders
+        //   holder can send back to issuer
+        //   issuer can send to holder
+        if (account_ != issuer && uDstAccountID != issuer &&
+            (isFrozen(view(), account_, issue) ||
+             isFrozen(view(), uDstAccountID, issue)))
+            return tecFROZEN;
+
         PaymentSandbox pv(&view());
         auto const res =
             accountSend(pv, account_, uDstAccountID, saDstAmount, j_);

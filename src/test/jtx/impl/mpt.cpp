@@ -37,7 +37,7 @@ uint64ToByteArray(std::uint64_t value)
 void
 mptflags::operator()(Env& env) const
 {
-    env.test.expect(tester_.checkFlags(flags_));
+    env.test.expect(tester_.checkFlags(flags_, holder_));
 }
 
 void
@@ -182,7 +182,32 @@ MPTTester::set(MPTSet const& arg)
     }
     if (arg.holder)
         jv[sfMPTokenHolder.jsonName] = arg.holder->human();
-    submit(arg, jv);
+    if (submit(arg, jv) == tesSUCCESS && arg.flags.value_or(0))
+    {
+        std::uint32_t flags = 0;
+        auto require = [&](AccountP holder, bool unchanged) {
+            assert(forObject(
+                [&](SLEP const& sle) {
+                    flags = sle->getFlags();
+                    return true;
+                },
+                holder));
+            if (!unchanged)
+            {
+                if (*arg.flags & tfMPTLock)
+                    flags |= lsfMPTLocked;
+                else if (*arg.flags & tfMPTUnlock)
+                    flags &= ~lsfMPTLocked;
+                else
+                    assert(0);
+            }
+            env_.require(mptflags(*this, flags, holder));
+        };
+        if (arg.account)
+            require(nullptr, arg.holder != nullptr);
+        if (arg.holder)
+            require(arg.holder, false);
+    }
 }
 
 bool

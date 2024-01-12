@@ -81,7 +81,7 @@ enum FreezeHandling { fhIGNORE_FREEZE, fhZERO_IF_FROZEN };
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, Issue const& issue);
 
-[[nodiscard]] inline bool
+[[nodiscard]] bool
 isIndividualFrozen(
     ReadView const& view,
     AccountID const& account,

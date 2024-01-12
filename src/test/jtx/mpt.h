@@ -42,10 +42,11 @@ class mptflags
 private:
     MPTTester& tester_;
     std::uint32_t flags_;
+    AccountP holder_;
 
 public:
-    mptflags(MPTTester& tester, std::uint32_t flags)
-        : tester_(tester), flags_(flags)
+    mptflags(MPTTester& tester, std::uint32_t flags, AccountP holder = nullptr)
+        : tester_(tester), flags_(flags), holder_(holder)
     {
     }
 
