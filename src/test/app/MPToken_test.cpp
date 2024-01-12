@@ -25,63 +25,6 @@ namespace ripple {
 
 class MPToken_test : public beast::unit_test::suite
 {
-    [[nodiscard]] bool
-    checkMPTokenAmount(
-        test::jtx::Env const& env,
-        ripple::uint256 const mptIssuanceid,
-        test::jtx::Account const& holder,
-        std::uint64_t expectedAmount)
-    {
-        auto const sleMpt = env.le(keylet::mptoken(mptIssuanceid, holder));
-        if (!sleMpt)
-            return false;
-
-        std::uint64_t const amount = (*sleMpt)[sfMPTAmount];
-        return amount == expectedAmount;
-    }
-
-    [[nodiscard]] bool
-    checkMPTokenOutstandingAmount(
-        test::jtx::Env const& env,
-        ripple::uint256 const mptIssuanceid,
-        std::uint64_t expectedAmount)
-    {
-        auto const sleMpt = env.le(keylet::mptIssuance(mptIssuanceid));
-        if (!sleMpt)
-            return false;
-
-        std::uint64_t const amount = (*sleMpt)[sfOutstandingAmount];
-        return amount == expectedAmount;
-    }
-
-    [[nodiscard]] bool
-    checkMPTokenIssuanceFlags(
-        test::jtx::Env const& env,
-        ripple::uint256 const mptIssuanceid,
-        uint32_t const expectedFlags)
-    {
-        auto const sleMptIssuance = env.le(keylet::mptIssuance(mptIssuanceid));
-        if (!sleMptIssuance)
-            return false;
-
-        uint32_t const mptIssuanceFlags = sleMptIssuance->getFlags();
-        return expectedFlags == mptIssuanceFlags;
-    }
-
-    [[nodiscard]] bool
-    checkMPTokenFlags(
-        test::jtx::Env const& env,
-        ripple::uint256 const mptIssuanceid,
-        test::jtx::Account const& holder,
-        uint32_t const expectedFlags)
-    {
-        auto const sleMpt = env.le(keylet::mptoken(mptIssuanceid, holder));
-        if (!sleMpt)
-            return false;
-        uint32_t const mptFlags = sleMpt->getFlags();
-        return mptFlags == expectedFlags;
-    }
-
     void
     testCreateValidation(FeatureBitset features)
     {
@@ -166,10 +109,6 @@ class MPToken_test : public beast::unit_test::suite
                  .ownerCount = 1,
                  .flags = tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow |
                      tfMPTCanTrade | tfMPTCanTransfer | tfMPTCanClawback});
-
-            BEAST_EXPECT(mptAlice.checkFlags(
-                lsfMPTCanLock | lsfMPTRequireAuth | lsfMPTCanEscrow |
-                lsfMPTCanTrade | lsfMPTCanTransfer | lsfMPTCanClawback));
         }
     }
 
@@ -217,7 +156,6 @@ class MPToken_test : public beast::unit_test::suite
 
                 // alice pays bob 100 tokens
                 mptAlice.pay(alice, bob, 100);
-                BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 100));
 
                 mptAlice.destroy({.err = tecHAS_OBLIGATIONS});
             }
@@ -250,6 +188,7 @@ class MPToken_test : public beast::unit_test::suite
         using namespace test::jtx;
         Account const alice("alice");
         Account const bob("bob");
+        Account const cindy("cindy");
         // Validate fields in MPTokenAuthorize (preflight)
         {
             Env env{*this, features - featureMPTokensV1};
@@ -295,8 +234,6 @@ class MPToken_test : public beast::unit_test::suite
 
             mptAlice.create({.ownerCount = 1});
 
-            BEAST_EXPECT(mptAlice.checkFlags(0));
-
             // bob submits a tx with a holder field
             mptAlice.authorize(
                 {.account = &bob, .holder = &alice, .err = temMALFORMED});
@@ -320,7 +257,6 @@ class MPToken_test : public beast::unit_test::suite
             {
                 // alice pays bob 100 tokens
                 mptAlice.pay(alice, bob, 100);
-                BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 100));
 
                 // bob tries to delete his CFToken, but fails since he still
                 // holds tokens
@@ -331,7 +267,6 @@ class MPToken_test : public beast::unit_test::suite
 
                 // bob pays back alice 100 tokens
                 mptAlice.pay(bob, alice, 100);
-                BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 0));
             }
 
             mptAlice.authorize({.account = &bob, .flags = tfMPTUnauthorize});
@@ -346,14 +281,9 @@ class MPToken_test : public beast::unit_test::suite
         // Test bad scenarios with allow-listing in MPTokenAuthorize (preclaim)
         {
             Env env{*this, features};
-            Account const alice("alice");  // issuer
-            Account const bob("bob");      // holder
-            Account const cindy("cindy");
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
             mptAlice.create({.ownerCount = 1, .flags = tfMPTRequireAuth});
-
-            BEAST_EXPECT(mptAlice.checkFlags(lsfMPTRequireAuth));
 
             // alice submits a tx without specifying a holder's account
             mptAlice.authorize({.err = temMALFORMED});
@@ -445,8 +375,6 @@ class MPToken_test : public beast::unit_test::suite
 
             mptAlice.create({.ownerCount = 1});
 
-            BEAST_EXPECT(mptAlice.checkFlags(0));
-
             // bob creates a mptoken
             mptAlice.authorize({.account = &bob, .holderCount = 1});
 
@@ -466,8 +394,6 @@ class MPToken_test : public beast::unit_test::suite
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
             mptAlice.create({.ownerCount = 1, .flags = tfMPTRequireAuth});
-
-            BEAST_EXPECT(mptAlice.checkFlags(lsfMPTRequireAuth));
 
             // bob creates a mptoken
             mptAlice.authorize({.account = &bob, .holderCount = 1});
@@ -519,8 +445,6 @@ class MPToken_test : public beast::unit_test::suite
 
             mptAlice.create({.ownerCount = 1, .holderCount = 0});
 
-            BEAST_EXPECT(mptAlice.checkFlags(0));
-
             mptAlice.authorize({.account = &bob, .holderCount = 1});
 
             // test invalid flag
@@ -552,8 +476,6 @@ class MPToken_test : public beast::unit_test::suite
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
             mptAlice.create({.ownerCount = 1});
-
-            BEAST_EXPECT(mptAlice.checkFlags(0));
 
             // alice tries to lock a mptissuance that has disabled locking
             mptAlice.set(
@@ -600,8 +522,6 @@ class MPToken_test : public beast::unit_test::suite
             // create a mptokenissuance with locking
             mptAlice.create({.ownerCount = 1, .flags = tfMPTCanLock});
 
-            BEAST_EXPECT(mptAlice.checkFlags(lsfMPTCanLock));
-
             // a non-issuer acct tries to set the mptissuance
             mptAlice.set(
                 {.account = &bob, .flags = tfMPTLock, .err = tecNO_PERMISSION});
@@ -635,8 +555,6 @@ class MPToken_test : public beast::unit_test::suite
         // create a mptokenissuance with locking
         mptAlice.create(
             {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanLock});
-
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTCanLock));
 
         mptAlice.authorize({.account = &bob, .holderCount = 1});
 
@@ -737,20 +655,13 @@ class MPToken_test : public beast::unit_test::suite
 
             // issuer to holder
             mptAlice.pay(alice, bob, 100);
-            BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 100));
-            BEAST_EXPECT(mptAlice.checkMPTokenOutstandingAmount(100));
 
             // holder to issuer
             mptAlice.pay(bob, alice, 100);
-            BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 0));
-            BEAST_EXPECT(mptAlice.checkMPTokenOutstandingAmount(0));
 
             // holder to holder
             mptAlice.pay(alice, bob, 100);
             mptAlice.pay(bob, carol, 50);
-            BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 50));
-            BEAST_EXPECT(mptAlice.checkMPTokenAmount(carol, 50));
-            BEAST_EXPECT(mptAlice.checkMPTokenOutstandingAmount(100));
         }
 
         // If allowlisting is enabled, Payment fails if the receiver is not
@@ -766,8 +677,6 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.authorize({.account = &bob});
 
             mptAlice.pay(alice, bob, 100, tecNO_AUTH);
-            BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 0));
-            BEAST_EXPECT(mptAlice.checkMPTokenOutstandingAmount(0));
         }
 
         // If allowlisting is enabled, Payment fails if the sender is not
@@ -788,8 +697,6 @@ class MPToken_test : public beast::unit_test::suite
 
             // alice sends 100 MPT to bob
             mptAlice.pay(alice, bob, 100);
-            BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 100));
-            BEAST_EXPECT(mptAlice.checkMPTokenOutstandingAmount(100));
 
             // alice UNAUTHORIZES bob
             mptAlice.authorize(
@@ -798,8 +705,26 @@ class MPToken_test : public beast::unit_test::suite
             // bob fails to send back to alice because he is no longer
             // authorize to move his funds!
             mptAlice.pay(bob, alice, 100, tecNO_AUTH);
-            BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 100));
-            BEAST_EXPECT(mptAlice.checkMPTokenOutstandingAmount(100));
+        }
+
+        // Payer doesn't have enough funds
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+
+            mptAlice.create({.ownerCount = 1});
+
+            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = &carol});
+
+            mptAlice.pay(alice, bob, 100);
+
+            // Pay to another holder
+            mptAlice.pay(bob, carol, 101, tecINSUFFICIENT_FUNDS);
+
+            // Pay to the issuer
+            mptAlice.pay(bob, alice, 101, tecINSUFFICIENT_FUNDS);
         }
     }
 

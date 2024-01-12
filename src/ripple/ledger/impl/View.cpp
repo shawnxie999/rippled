@@ -168,11 +168,16 @@ hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp)
 }
 
 bool
-isGlobalFrozen(ReadView const& view, AccountID const& issuer)
+isGlobalFrozen(ReadView const& view, Issue const& issue)
 {
-    if (isXRP(issuer))
+    if (isXRP(issue))
         return false;
-    if (auto const sle = view.read(keylet::account(issuer)))
+    if (issue.isMPT())
+    {
+        if (auto const sle = view.read(keylet::mptIssuance(issue.asset())))
+            return sle->getFlags() & lsfMPTLocked;
+    }
+    else if (auto const sle = view.read(keylet::account(issue.account())))
         return sle->isFlag(lsfGlobalFreeze);
     return false;
 }
@@ -181,18 +186,27 @@ bool
 isIndividualFrozen(
     ReadView const& view,
     AccountID const& account,
-    Currency const& currency,
-    AccountID const& issuer)
+    Issue const& issue)
 {
-    if (isXRP(currency))
+    if (isXRP(issue))
         return false;
-    if (issuer != account)
+    if (issue.account() != account)
     {
+        // Check if the issuer locked MPT
+        if (issue.isMPT())
+        {
+            if (auto const sle =
+                    view.read(keylet::mptoken(issue.asset(), account)))
+                return sle->getFlags() & lsfMPTLocked;
+        }
         // Check if the issuer froze the line
-        auto const sle = view.read(keylet::line(account, issuer, currency));
-        if (sle &&
-            sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
-            return true;
+        else if (
+            auto const sle = view.read(
+                keylet::line(account, issue.account(), issue.asset())))
+        {
+            return sle->isFlag(
+                (issue.account() > account) ? lsfHighFreeze : lsfLowFreeze);
+        }
     }
     return false;
 }
@@ -206,20 +220,12 @@ isFrozen(
     Asset const& asset,
     AccountID const& issuer)
 {
-    if (isXRP(asset) || asset.isMPT())
+    Issue const issue = asset.isMPT() ? Issue{asset} : Issue{asset, issuer};
+    if (isXRP(issue))
         return false;
-    auto sle = view.read(keylet::account(issuer));
-    if (sle && sle->isFlag(lsfGlobalFreeze))
+    if (isGlobalFrozen(view, issue))
         return true;
-    if (issuer != account)
-    {
-        // Check if the issuer froze the line
-        sle = view.read(keylet::line(account, issuer, asset));
-        if (sle &&
-            sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
-            return true;
-    }
-    return false;
+    return isIndividualFrozen(view, account, issue);
 }
 
 STAmount
@@ -231,46 +237,49 @@ accountHolds(
     FreezeHandling zeroIfFrozen,
     beast::Journal j)
 {
-    STAmount amount;
     if (isXRP(asset))
     {
         return {xrpLiquid(view, account, 0, j)};
     }
 
-    if (asset.isMPT())
+    STAmount amount;
+    Issue const issue = asset.isMPT() ? Issue{asset} : Issue{asset, issuer};
+    amount.clear(issue);
+
+    // Lambda returns sle if the object exists and
+    // the asset is not frozen/locked
+    auto getSle = [&]() -> std::shared_ptr<SLE const> {
+        Keylet const key = asset.isMPT() ? keylet::mptoken(asset, account)
+                                         : keylet::line(account, issuer, asset);
+        auto const sle = view.read(key);
+        if (!sle ||
+            ((zeroIfFrozen == fhZERO_IF_FROZEN) &&
+             isFrozen(view, account, issue)))
+            return nullptr;
+        else
+            return sle;
+    };
+
+    if (auto const sle = getSle())
     {
-        Issue iss{asset};
-        if (auto const sle = view.read(keylet::mptoken(asset, account)))
+        // Return balance on MPT or trust line modulo freeze
+        if (asset.isMPT())
         {
             auto const amt = sle->getFieldU64(sfMPTAmount);
             auto const locked = sle->getFieldU64(sfLockedAmount);
             if (amt > locked)
-                return STAmount{iss, amt - locked};
+                amount = STAmount{Issue{asset}, amt - locked};
         }
-        return STAmount{iss, 0};
-    }
-
-    // IOU: Return balance on trust line modulo freeze
-    auto const sle = view.read(keylet::line(account, issuer, asset));
-    if (!sle)
-    {
-        amount.clear({asset, issuer});
-    }
-    else if (
-        (zeroIfFrozen == fhZERO_IF_FROZEN) &&
-        isFrozen(view, account, asset, issuer))
-    {
-        amount.clear(Issue(asset, issuer));
-    }
-    else
-    {
-        amount = sle->getFieldAmount(sfBalance);
-        if (account > issuer)
+        else
         {
-            // Put balance in account terms.
-            amount.negate();
+            amount = sle->getFieldAmount(sfBalance);
+            if (account > issuer)
+            {
+                // Put balance in account terms.
+                amount.negate();
+            }
+            amount.setIssuer(issuer);
         }
-        amount.setIssuer(issuer);
     }
     JLOG(j.trace()) << "accountHolds:"
                     << " account=" << to_string(account)
