@@ -1582,7 +1582,7 @@ class LedgerRPC_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryMPTIssuanceID()
+    testLedgerEntryMPTIssuance()
     {
         testcase("ledger_entry Request MPTokenIssuance");
         using namespace test::jtx;
@@ -1599,7 +1599,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         {
             // Request the MPTokenIssuance using its ID.
             Json::Value jvParams;
-            jvParams[jss::mpt_issuance_id] = to_string(mptAlice.issuanceID());
+            jvParams[jss::mpt_issuance] = to_string(mptAlice.issuanceID());
             jvParams[jss::ledger_hash] = ledgerHash;
             Json::Value const jrr = env.rpc(
                 "json", "ledger_entry", to_string(jvParams))[jss::result];
@@ -1608,11 +1608,64 @@ class LedgerRPC_test : public beast::unit_test::suite
         {
             // Request an index that is not a MPTokenIssuacne.
             Json::Value jvParams;
-            jvParams[jss::mpt_issuance_id] = ledgerHash;
+            jvParams[jss::mpt_issuance] = ledgerHash;
             jvParams[jss::ledger_hash] = ledgerHash;
             Json::Value const jrr = env.rpc(
                 "json", "ledger_entry", to_string(jvParams))[jss::result];
             checkErrorValue(jrr, "malformedRequest", "");
+        }
+    }
+
+    void
+    testLedgerEntryMPToken()
+    {
+        testcase("ledger_entry Request MPToken");
+        using namespace test::jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+        mptAlice.create();
+        std::string ledgerHash{to_string(env.closed()->info().hash)};
+
+        // MPToken can be requested in two ways:
+        //    1.  an object that has MPTIssuanceID and holder 
+        //    2.  ledger index string of the MPToken object
+        {
+            mptAlice.authorize({.account = &bob, .holderCount = 1});
+            ledgerHash = to_string(env.closed()->info().hash);
+
+            // Request the MPToken using its issuanceID and holder.
+            Json::Value jvObjParams;
+            jvObjParams[jss::mptoken] = Json::objectValue;
+            jvObjParams[jss::mptoken][jss::account] = bob.human();
+            jvObjParams[jss::mptoken][jss::mpt_issuance_id] = to_string(mptAlice.issuanceID());
+            jvObjParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr1 = env.rpc(
+                "json", "ledger_entry", to_string(jvObjParams))[jss::result];
+            BEAST_EXPECT(jrr1[jss::node][sfAccount.jsonName] == bob.human());
+
+            auto const mptokenIndex = jrr1[jss::node][jss::index];
+
+            // Request the same MPToken using the ledger index
+            Json::Value jvStrParams;
+            jvStrParams[jss::mptoken] = mptokenIndex;
+            jvStrParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr2 = env.rpc(
+                "json", "ledger_entry", to_string(jvStrParams))[jss::result];
+            BEAST_EXPECT(jrr2[jss::node][sfAccount.jsonName] == bob.human());
+        }
+        {
+            // Request an index that is not a MPToken.
+            Json::Value jvParams;
+            jvParams[jss::mptoken] = ledgerHash;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "");
         }
     }
 
@@ -2339,7 +2392,8 @@ public:
         testQueue();
         testLedgerAccountsOption();
         testLedgerEntryDID();
-        testLedgerEntryMPTIssuanceID();
+        testLedgerEntryMPTIssuance();
+        testLedgerEntryMPToken();
 
         test::jtx::forAllApiVersions(std::bind_front(
             &LedgerRPC_test::testLedgerEntryInvalidParams, this));
