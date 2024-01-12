@@ -1632,7 +1632,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         std::string ledgerHash{to_string(env.closed()->info().hash)};
 
         // MPToken can be requested in two ways:
-        //    1.  an object that has MPTIssuanceID and holder 
+        //    1.  an object that has MPTIssuanceID and holder
         //    2.  ledger index string of the MPToken object
         {
             mptAlice.authorize({.account = &bob, .holderCount = 1});
@@ -1642,7 +1642,8 @@ class LedgerRPC_test : public beast::unit_test::suite
             Json::Value jvObjParams;
             jvObjParams[jss::mptoken] = Json::objectValue;
             jvObjParams[jss::mptoken][jss::account] = bob.human();
-            jvObjParams[jss::mptoken][jss::mpt_issuance_id] = to_string(mptAlice.issuanceID());
+            jvObjParams[jss::mptoken][jss::mpt_issuance_id] =
+                to_string(mptAlice.issuanceID());
             jvObjParams[jss::ledger_hash] = ledgerHash;
             Json::Value const jrr1 = env.rpc(
                 "json", "ledger_entry", to_string(jvObjParams))[jss::result];

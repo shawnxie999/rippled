@@ -624,7 +624,8 @@ doLedgerEntry(RPC::JsonContext& context)
             expectedType = ltMPTOKEN;
             if (!context.params[jss::mptoken].isObject())
             {
-                if (!uNodeIndex.parseHex(context.params[jss::mptoken].asString()))
+                if (!uNodeIndex.parseHex(
+                        context.params[jss::mptoken].asString()))
                 {
                     uNodeIndex = beast::zero;
                     jvResult[jss::error] = "malformedRequest";
@@ -641,11 +642,13 @@ doLedgerEntry(RPC::JsonContext& context)
                 try
                 {
                     auto const mptIssuanceIdStr =
-                        context.params[jss::mptoken][jss::mpt_issuance_id].asString();
+                        context.params[jss::mptoken][jss::mpt_issuance_id]
+                            .asString();
 
                     uint192 mptIssuanceID;
                     if (!mptIssuanceID.parseHex(mptIssuanceIdStr))
-                        Throw<std::runtime_error>("Cannot parse mpt_issuance_id");
+                        Throw<std::runtime_error>(
+                            "Cannot parse mpt_issuance_id");
 
                     auto const account = parseBase58<AccountID>(
                         context.params[jss::mptoken][jss::account].asString());
@@ -653,7 +656,8 @@ doLedgerEntry(RPC::JsonContext& context)
                     if (!account || account->isZero())
                         jvResult[jss::error] = "malformedAddress";
                     else
-                        uNodeIndex = keylet::mptoken(mptIssuanceID, *account).key;
+                        uNodeIndex =
+                            keylet::mptoken(mptIssuanceID, *account).key;
                 }
                 catch (std::runtime_error const&)
                 {
