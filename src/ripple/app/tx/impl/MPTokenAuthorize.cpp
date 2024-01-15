@@ -182,13 +182,6 @@ MPTokenAuthorize::doApply()
                 false))
             return tecINTERNAL;
 
-        if (!view().dirRemove(
-                keylet::mpt_dir(mptIssuanceID),
-                (*sleMpt)[sfMPTokenNode],
-                sleMpt->key(),
-                false))
-            return tecINTERNAL;
-
         adjustOwnerCount(view(), sleAcct, -1, j_);
 
         view().erase(sleMpt);
@@ -214,22 +207,11 @@ MPTokenAuthorize::doApply()
     if (!ownerNode)
         return tecDIR_FULL;
 
-    auto const mptNode = view().dirInsert(
-        keylet::mpt_dir(mptIssuanceID),
-        mptokenKey,
-        [&mptIssuanceID](std::shared_ptr<SLE> const& sle) {
-            (*sle)[sfMPTokenIssuanceID] = mptIssuanceID;
-        });
-
-    if (!mptNode)
-        return tecDIR_FULL;
-
     auto mptoken = std::make_shared<SLE>(mptokenKey);
     (*mptoken)[sfAccount] = account_;
     (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
     (*mptoken)[sfFlags] = 0;
     (*mptoken)[sfOwnerNode] = *ownerNode;
-    (*mptoken)[sfMPTokenNode] = *mptNode;
     view().insert(mptoken);
 
     // Update owner count.
