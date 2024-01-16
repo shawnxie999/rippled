@@ -242,7 +242,7 @@ class MPToken_test : public beast::unit_test::suite
                 {.account = &bob, .holder = &bob, .err = temMALFORMED});
 
             // alice tries to hold onto her own token
-            mptAlice.authorize({.account= &alice, .err = temMALFORMED});
+            mptAlice.authorize({.account = &alice, .err = temMALFORMED});
 
             // alice tries to authorize herself
             mptAlice.authorize({.holder = &alice, .err = temMALFORMED});
@@ -276,7 +276,8 @@ class MPToken_test : public beast::unit_test::suite
             // bob deletes/unauthorizes his MPToken
             mptAlice.authorize({.account = &bob, .flags = tfMPTUnauthorize});
 
-            // bob receives error when he tries to delete his MPToken that has already been deleted
+            // bob receives error when he tries to delete his MPToken that has
+            // already been deleted
             mptAlice.authorize(
                 {.account = &bob,
                  .holderCount = 0,
@@ -434,7 +435,7 @@ class MPToken_test : public beast::unit_test::suite
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
             mptAlice.create({.ownerCount = 1});
-            
+
             // bob creates a mptoken
             mptAlice.authorize({.account = &bob, .holderCount = 1});
 
@@ -444,7 +445,8 @@ class MPToken_test : public beast::unit_test::suite
             // alice deletes her issuance
             mptAlice.destroy({.ownerCount = 0});
 
-            // bob can delete his mptoken even though issuance is no longer existent
+            // bob can delete his mptoken even though issuance is no longer
+            // existent
             mptAlice.authorize(
                 {.account = &bob, .holderCount = 0, .flags = tfMPTUnauthorize});
         }

@@ -61,12 +61,14 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     //
     // Note: `accountID` is holder's account
     //       `holderID` is NOT used
-    if (!holderID){
-        std::shared_ptr<SLE const> sleMpt =
-            ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], accountID));
+    if (!holderID)
+    {
+        std::shared_ptr<SLE const> sleMpt = ctx.view.read(
+            keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], accountID));
 
-        // There is an edge case where holder deletes MPT after issuance has already been destroyed. 
-        // So we must check for unauthorize before fetching the MPTIssuance object(since it doesn't exist)
+        // There is an edge case where holder deletes MPT after issuance has
+        // already been destroyed. So we must check for unauthorize before
+        // fetching the MPTIssuance object(since it doesn't exist)
 
         // if holder wants to delete/unauthorize a mpt
         if (txFlags & tfMPTUnauthorize)
@@ -76,17 +78,17 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
             if ((*sleMpt)[sfMPTAmount] != 0)
                 return tecHAS_OBLIGATIONS;
-            
+
             return tesSUCCESS;
         }
 
         // Now test when the holder wants to hold/create/authorize a new MPT
-        sleMptIssuance =         
+        sleMptIssuance =
             ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
 
         if (!sleMptIssuance)
             return tecOBJECT_NOT_FOUND;
-        
+
         if (accountID == (*sleMptIssuance)[sfIssuer])
             return temMALFORMED;
 
@@ -143,7 +145,8 @@ MPTokenAuthorize::doApply()
     // If the account that submitted the tx is a holder
     // Note: `account_` is holder's account
     //       `holderID` is NOT used
-    if (!holderID){
+    if (!holderID)
+    {
         // When a holder wants to unauthorize/delete a MPT, the ledger must
         //      - delete mptokenKey from both owner and mpt directories
         //      - delete the MPToken
@@ -173,7 +176,7 @@ MPTokenAuthorize::doApply()
         std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
         XRPAmount const reserveCreate(
             (uOwnerCount < 2) ? XRPAmount(beast::zero)
-                            : view().fees().accountReserve(uOwnerCount + 1));
+                              : view().fees().accountReserve(uOwnerCount + 1));
 
         if (mPriorBalance < reserveCreate)
             return tecINSUFFICIENT_RESERVE;
@@ -199,7 +202,8 @@ MPTokenAuthorize::doApply()
         return tesSUCCESS;
     }
 
-    std::shared_ptr<SLE const> sleMptIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    std::shared_ptr<SLE const> sleMptIssuance =
+        view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleMptIssuance)
         return tecINTERNAL;
 
@@ -208,12 +212,11 @@ MPTokenAuthorize::doApply()
     //       `holderID` is holder's account
     if (account_ != (*sleMptIssuance)[sfIssuer])
         return tecINTERNAL;
-    
+
     if (!holderID)
         return tecINTERNAL;
 
-    auto const sleMpt =
-        view().peek(keylet::mptoken(mptIssuanceID, *holderID));
+    auto const sleMpt = view().peek(keylet::mptoken(mptIssuanceID, *holderID));
     if (!sleMpt)
         return tecINTERNAL;
 
