@@ -759,6 +759,23 @@ class MPToken_test : public beast::unit_test::suite
             // Holder can send back to issuer
             mptAlice.pay(bob, alice, 8);
         }
+
+        // Issuer fails trying to send more than the maximum amount allowed
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            mptAlice.create({.ownerCount = 1, .holderCount = 0, .maxAmt = 100});
+
+            mptAlice.authorize({.account = &bob});
+
+            // issuer sends holder the max amount allowed
+            mptAlice.pay(alice, bob, 100);
+
+            // issuer tries to exceed max amount
+            mptAlice.pay(alice, bob, 1, tecMPT_MAX_AMOUNT_EXCEEDED);
+        }
     }
 
     void
