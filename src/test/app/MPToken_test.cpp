@@ -273,8 +273,10 @@ class MPToken_test : public beast::unit_test::suite
                 mptAlice.pay(bob, alice, 100);
             }
 
+            // bob deletes/unauthorizes his MPToken
             mptAlice.authorize({.account = &bob, .flags = tfMPTUnauthorize});
 
+            // bob receives error when he tries to delete his MPToken that has already been deleted
             mptAlice.authorize(
                 {.account = &bob,
                  .holderCount = 0,

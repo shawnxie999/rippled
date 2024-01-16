@@ -168,7 +168,7 @@ MPTokenAuthorize::doApply()
         }
 
         // A potential holder wants to authorize/hold a mpt, the ledger must:
-        //      - add the new mptokenKey to both the owner and mpt directries
+        //      - add the new mptokenKey to the owner directory
         //      - create the MPToken object for the holder
         std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
         XRPAmount const reserveCreate(
