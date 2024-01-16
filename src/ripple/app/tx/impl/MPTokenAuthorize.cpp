@@ -148,7 +148,7 @@ MPTokenAuthorize::doApply()
     if (!holderID)
     {
         // When a holder wants to unauthorize/delete a MPT, the ledger must
-        //      - delete mptokenKey from both owner and mpt directories
+        //      - delete mptokenKey from owner directory
         //      - delete the MPToken
         if (txFlags & tfMPTUnauthorize)
         {
