@@ -241,6 +241,10 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.authorize(
                 {.account = &bob, .holder = &bob, .err = temMALFORMED});
 
+            // alice tries to hold onto her own token
+            mptAlice.authorize({.account= &alice, .err = temMALFORMED});
+
+            // alice tries to authorize herself
             mptAlice.authorize({.holder = &alice, .err = temMALFORMED});
 
             // the mpt does not enable allowlisting
@@ -417,6 +421,28 @@ class MPToken_test : public beast::unit_test::suite
             // ensure bob's mptoken no longer has lsfMPTAuthorized set
             BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
 
+            mptAlice.authorize(
+                {.account = &bob, .holderCount = 0, .flags = tfMPTUnauthorize});
+        }
+
+        // Holder can have dangling MPToken even if issuance has been destroyed.
+        // Make sure they can still delete/unauthorize the MPToken
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            mptAlice.create({.ownerCount = 1});
+            
+            // bob creates a mptoken
+            mptAlice.authorize({.account = &bob, .holderCount = 1});
+
+            BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
+            BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 0));
+
+            // alice deletes her issuance
+            mptAlice.destroy({.ownerCount = 0});
+
+            // bob can delete his mptoken even though issuance is no longer existent
             mptAlice.authorize(
                 {.account = &bob, .holderCount = 0, .flags = tfMPTUnauthorize});
         }
