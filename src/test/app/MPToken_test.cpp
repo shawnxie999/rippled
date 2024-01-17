@@ -777,8 +777,10 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(alice, bob, 1, tecMPT_MAX_AMOUNT_EXCEEDED);
         }
 
-        // TODO: This test is currently failing! Modify the STAmount to change the range
-        // Issuer fails trying to send more than the default maximum amount allowed
+        // TODO: This test is currently failing! Modify the STAmount to change
+        // the range 
+        // Issuer fails trying to send more than the default maximum
+        // amount allowed
         {
             Env env{*this, features};
 
