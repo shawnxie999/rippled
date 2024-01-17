@@ -61,8 +61,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         if (maxAmt == 0)
             return temMALFORMED;
 
-        // TODO: Improve this check and move the constant elsewhere (STAmount?)
-        if (maxAmt > 0x7FFFFFFFFFFFFFFFull)
+        if (maxAmt > maxMPTokenAmount)
             return temMALFORMED;
     }
     return preflight2(ctx);
