@@ -766,7 +766,7 @@ class MPToken_test : public beast::unit_test::suite
 
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
-            mptAlice.create({.ownerCount = 1, .holderCount = 0, .maxAmt = 100});
+            mptAlice.create({.maxAmt = 100, .ownerCount = 1, .holderCount = 0});
 
             mptAlice.authorize({.account = &bob});
 
