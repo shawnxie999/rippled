@@ -200,8 +200,7 @@ MPTokenAuthorize::doApply()
         return tesSUCCESS;
     }
 
-    auto const sleMptIssuance =
-        view().read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleMptIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleMptIssuance)
         return tecINTERNAL;
 
