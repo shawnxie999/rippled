@@ -815,8 +815,9 @@ ValidMPTIssuance::visitEntry(
             mptIssuancesDeleted_++;
         else if (!before)
             mptIssuancesCreated_++;
-        
-        if ((*after)[sfOutstandingAmount] > (*after)[~sfMaximumAmount].value_or(maxMPTokenAmount))
+
+        if ((*after)[sfOutstandingAmount] >
+            (*after)[~sfMaximumAmount].value_or(maxMPTokenAmount))
             amountExceededMax_ = true;
     }
 
@@ -837,23 +838,24 @@ ValidMPTIssuance::finalize(
     ReadView const& _view,
     beast::Journal const& j)
 {
-    if (result == tesSUCCESS){
+    if (result == tesSUCCESS)
+    {
         if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_CREATE)
         {
             if (mptIssuancesCreated_ == 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT issuance creation "
-                                "succeeded without creating a MPT issuance";
+                                   "succeeded without creating a MPT issuance";
             }
             else if (mptIssuancesDeleted_ != 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT issuance creation "
-                                "succeeded while removing MPT issuances";
+                                   "succeeded while removing MPT issuances";
             }
             else if (mptIssuancesCreated_ > 1)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT issuance creation "
-                                "succeeded but created multiple issuances";
+                                   "succeeded but created multiple issuances";
             }
 
             return mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0;
@@ -864,17 +866,17 @@ ValidMPTIssuance::finalize(
             if (mptIssuancesDeleted_ == 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT issuance deletion "
-                                "succeeded without removing a MPT issuance";
+                                   "succeeded without removing a MPT issuance";
             }
             else if (mptIssuancesCreated_ > 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT issuance deletion "
-                                "succeeded while creating MPT issuances";
+                                   "succeeded while creating MPT issuances";
             }
             else if (mptIssuancesDeleted_ > 1)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT issuance deletion "
-                                "succeeded but deleted multiple issuances";
+                                   "succeeded but deleted multiple issuances";
             }
 
             return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 1;
@@ -887,58 +889,60 @@ ValidMPTIssuance::finalize(
             if (mptIssuancesCreated_ > 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT authorize "
-                                "succeeded but created MPT issuances";
+                                   "succeeded but created MPT issuances";
                 return false;
             }
             else if (mptIssuancesDeleted_ > 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT authorize "
-                                "succeeded but deleted issuances";
+                                   "succeeded but deleted issuances";
                 return false;
             }
             else if (
-                submittedByIssuer && (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
+                submittedByIssuer &&
+                (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
             {
                 JLOG(j.fatal())
                     << "Invariant failed: MPT authorize submitted by issuer "
-                    "succeeded but created/deleted mptokens";
+                       "succeeded but created/deleted mptokens";
                 return false;
             }
             else if (
-                !submittedByIssuer && (mptokensCreated_ + mptokensDeleted_ != 1))
+                !submittedByIssuer &&
+                (mptokensCreated_ + mptokensDeleted_ != 1))
             {
-                // if the holder submitted this tx, then a mptoken must be either
-                // created or deleted.
+                // if the holder submitted this tx, then a mptoken must be
+                // either created or deleted.
                 JLOG(j.fatal())
                     << "Invariant failed: MPT authorize submitted by holder "
-                    "succeeded but created/deleted bad number of mptokens";
+                       "succeeded but created/deleted bad number of mptokens";
                 return false;
             }
 
             return true;
         }
 
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_SET )
+        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_SET)
         {
             if (mptIssuancesDeleted_ > 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                "succeeded while removing MPT issuances";
+                                   "succeeded while removing MPT issuances";
             }
             else if (mptIssuancesCreated_ > 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                "succeeded while creating MPT issuances";
+                                   "succeeded while creating MPT issuances";
             }
             else if (mptokensDeleted_ > 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                "succeeded while removing MPTokens";
+                                   "succeeded while removing MPTokens";
             }
             else if (mptokensCreated_ > 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                "succeeded while creating MPTokens";
+                                   "succeeded while creating MPTokens";
             }
 
             return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
@@ -948,7 +952,7 @@ ValidMPTIssuance::finalize(
 
     if (mptIssuancesCreated_ != 0)
     {
-        JLOG(j.fatal()) << "Invariant failed: a MPT issuance was created";        
+        JLOG(j.fatal()) << "Invariant failed: a MPT issuance was created";
     }
     else if (mptIssuancesDeleted_ != 0)
     {
@@ -964,7 +968,8 @@ ValidMPTIssuance::finalize(
     }
     else if (amountExceededMax_)
     {
-        JLOG(j.fatal()) << "Invariant failed: OutstandingAmount exceeded MaximumAmount";
+        JLOG(j.fatal())
+            << "Invariant failed: OutstandingAmount exceeded MaximumAmount";
     }
 
     return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
