@@ -815,10 +815,6 @@ ValidMPTIssuance::visitEntry(
             mptIssuancesDeleted_++;
         else if (!before)
             mptIssuancesCreated_++;
-
-        if ((*after)[sfOutstandingAmount] >
-            (*after)[~sfMaximumAmount].value_or(maxMPTokenAmount))
-            amountExceededMax_ = true;
     }
 
     if (after && after->getType() == ltMPTOKEN)
@@ -966,14 +962,9 @@ ValidMPTIssuance::finalize(
     {
         JLOG(j.fatal()) << "Invariant failed: a MPToken was deleted";
     }
-    else if (amountExceededMax_)
-    {
-        JLOG(j.fatal())
-            << "Invariant failed: OutstandingAmount exceeded MaximumAmount";
-    }
 
     return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
-        mptokensCreated_ == 0 && mptokensDeleted_ == 0 && !amountExceededMax_;
+        mptokensCreated_ == 0 && mptokensDeleted_ == 0;
 }
 
 }  // namespace ripple

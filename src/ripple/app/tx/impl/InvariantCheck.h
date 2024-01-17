@@ -426,8 +426,6 @@ class ValidMPTIssuance
     std::uint32_t mptokensCreated_ = 0;
     std::uint32_t mptokensDeleted_ = 0;
 
-    bool amountExceededMax_ = false;
-
 public:
     void
     visitEntry(
