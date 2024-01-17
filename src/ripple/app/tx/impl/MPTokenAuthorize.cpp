@@ -47,7 +47,6 @@ TER
 MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
-    auto const txFlags = ctx.tx.getFlags();
     auto const holderID = ctx.tx[~sfMPTokenHolder];
 
     if (holderID && !(ctx.view.exists(keylet::account(*holderID))))
@@ -69,10 +68,10 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         // fetching the MPTIssuance object(since it doesn't exist)
 
         // if holder wants to delete/unauthorize a mpt
-        if (txFlags & tfMPTUnauthorize)
+        if (ctx.tx.getFlags() & tfMPTUnauthorize)
         {
             if (!sleMpt)
-                return tecNO_ENTRY;
+                return tecOBJECT_NOT_FOUND;
 
             if ((*sleMpt)[sfMPTAmount] != 0)
                 return tecHAS_OBLIGATIONS;
@@ -114,9 +113,6 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (accountID != (*sleMptIssuance)[sfIssuer])
         return temMALFORMED;
 
-    if (!holderID)
-        return temMALFORMED;
-
     // If tx is submitted by issuer, it only applies for MPT with
     // lsfMPTRequireAuth set
     if (!(mptIssuanceFlags & lsfMPTRequireAuth))
@@ -124,7 +120,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
     if (!ctx.view.exists(
             keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], *holderID)))
-        return tecNO_ENTRY;
+        return tecOBJECT_NOT_FOUND;
 
     return tesSUCCESS;
 }
@@ -138,7 +134,6 @@ MPTokenAuthorize::doApply()
         return tecINTERNAL;
 
     auto const holderID = ctx_.tx[~sfMPTokenHolder];
-    auto const txFlags = ctx_.tx.getFlags();
 
     // If the account that submitted the tx is a holder
     // Note: `account_` is holder's account
@@ -148,7 +143,7 @@ MPTokenAuthorize::doApply()
         // When a holder wants to unauthorize/delete a MPT, the ledger must
         //      - delete mptokenKey from owner directory
         //      - delete the MPToken
-        if (txFlags & tfMPTUnauthorize)
+        if (ctx_.tx.getFlags() & tfMPTUnauthorize)
         {
             auto const mptokenKey = keylet::mptoken(mptIssuanceID, account_);
             auto const sleMpt = view().peek(mptokenKey);
@@ -210,9 +205,6 @@ MPTokenAuthorize::doApply()
     if (account_ != (*sleMptIssuance)[sfIssuer])
         return tecINTERNAL;
 
-    if (!holderID)
-        return tecINTERNAL;
-
     auto const sleMpt = view().peek(keylet::mptoken(mptIssuanceID, *holderID));
     if (!sleMpt)
         return tecINTERNAL;
@@ -222,7 +214,7 @@ MPTokenAuthorize::doApply()
 
     // Issuer wants to unauthorize the holder, unset lsfMPTAuthorized on
     // their MPToken
-    if (txFlags & tfMPTUnauthorize)
+    if (ctx_.tx.getFlags() & tfMPTUnauthorize)
         flagsOut &= ~lsfMPTAuthorized;
     // Issuer wants to authorize a holder, set lsfMPTAuthorized on their
     // MPToken

@@ -282,7 +282,7 @@ class MPToken_test : public beast::unit_test::suite
                 {.account = &bob,
                  .holderCount = 0,
                  .flags = tfMPTUnauthorize,
-                 .err = tecNO_ENTRY});
+                 .err = tecOBJECT_NOT_FOUND});
         }
 
         // Test bad scenarios with allow-listing in MPTokenAuthorize (preclaim)
@@ -297,7 +297,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // alice submits a tx to authorize a holder that hasn't created
             // a mptoken yet
-            mptAlice.authorize({.holder = &bob, .err = tecNO_ENTRY});
+            mptAlice.authorize({.holder = &bob, .err = tecOBJECT_NOT_FOUND});
 
             // alice specifys a holder acct that doesn't exist
             mptAlice.authorize({.holder = &cindy, .err = tecNO_DST});
