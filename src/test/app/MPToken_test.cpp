@@ -241,6 +241,10 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.authorize(
                 {.account = &bob, .holder = &bob, .err = temMALFORMED});
 
+            // alice tries to hold onto her own token
+            mptAlice.authorize({.account = &alice, .err = temMALFORMED});
+
+            // alice tries to authorize herself
             mptAlice.authorize({.holder = &alice, .err = temMALFORMED});
 
             // the mpt does not enable allowlisting
@@ -269,13 +273,16 @@ class MPToken_test : public beast::unit_test::suite
                 mptAlice.pay(bob, alice, 100);
             }
 
+            // bob deletes/unauthorizes his MPToken
             mptAlice.authorize({.account = &bob, .flags = tfMPTUnauthorize});
 
+            // bob receives error when he tries to delete his MPToken that has
+            // already been deleted
             mptAlice.authorize(
                 {.account = &bob,
                  .holderCount = 0,
                  .flags = tfMPTUnauthorize,
-                 .err = tecNO_ENTRY});
+                 .err = tecOBJECT_NOT_FOUND});
         }
 
         // Test bad scenarios with allow-listing in MPTokenAuthorize (preclaim)
@@ -290,7 +297,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // alice submits a tx to authorize a holder that hasn't created
             // a mptoken yet
-            mptAlice.authorize({.holder = &bob, .err = tecNO_ENTRY});
+            mptAlice.authorize({.holder = &bob, .err = tecOBJECT_NOT_FOUND});
 
             // alice specifys a holder acct that doesn't exist
             mptAlice.authorize({.holder = &cindy, .err = tecNO_DST});
@@ -417,6 +424,29 @@ class MPToken_test : public beast::unit_test::suite
             // ensure bob's mptoken no longer has lsfMPTAuthorized set
             BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
 
+            mptAlice.authorize(
+                {.account = &bob, .holderCount = 0, .flags = tfMPTUnauthorize});
+        }
+
+        // Holder can have dangling MPToken even if issuance has been destroyed.
+        // Make sure they can still delete/unauthorize the MPToken
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            mptAlice.create({.ownerCount = 1});
+
+            // bob creates a mptoken
+            mptAlice.authorize({.account = &bob, .holderCount = 1});
+
+            BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
+            BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 0));
+
+            // alice deletes her issuance
+            mptAlice.destroy({.ownerCount = 0});
+
+            // bob can delete his mptoken even though issuance is no longer
+            // existent
             mptAlice.authorize(
                 {.account = &bob, .holderCount = 0, .flags = tfMPTUnauthorize});
         }
@@ -728,6 +758,43 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(alice, bob, 7);
             // Holder can send back to issuer
             mptAlice.pay(bob, alice, 8);
+        }
+
+        // Issuer fails trying to send more than the maximum amount allowed
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            mptAlice.create({.ownerCount = 1, .holderCount = 0, .maxAmt = 100});
+
+            mptAlice.authorize({.account = &bob});
+
+            // issuer sends holder the max amount allowed
+            mptAlice.pay(alice, bob, 100);
+
+            // issuer tries to exceed max amount
+            mptAlice.pay(alice, bob, 1, tecMPT_MAX_AMOUNT_EXCEEDED);
+        }
+
+        // TODO: This test is currently failing! Modify the STAmount to change
+        // the range
+        // Issuer fails trying to send more than the default maximum
+        // amount allowed
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
+
+            mptAlice.authorize({.account = &bob});
+
+            // issuer sends holder the default max amount allowed
+            mptAlice.pay(alice, bob, 0x7FFFFFFFFFFFFFFFull);
+
+            // issuer tries to exceed max amount
+            mptAlice.pay(alice, bob, 1, tecMPT_MAX_AMOUNT_EXCEEDED);
         }
     }
 
