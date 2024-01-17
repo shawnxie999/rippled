@@ -778,7 +778,7 @@ class MPToken_test : public beast::unit_test::suite
         }
 
         // TODO: This test is currently failing! Modify the STAmount to change
-        // the range 
+        // the range
         // Issuer fails trying to send more than the default maximum
         // amount allowed
         {
