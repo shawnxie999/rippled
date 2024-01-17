@@ -53,8 +53,6 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (holderID && !(ctx.view.exists(keylet::account(*holderID))))
         return tecNO_DST;
 
-    std::shared_ptr<SLE const> sleMptIssuance;
-
     // if non-issuer account submits this tx, then they are trying either:
     // 1. Unauthorize/delete MPToken
     // 2. Use/create MPToken
@@ -83,7 +81,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         }
 
         // Now test when the holder wants to hold/create/authorize a new MPT
-        sleMptIssuance =
+        auto const sleMptIssuance =
             ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
 
         if (!sleMptIssuance)
@@ -99,7 +97,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         return tesSUCCESS;
     }
 
-    sleMptIssuance =
+    auto const sleMptIssuance =
         ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
     if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -202,7 +200,7 @@ MPTokenAuthorize::doApply()
         return tesSUCCESS;
     }
 
-    std::shared_ptr<SLE const> sleMptIssuance =
+    auto const sleMptIssuance =
         view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleMptIssuance)
         return tecINTERNAL;
