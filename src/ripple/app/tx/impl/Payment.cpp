@@ -454,7 +454,7 @@ Payment::doApply()
         if (account_ != issuer && uDstAccountID != issuer &&
             (isFrozen(view(), account_, issue) ||
              isFrozen(view(), uDstAccountID, issue)))
-            return tecFROZEN;
+            return tecMPT_LOCKED;
 
         PaymentSandbox pv(&view());
         auto const res =

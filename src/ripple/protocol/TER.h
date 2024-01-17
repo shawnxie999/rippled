@@ -333,7 +333,8 @@ enum TECcodes : TERUnderlyingType {
     tecXCHAIN_CREATE_ACCOUNT_DISABLED = 186,
     tecEMPTY_DID = 187,
     tecMPTOKEN_EXISTS = 188,
-    tecMPT_MAX_AMOUNT_EXCEEDED = 189
+    tecMPT_MAX_AMOUNT_EXCEEDED = 189,
+    tecMPT_LOCKED = 190
 
 };
 

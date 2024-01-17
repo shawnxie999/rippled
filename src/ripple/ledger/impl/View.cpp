@@ -1736,9 +1736,8 @@ rippleMPTCredit(
                 sfOutstandingAmount,
                 sle->getFieldU64(sfOutstandingAmount) + saAmount.mpt().mpt());
 
-            // TODO: Replace maxAmt const with a variable
             if (sle->getFieldU64(sfOutstandingAmount) >
-                (*sle)[~sfMaximumAmount].value_or(0x7FFFFFFFFFFFFFFFull))
+                (*sle)[~sfMaximumAmount].value_or(maxMPTokenAmount))
                 return tecMPT_MAX_AMOUNT_EXCEEDED;
 
             view.update(sle);

@@ -739,8 +739,8 @@ class MPToken_test : public beast::unit_test::suite
             // Global lock
             mptAlice.set({.account = &alice, .flags = tfMPTLock});
             // Can't send between holders
-            mptAlice.pay(bob, carol, 1, tecFROZEN);
-            mptAlice.pay(carol, bob, 2, tecFROZEN);
+            mptAlice.pay(bob, carol, 1, tecMPT_LOCKED);
+            mptAlice.pay(carol, bob, 2, tecMPT_LOCKED);
             // Issuer can send
             mptAlice.pay(alice, bob, 3);
             // Holder can send back to issuer
@@ -752,8 +752,8 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.set(
                 {.account = &alice, .holder = &bob, .flags = tfMPTLock});
             // Can't send between holders
-            mptAlice.pay(bob, carol, 5, tecFROZEN);
-            mptAlice.pay(carol, bob, 6, tecFROZEN);
+            mptAlice.pay(bob, carol, 5, tecMPT_LOCKED);
+            mptAlice.pay(carol, bob, 6, tecMPT_LOCKED);
             // Issuer can send
             mptAlice.pay(alice, bob, 7);
             // Holder can send back to issuer
@@ -791,7 +791,7 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.authorize({.account = &bob});
 
             // issuer sends holder the default max amount allowed
-            mptAlice.pay(alice, bob, 0x7FFFFFFFFFFFFFFFull);
+            mptAlice.pay(alice, bob, maxMPTokenAmount);
 
             // issuer tries to exceed max amount
             mptAlice.pay(alice, bob, 1, tecMPT_MAX_AMOUNT_EXCEEDED);
