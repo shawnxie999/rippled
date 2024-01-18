@@ -25,6 +25,7 @@
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/protocol/Protocol.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/regex.hpp>
@@ -865,7 +866,12 @@ STAmount::canonicalize()
             }
         }
 
-        if (mValue > cMaxNativeN)
+        // TODO: refactor this
+        if (mIssue.isMPT()){
+            if (mValue > maxMPTokenAmount)
+                Throw<std::runtime_error>("MPToken amount out of range");
+        }
+        else if (mValue > cMaxNativeN)
             Throw<std::runtime_error>("Native currency amount out of range");
 
         return;
