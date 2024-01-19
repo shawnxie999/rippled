@@ -161,7 +161,24 @@ MPTTester::authorize(MPTAuthorize const& arg)
     }
     if (arg.holder)
         jv[sfMPTokenHolder.jsonName] = arg.holder->human();
-    submit(arg, jv);
+    if (submit(arg, jv) == tesSUCCESS)
+    {
+        if (arg.account == nullptr || *arg.account == issuer_)
+        {
+            // issuer un-authorizes the holder
+            if (arg.flags.value_or(0) == tfMPTUnauthorize)
+                env_.require(mptflags(*this, 0, arg.holder));
+            // issuer authorizes the holder
+            else
+                env_.require(mptflags(*this, lsfMPTAuthorized, arg.holder));
+        }
+        else if (arg.flags.value_or(0) == 0)
+        {
+            // holder creates a token
+            env_.require(mptflags(*this, 0, arg.account));
+            env_.require(mptpay(*this, *arg.account, 0));
+        }
+    }
 }
 
 void
@@ -248,7 +265,13 @@ MPTTester::checkMPTokenOutstandingAmount(std::uint64_t expectedAmount) const
 MPTTester::checkFlags(uint32_t const expectedFlags, AccountP holder_) const
 {
     return forObject(
-        [&](SLEP const& sle) { return expectedFlags == sle->getFlags(); },
+        [&](SLEP const& sle) {
+            auto const flags = sle->getFlags();
+            if (flags != expectedFlags)
+                std::cout << flags << " " << expectedFlags << " "
+                          << (std::uint64_t)holder_ << std::endl;
+            return expectedFlags == flags;
+        },
         holder_);
 }
 

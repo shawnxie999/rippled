@@ -305,24 +305,19 @@ class MPToken_test : public beast::unit_test::suite
             // bob now holds a mptoken object
             mptAlice.authorize({.account = &bob, .holderCount = 1});
 
-            BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
-
             // alice tries to unauthorize bob.
             // although tx is successful,
             // but nothing happens because bob hasn't been authorized yet
             mptAlice.authorize({.holder = &bob, .flags = tfMPTUnauthorize});
-            BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
 
             // alice authorizes bob
             // make sure bob's mptoken has set lsfMPTAuthorized
             mptAlice.authorize({.holder = &bob});
-            BEAST_EXPECT(mptAlice.checkFlags(lsfMPTAuthorized, &bob));
 
             // alice tries authorizes bob again.
             // tx is successful, but bob is already authorized,
             // so no changes
             mptAlice.authorize({.holder = &bob});
-            BEAST_EXPECT(mptAlice.checkFlags(lsfMPTAuthorized, &bob));
 
             // bob deletes his mptoken
             mptAlice.authorize(
@@ -385,9 +380,6 @@ class MPToken_test : public beast::unit_test::suite
             // bob creates a mptoken
             mptAlice.authorize({.account = &bob, .holderCount = 1});
 
-            BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
-            BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 0));
-
             // bob deletes his mptoken
             mptAlice.authorize(
                 {.account = &bob, .holderCount = 0, .flags = tfMPTUnauthorize});
@@ -405,14 +397,8 @@ class MPToken_test : public beast::unit_test::suite
             // bob creates a mptoken
             mptAlice.authorize({.account = &bob, .holderCount = 1});
 
-            BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
-            BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 0));
-
             // alice authorizes bob
             mptAlice.authorize({.account = &alice, .holder = &bob});
-
-            // make sure bob's mptoken has lsfMPTAuthorized set
-            BEAST_EXPECT(mptAlice.checkFlags(lsfMPTAuthorized, &bob));
 
             // Unauthorize bob's mptoken
             mptAlice.authorize(
@@ -420,9 +406,6 @@ class MPToken_test : public beast::unit_test::suite
                  .holder = &bob,
                  .holderCount = 1,
                  .flags = tfMPTUnauthorize});
-
-            // ensure bob's mptoken no longer has lsfMPTAuthorized set
-            BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
 
             mptAlice.authorize(
                 {.account = &bob, .holderCount = 0, .flags = tfMPTUnauthorize});
@@ -438,9 +421,6 @@ class MPToken_test : public beast::unit_test::suite
 
             // bob creates a mptoken
             mptAlice.authorize({.account = &bob, .holderCount = 1});
-
-            BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
-            BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 0));
 
             // alice deletes her issuance
             mptAlice.destroy({.ownerCount = 0});
@@ -587,10 +567,6 @@ class MPToken_test : public beast::unit_test::suite
             {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanLock});
 
         mptAlice.authorize({.account = &bob, .holderCount = 1});
-
-        // both the mptissuance and mptoken are not locked
-        BEAST_EXPECT(mptAlice.checkFlags(lsfMPTCanLock));
-        BEAST_EXPECT(mptAlice.checkFlags(0, &bob));
 
         // locks bob's mptoken
         mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTLock});
