@@ -24,6 +24,7 @@
 #include <ripple/protocol/jss.h>
 #include <initializer_list>
 #include <test/jtx.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/trust.h>
 
 namespace ripple {
@@ -944,6 +945,167 @@ class Clawback_test : public beast::unit_test::suite
     }
 
     void
+    testMPTValidations(FeatureBitset features)
+    {
+        testcase("MPT clawback validations");
+        using namespace test::jtx;
+
+        // Make sure clawback cannot work when featureMPTokensV1 is disabled
+        if (!features[featureMPTokensV1])
+        {
+            Env env(*this, features);
+            Account alice{"alice"};
+            Account bob{"bob"};
+
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const USD = alice["USD"];
+            auto const mpt = ripple::test::jtx::MPT(
+                alice.name(), std::make_pair(env.seq(alice), alice.id()));
+
+            env(claw(alice, bob["USD"](5), bob), ter(temDISABLED));
+            env.close();
+
+            env(claw(alice, mpt(5)), ter(temDISABLED));
+            env.close();
+
+            env(claw(alice, mpt(5), bob), ter(temDISABLED));
+            env.close();
+        }
+
+        // Test preflight
+        if (features[featureMPTokensV1])
+        {
+            Env env(*this, features);
+            Account alice{"alice"};
+            Account bob{"bob"};
+
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const USD = alice["USD"];
+            auto const mpt = ripple::test::jtx::MPT(
+                alice.name(), std::make_pair(env.seq(alice), alice.id()));
+
+            // clawing back IOU from a MPT holder fails
+            env(claw(alice, bob["USD"](5), bob), ter(temMALFORMED));
+            env.close();
+
+            // clawing back MPT without specifying a holder fails
+            env(claw(alice, mpt(5)), ter(temMALFORMED));
+            env.close();
+
+            // clawing back zero amount fails
+            env(claw(alice, mpt(0), bob), ter(temBAD_AMOUNT));
+            env.close();
+
+            // issuer clawing back from thmself fails
+            env(claw(alice, mpt(5), alice), ter(temMALFORMED));
+            env.close();
+
+            // TODO: uncomment after stamount changes
+            // env(claw(alice, mpt(maxMPTokenAmount), bob), ter(temBAD_AMOUNT));
+            // env.close();
+        }
+
+        // Preclaim - clawback fails when MPTCanClawback is disabled on issuance
+        if (features[featureMPTokensV1])
+        {
+            Env env(*this, features);
+            Account alice{"alice"};
+            Account bob{"bob"};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            // enable asfAllowTrustLineClawback for alice
+            env(fset(alice, asfAllowTrustLineClawback));
+            env.close();
+            env.require(flags(alice, asfAllowTrustLineClawback));
+
+            // Create issuance without enabling clawback
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
+
+            mptAlice.authorize({.account = &bob});
+
+            mptAlice.pay(alice, bob, 100);
+
+            // alice cannot clawback before she didn't enable MPTCanClawback
+            // asfAllowTrustLineClawback has no effect
+            mptAlice.claw(alice, bob, 1, tecNO_PERMISSION);
+        }
+
+        // Preclaim - test various scenarios
+        if (features[featureMPTokensV1])
+        {
+            Env env(*this, features);
+            Account alice{"alice"};
+            Account bob{"bob"};
+            Account carol{"carol"};
+            env.fund(XRP(1000), carol);
+            env.close();
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            auto const fakeMpt = ripple::test::jtx::MPT(
+                alice.name(), std::make_pair(env.seq(alice), alice.id()));
+
+            // issuer tries to clawback MPT where issuance doesn't exist
+            env(claw(alice, fakeMpt(5), bob), ter(tecOBJECT_NOT_FOUND));
+            env.close();
+
+            // alice creates issuance
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanClawback});
+
+            // alice tries to clawback from someone who doesn't have MPToken
+            mptAlice.claw(alice, bob, 1, tecOBJECT_NOT_FOUND);
+
+            // bob creates a MPToken
+            mptAlice.authorize({.account = &bob});
+
+            // clawback fails because bob currently has a balance of zero
+            mptAlice.claw(alice, bob, 1, tecINSUFFICIENT_FUNDS);
+
+            // alice pays bob 100 tokens
+            mptAlice.pay(alice, bob, 100);
+
+            // carol fails tries to clawback from bob because he is not the
+            // issuer
+            mptAlice.claw(carol, bob, 1, tecNO_PERMISSION);
+        }
+    }
+
+    void
+    testMPTClawback(FeatureBitset features)
+    {
+        testcase("MPT Clawback");
+        using namespace test::jtx;
+
+        Env env(*this, features | featureMPTokensV1);
+        Account alice{"alice"};
+        Account bob{"bob"};
+
+        MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+        // alice creates issuance
+        mptAlice.create(
+            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanClawback});
+
+        // bob creates a MPToken
+        mptAlice.authorize({.account = &bob});
+
+        // alice pays bob 100 tokens
+        mptAlice.pay(alice, bob, 100);
+
+        mptAlice.claw(alice, bob, 1);
+
+        mptAlice.claw(alice, bob, 1000);
+
+        // clawback fails because bob currently has a balance of zero
+        mptAlice.claw(alice, bob, 1, tecINSUFFICIENT_FUNDS);
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testAllowTrustLineClawbackFlag(features);
@@ -956,6 +1118,10 @@ class Clawback_test : public beast::unit_test::suite
         testFrozenLine(features);
         testAmountExceedsAvailable(features);
         testTickets(features);
+
+        // Test MPT clawback
+        testMPTValidations(features);
+        testMPTClawback(features);
     }
 
 public:
@@ -965,6 +1131,7 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
 
+        testWithFeats(all - featureMPTokensV1);
         testWithFeats(all);
     }
 };

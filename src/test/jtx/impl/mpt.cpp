@@ -342,6 +342,31 @@ MPTTester::pay(
     }
 }
 
+void
+MPTTester::claw(
+    Account const& issuer,
+    Account const& holder,
+    std::uint64_t amount,
+    std::optional<TER> err)
+{
+    assert(mpt_);
+    auto const issuerAmt = getAmount(issuer);
+    auto const holderAmt = getAmount(holder);
+    if (err)
+        env_(jtx::claw(issuer, mpt(amount), holder), ter(*err));
+    else
+        env_(jtx::claw(issuer, mpt(amount), holder));
+    if (env_.ter() != tesSUCCESS)
+        amount = 0;
+    if (close_)
+        env_.close();
+
+    env_.require(
+        mptpay(*this, issuer, issuerAmt - std::min(holderAmt, amount)));
+    env_.require(
+        mptpay(*this, holder, holderAmt - std::min(holderAmt, amount)));
+}
+
 PrettyAmount
 MPTTester::mpt(std::uint64_t amount) const
 {
