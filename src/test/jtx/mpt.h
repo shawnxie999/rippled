@@ -189,6 +189,13 @@ public:
         std::uint64_t amount,
         std::optional<TER> err = std::nullopt);
 
+    void
+    claw(
+        Account const& issuer,
+        Account const& holder,
+        std::uint64_t amount,
+        std::optional<TER> err = std::nullopt);
+
     PrettyAmount
     mpt(std::uint64_t amount) const;
 
