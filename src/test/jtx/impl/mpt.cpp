@@ -46,6 +46,12 @@ mptpay::operator()(Env& env) const
     env.test.expect(amount_ == tester_.getAmount(account_));
 }
 
+void
+requireAny::operator()(Env& env) const
+{
+    env.test.expect(cb_());
+}
+
 std::unordered_map<std::string, AccountP>
 MPTTester::makeHolders(std::vector<AccountP> const& holders)
 {
@@ -163,21 +169,36 @@ MPTTester::authorize(MPTAuthorize const& arg)
         jv[sfMPTokenHolder.jsonName] = arg.holder->human();
     if (submit(arg, jv) == tesSUCCESS)
     {
+        // Issuer authorizes
         if (arg.account == nullptr || *arg.account == issuer_)
         {
+            auto const flags = getFlags(arg.holder);
             // issuer un-authorizes the holder
             if (arg.flags.value_or(0) == tfMPTUnauthorize)
-                env_.require(mptflags(*this, 0, arg.holder));
+                env_.require(mptflags(*this, flags, arg.holder));
             // issuer authorizes the holder
             else
-                env_.require(mptflags(*this, lsfMPTAuthorized, arg.holder));
+                env_.require(
+                    mptflags(*this, flags | lsfMPTAuthorized, arg.holder));
         }
+        // Holder authorizes
         else if (arg.flags.value_or(0) == 0)
         {
+            auto const flags = getFlags(arg.account);
             // holder creates a token
-            env_.require(mptflags(*this, 0, arg.account));
+            env_.require(mptflags(*this, flags, arg.account));
             env_.require(mptpay(*this, *arg.account, 0));
         }
+    }
+    else if (
+        arg.account != nullptr && *arg.account != issuer_ &&
+        arg.flags.value_or(0) == 0)
+    {
+        // Verify MPToken doesn't exist if holder failed authorizing
+        env_.require(requireAny([&]() -> bool {
+            return env_.le(keylet::mptoken(*issuanceKey_, arg.account->id())) ==
+                nullptr;
+        }));
     }
 }
 
@@ -201,14 +222,8 @@ MPTTester::set(MPTSet const& arg)
         jv[sfMPTokenHolder.jsonName] = arg.holder->human();
     if (submit(arg, jv) == tesSUCCESS && arg.flags.value_or(0))
     {
-        std::uint32_t flags = 0;
         auto require = [&](AccountP holder, bool unchanged) {
-            assert(forObject(
-                [&](SLEP const& sle) {
-                    flags = sle->getFlags();
-                    return true;
-                },
-                holder));
+            auto flags = getFlags(holder);
             if (!unchanged)
             {
                 if (*arg.flags & tfMPTLock)
@@ -262,17 +277,9 @@ MPTTester::checkMPTokenOutstandingAmount(std::uint64_t expectedAmount) const
 }
 
 [[nodiscard]] bool
-MPTTester::checkFlags(uint32_t const expectedFlags, AccountP holder_) const
+MPTTester::checkFlags(uint32_t const expectedFlags, AccountP holder) const
 {
-    return forObject(
-        [&](SLEP const& sle) {
-            auto const flags = sle->getFlags();
-            if (flags != expectedFlags)
-                std::cout << flags << " " << expectedFlags << " "
-                          << (std::uint64_t)holder_ << std::endl;
-            return expectedFlags == flags;
-        },
-        holder_);
+    return expectedFlags == getFlags(holder);
 }
 
 void
@@ -285,6 +292,7 @@ MPTTester::pay(
     assert(mpt_);
     auto const srcAmt = getAmount(src);
     auto const destAmt = getAmount(dest);
+    auto const outstnAmt = getAmount(issuer_);
     if (err)
         env_(jtx::pay(src, dest, mpt(amount)), ter(*err));
     else
@@ -305,8 +313,15 @@ MPTTester::pay(
     }
     else
     {
-        env_.require(mptpay(*this, src, srcAmt - amount));
+        STAmount const saAmount = {Issue{*mpt_}, amount};
+        STAmount const saActual =
+            multiply(saAmount, transferRateMPT(*env_.current(), *mpt_));
+        // Sender pays the transfer fee if any
+        env_.require(mptpay(*this, src, srcAmt - saActual.mpt().mpt()));
         env_.require(mptpay(*this, dest, destAmt + amount));
+        // Outstanding amount is reduced by the transfer fee if any
+        env_.require(mptpay(
+            *this, issuer_, outstnAmt - (saActual - saAmount).mpt().mpt()));
     }
 }
 
@@ -332,6 +347,19 @@ MPTTester::getAmount(Account const& account) const
             return sle->getFieldU64(sfMPTAmount);
     }
     return 0;
+}
+
+std::uint32_t
+MPTTester::getFlags(ripple::test::jtx::AccountP holder) const
+{
+    std::uint32_t flags = 0;
+    assert(forObject(
+        [&](SLEP const& sle) {
+            flags = sle->getFlags();
+            return true;
+        },
+        holder));
+    return flags;
 }
 
 }  // namespace jtx

@@ -1167,8 +1167,20 @@ rippleSend(
                       saAmount,
                       transferRateMPT(
                           view, static_cast<MPT>(saAmount.getAsset())));
-            return rippleMPTCredit(view, uSenderID, uReceiverID, saActual, j);
+
+            JLOG(j.debug()) << "rippleSend> " << to_string(uSenderID) << " - > "
+                            << to_string(uReceiverID)
+                            << " : deliver=" << saAmount.getFullText()
+                            << " cost=" << saActual.getFullText();
+
+            if (auto const terResult =
+                    rippleMPTCredit(view, issuer, uReceiverID, saAmount, j);
+                terResult != tesSUCCESS)
+                return terResult;
+            else
+                return rippleMPTCredit(view, uSenderID, issuer, saActual, j);
         }
+
         return tecINTERNAL;
     }
 
