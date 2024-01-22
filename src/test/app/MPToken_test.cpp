@@ -40,8 +40,12 @@ class MPToken_test : public beast::unit_test::suite
             MPTTester mptAlice(env, alice);
 
             mptAlice.create({.ownerCount = 0, .err = temDISABLED});
+        }
 
-            env.enableFeature(featureMPTokensV1);
+        // test preflight of MPTokenIssuanceCreate
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
 
             mptAlice.create({.flags = 0x00000001, .err = temINVALID_FLAG});
 
@@ -189,7 +193,7 @@ class MPToken_test : public beast::unit_test::suite
         Account const alice("alice");
         Account const bob("bob");
         Account const cindy("cindy");
-        // Validate fields in MPTokenAuthorize (preflight)
+        // Validate amendment enable in MPTokenAuthorize (preflight)
         {
             Env env{*this, features - featureMPTokensV1};
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
@@ -198,8 +202,12 @@ class MPToken_test : public beast::unit_test::suite
                 {.account = &bob,
                  .id = getMptID(alice, env.seq(alice)),
                  .err = temDISABLED});
+        }
 
-            env.enableFeature(featureMPTokensV1);
+        // Validate fields in MPTokenAuthorize (preflight)
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
             mptAlice.create({.ownerCount = 1});
 
@@ -256,13 +264,13 @@ class MPToken_test : public beast::unit_test::suite
             // bob cannot create the mptoken the second time
             mptAlice.authorize({.account = &bob, .err = tecMPTOKEN_EXISTS});
 
-            // Check that bob cannot delete CFToken when his balance is
+            // Check that bob cannot delete MPToken when his balance is
             // non-zero
             {
                 // alice pays bob 100 tokens
                 mptAlice.pay(alice, bob, 100);
 
-                // bob tries to delete his CFToken, but fails since he still
+                // bob tries to delete his MPToken, but fails since he still
                 // holds tokens
                 mptAlice.authorize(
                     {.account = &bob,
