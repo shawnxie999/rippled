@@ -72,6 +72,20 @@ public:
     operator()(Env& env) const;
 };
 
+class requireAny
+{
+private:
+    std::function<bool()> cb_;
+
+public:
+    requireAny(std::function<bool()> const& cb) : cb_(cb)
+    {
+    }
+
+    void
+    operator()(Env& env) const;
+};
+
 struct MPTConstr
 {
     std::vector<AccountP> holders = {};
@@ -232,6 +246,9 @@ private:
 
     std::unordered_map<std::string, AccountP>
     makeHolders(std::vector<AccountP> const& holders);
+
+    std::uint32_t
+    getFlags(AccountP holder) const;
 };
 
 }  // namespace jtx

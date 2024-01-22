@@ -772,6 +772,38 @@ class MPToken_test : public beast::unit_test::suite
         //     // issuer tries to exceed max amount
         //     mptAlice.pay(alice, bob, 1, tecMPT_MAX_AMOUNT_EXCEEDED);
         // }
+
+        // Transfer fee
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+
+            // Transfer fee is 10%
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .transferFee = 10'000,
+                 .flags = tfMPTCanTransfer});
+
+            // Holders create MPToken
+            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = &carol});
+
+            // Payment between the issuer and the holder, no transfer fee.
+            mptAlice.pay(alice, bob, 2'000);
+
+            // Payment between the holder and the issuer, no transfer fee.
+            mptAlice.pay(alice, bob, 1'000);
+
+            // Payment between the holders. The sender doesn't have
+            // enough funds to cover the transfer fee.
+            mptAlice.pay(bob, carol, 1'000);
+
+            // Payment between the holders. The sender pays 10% transfer fee.
+            std::cout << "test transfer" << std::endl;
+            mptAlice.pay(bob, carol, 100);
+        }
     }
 
     void
