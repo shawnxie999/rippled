@@ -112,6 +112,11 @@ MPTTester::create(const MPTCreate& arg)
         jv[sfMaximumAmount.jsonName] = strHex(uint64ToByteArray(*arg.maxAmt));
     if (submit(arg, jv) != tesSUCCESS)
     {
+        // Verify issuance doesn't exist
+        env_.require(requireAny([&]() -> bool {
+            return env_.le(keylet::mptIssuance(*id_)) == nullptr;
+        }));
+
         id_.reset();
         issuanceKey_.reset();
         mpt_.reset();
@@ -167,7 +172,7 @@ MPTTester::authorize(MPTAuthorize const& arg)
     }
     if (arg.holder)
         jv[sfMPTokenHolder.jsonName] = arg.holder->human();
-    if (submit(arg, jv) == tesSUCCESS)
+    if (auto const result = submit(arg, jv); result == tesSUCCESS)
     {
         // Issuer authorizes
         if (arg.account == nullptr || *arg.account == issuer_)
@@ -194,11 +199,23 @@ MPTTester::authorize(MPTAuthorize const& arg)
         arg.account != nullptr && *arg.account != issuer_ &&
         arg.flags.value_or(0) == 0)
     {
-        // Verify MPToken doesn't exist if holder failed authorizing
-        env_.require(requireAny([&]() -> bool {
-            return env_.le(keylet::mptoken(*issuanceKey_, arg.account->id())) ==
-                nullptr;
-        }));
+        if (result == tecMPTOKEN_EXISTS)
+        {
+            // Verify that MPToken already exists
+            env_.require(requireAny([&]() -> bool {
+                return env_.le(keylet::mptoken(
+                           *issuanceKey_, arg.account->id())) != nullptr;
+            }));
+        }
+        else
+        {
+            // Verify MPToken doesn't exist if holder failed authorizing(unless
+            // it already exists)
+            env_.require(requireAny([&]() -> bool {
+                return env_.le(keylet::mptoken(
+                           *issuanceKey_, arg.account->id())) == nullptr;
+            }));
+        }
     }
 }
 
