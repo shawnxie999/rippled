@@ -789,9 +789,9 @@ class MPToken_test : public beast::unit_test::suite
 
             // Transfer fee is 10%
             mptAlice.create(
-                {.ownerCount = 1,
+                {.transferFee = 10'000,
+                 .ownerCount = 1,
                  .holderCount = 0,
-                 .transferFee = 10'000,
                  .flags = tfMPTCanTransfer});
 
             // Holders create MPToken
@@ -809,7 +809,6 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(bob, carol, 1'000);
 
             // Payment between the holders. The sender pays 10% transfer fee.
-            std::cout << "test transfer" << std::endl;
             mptAlice.pay(bob, carol, 100);
         }
     }
