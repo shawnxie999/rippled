@@ -514,14 +514,16 @@ public:
         Json::Value jvParams;
         jvParams[jss::ledger_index] = "current";
         jvParams[jss::type] = jss::mpt_issuance;
-        auto const jrr =  env.rpc(
+        auto const jrr = env.rpc(
             "json",
             "ledger_data",
             boost::lexical_cast<std::string>(jvParams))[jss::result];
-       
-        for (auto const& j : jrr[jss::state]){
+
+        for (auto const& j : jrr[jss::state])
+        {
             BEAST_EXPECT(j["LedgerEntryType"] == jss::MPTokenIssuance);
-            BEAST_EXPECT(j[jss::mpt_issuance_id] == to_string(mptAlice.issuanceID()));            
+            BEAST_EXPECT(
+                j[jss::mpt_issuance_id] == to_string(mptAlice.issuanceID()));
         }
     }
 
