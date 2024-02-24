@@ -21,6 +21,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/core/LexicalCast.h>
+#include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/UintTypes.h>
@@ -116,8 +117,9 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
     {
         if (isMPT)
         {
-            mAsset = std::make_pair(
-                sit.get32(), static_cast<AccountID>(sit.get160()));
+            // mAsset = std::make_pair(
+            //     sit.get32(), static_cast<AccountID>(sit.get160()));
+            mAsset = sit.get192();
         }
         else
             mAsset = xrpIssue();
@@ -756,8 +758,10 @@ STAmount::add(Serializer& s) const
                 s.add64(mValue | cMPToken);
             else
                 s.add64(mValue | cMPToken | cPositive);
-            s.add32(mAsset.mptIssue().sequence());
-            s.addBitString(mAsset.mptIssue().account());
+            // s.add32(mAsset.mptIssue().sequence());
+            // s.addBitString(mAsset.mptIssue().account());
+            auto const& mptIssue = mAsset.mptIssue();
+            s.addBitString(getMptID(mptIssue.account(), mptIssue.sequence()));
         }
         else
         {
