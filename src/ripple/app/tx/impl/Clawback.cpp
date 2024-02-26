@@ -105,6 +105,15 @@ Clawback::preclaim(PreclaimContext const& ctx)
 
         if (!ctx.view.exists(keylet::mptoken(issuanceKey.key, holder)))
             return tecOBJECT_NOT_FOUND;
+
+        if (accountHolds(
+                ctx.view,
+                holder,
+                clawAmount.mptIssue(),
+                fhIGNORE_FREEZE,
+                ahIGNORE_AUTH,
+                ctx.j) <= beast::zero)
+            return tecINSUFFICIENT_FUNDS;
     }
     else
     {
@@ -130,25 +139,25 @@ Clawback::preclaim(PreclaimContext const& ctx)
         // If balance is negative, issuer must have lower address than holder
         if (balance < beast::zero && issuer > holder)
             return tecNO_PERMISSION;
-    }
 
-    // At this point, we know that issuer and holder accounts
-    // are correct and a trustline (or MPToken) exists between them.
-    //
-    // Must now explicitly check the balance to make sure
-    // available balance is non-zero.
-    //
-    // We can't directly check the balance of trustline/MPToken because
-    // the available balance of a trustline/MPToken is prone to new changes (eg.
-    // XLS-34). So we must use `accountHolds`.
-    if (accountHolds(
-            ctx.view,
-            holder,
-            clawAmount.getCurrency(),
-            issuer,
-            fhIGNORE_FREEZE,
-            ctx.j) <= beast::zero)
-        return tecINSUFFICIENT_FUNDS;
+        // At this point, we know that issuer and holder accounts
+        // are correct and a trustline exists between them.
+        //
+        // Must now explicitly check the balance to make sure
+        // available balance is non-zero.
+        //
+        // We can't directly check the balance of trustline because
+        // the available balance of a trustline is prone to new changes (eg.
+        // XLS-34). So we must use `accountHolds`.
+        if (accountHolds(
+                ctx.view,
+                holder,
+                clawAmount.getCurrency(),
+                issuer,
+                fhIGNORE_FREEZE,
+                ctx.j) <= beast::zero)
+            return tecINSUFFICIENT_FUNDS;
+    }
 
     return tesSUCCESS;
 }
@@ -162,33 +171,42 @@ Clawback::doApply()
         ? ctx_.tx[~sfMPTokenHolder].value()
         : clawAmount.getIssuer();  // cannot be reference
 
-    // Replace the `issuer` field with issuer's account if asset is IOU
-    if (!clawAmount.isMPT()){
-        clawAmount.setIssuer(issuer);
-        if (holder == issuer)
-            return tecINTERNAL;
-
+    if (clawAmount.isMPT()){
         // Get the spendable balance. Must use `accountHolds`.
         STAmount const spendableAmount = accountHolds(
             view(),
             holder,
-            clawAmount.getCurrency(),
-            clawAmount.getIssuer(),
+            clawAmount.mptIssue(),
             fhIGNORE_FREEZE,
+            ahIGNORE_AUTH,
             j_);
 
-        return rippleCredit(
-            view(),
-            holder,
-            issuer,
-            std::min(spendableAmount, clawAmount),
-            true,
-            j_);
-    }
-    
-            if (clawAmount.isMPT())
         return rippleMPTCredit(
             view(), holder, issuer, std::min(spendableAmount, clawAmount), j_);
+    }
+
+    // Replace the `issuer` field with issuer's account if asset is IOU
+    clawAmount.setIssuer(issuer);
+
+    if (holder == issuer)
+        return tecINTERNAL;
+
+    // Get the spendable balance. Must use `accountHolds`.
+    STAmount const spendableAmount = accountHolds(
+        view(),
+        holder,
+        clawAmount.getCurrency(),
+        clawAmount.getIssuer(),
+        fhIGNORE_FREEZE,
+        j_);
+
+    return rippleCredit(
+        view(),
+        holder,
+        issuer,
+        std::min(spendableAmount, clawAmount),
+        true,
+        j_);
 }
 
 }  // namespace ripple
