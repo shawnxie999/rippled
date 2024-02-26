@@ -187,7 +187,6 @@ Clawback::doApply()
 
     // Replace the `issuer` field with issuer's account if asset is IOU
     clawAmount.setIssuer(issuer);
-
     if (holder == issuer)
         return tecINTERNAL;
 
