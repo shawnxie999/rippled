@@ -20,6 +20,7 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <test/jtx/trust.h>
 
 namespace ripple {
 
@@ -858,6 +859,246 @@ class MPToken_test : public beast::unit_test::suite
             meta[jss::mpt_issuance_id] == to_string(mptAlice.issuanceID()));
     }
 
+    void
+    testClawbackValidation(FeatureBitset features)
+    {
+        testcase("MPT clawback validations");
+        using namespace test::jtx;
+
+        // Make sure clawback cannot work when featureMPTokensV1 is disabled
+        {
+            Env env(*this, features - featureMPTokensV1);
+            Account alice{"alice"};
+            Account bob{"bob"};
+
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const USD = alice["USD"];
+            auto const mpt = ripple::test::jtx::MPT(
+                alice.name(), std::make_pair(env.seq(alice), alice.id()));
+
+            env(claw(alice, bob["USD"](5), bob), ter(temDISABLED));
+            env.close();
+
+            env(claw(alice, mpt(5)), ter(temDISABLED));
+            env.close();
+
+            env(claw(alice, mpt(5), bob), ter(temDISABLED));
+            env.close();
+        }
+
+        // Test preflight
+        {
+            Env env(*this, features);
+            Account alice{"alice"};
+            Account bob{"bob"};
+
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const USD = alice["USD"];
+            auto const mpt = ripple::test::jtx::MPT(
+                alice.name(), std::make_pair(env.seq(alice), alice.id()));
+
+            // clawing back IOU from a MPT holder fails
+            env(claw(alice, bob["USD"](5), bob), ter(temMALFORMED));
+            env.close();
+
+            // clawing back MPT without specifying a holder fails
+            env(claw(alice, mpt(5)), ter(temMALFORMED));
+            env.close();
+
+            // clawing back zero amount fails
+            env(claw(alice, mpt(0), bob), ter(temBAD_AMOUNT));
+            env.close();
+
+            // alice can't claw back from herself
+            env(claw(alice, mpt(5), alice), ter(temMALFORMED));
+            env.close();
+
+            // TODO: uncomment after stamount changes
+            // env(claw(alice, mpt(maxMPTokenAmount), bob), ter(temBAD_AMOUNT));
+            // env.close();
+        }
+
+        // Preclaim - clawback fails when MPTCanClawback is disabled on issuance
+        {
+            Env env(*this, features);
+            Account alice{"alice"};
+            Account bob{"bob"};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            // enable asfAllowTrustLineClawback for alice
+            env(fset(alice, asfAllowTrustLineClawback));
+            env.close();
+            env.require(flags(alice, asfAllowTrustLineClawback));
+
+            // Create issuance without enabling clawback
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
+
+            mptAlice.authorize({.account = &bob});
+
+            mptAlice.pay(alice, bob, 100);
+
+            // alice cannot clawback before she didn't enable MPTCanClawback
+            // asfAllowTrustLineClawback has no effect
+            mptAlice.claw(alice, bob, 1, tecNO_PERMISSION);
+        }
+
+        // Preclaim - test various scenarios
+        {
+            Env env(*this, features);
+            Account alice{"alice"};
+            Account bob{"bob"};
+            Account carol{"carol"};
+            env.fund(XRP(1000), carol);
+            env.close();
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            auto const fakeMpt = ripple::test::jtx::MPT(
+                alice.name(), std::make_pair(env.seq(alice), alice.id()));
+
+            // issuer tries to clawback MPT where issuance doesn't exist
+            env(claw(alice, fakeMpt(5), bob), ter(tecOBJECT_NOT_FOUND));
+            env.close();
+
+            // alice creates issuance
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanClawback});
+
+            // alice tries to clawback from someone who doesn't have MPToken
+            mptAlice.claw(alice, bob, 1, tecOBJECT_NOT_FOUND);
+
+            // bob creates a MPToken
+            mptAlice.authorize({.account = &bob});
+
+            // clawback fails because bob currently has a balance of zero
+            mptAlice.claw(alice, bob, 1, tecINSUFFICIENT_FUNDS);
+
+            // alice pays bob 100 tokens
+            mptAlice.pay(alice, bob, 100);
+
+            // carol fails tries to clawback from bob because he is not the
+            // issuer
+            mptAlice.claw(carol, bob, 1, tecNO_PERMISSION);
+        }
+    }
+
+    void
+    testClawback(FeatureBitset features)
+    {
+        testcase("MPT Clawback");
+        using namespace test::jtx;
+
+        {
+            Env env(*this, features);
+            Account alice{"alice"};
+            Account bob{"bob"};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            // alice creates issuance
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanClawback});
+
+            // bob creates a MPToken
+            mptAlice.authorize({.account = &bob});
+
+            // alice pays bob 100 tokens
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.claw(alice, bob, 1);
+
+            mptAlice.claw(alice, bob, 1000);
+
+            // clawback fails because bob currently has a balance of zero
+            mptAlice.claw(alice, bob, 1, tecINSUFFICIENT_FUNDS);
+        }
+
+        // Test that globally locked funds can be clawed
+        {
+            Env env(*this, features);
+            Account alice{"alice"};
+            Account bob{"bob"};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            // alice creates issuance
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanLock | tfMPTCanClawback});
+
+            // bob creates a MPToken
+            mptAlice.authorize({.account = &bob});
+
+            // alice pays bob 100 tokens
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.set({.account = &alice, .flags = tfMPTLock});
+
+            mptAlice.claw(alice, bob, 100);
+        }
+
+        // Test that individually locked funds can be clawed
+        {
+            Env env(*this, features);
+            Account alice{"alice"};
+            Account bob{"bob"};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            // alice creates issuance
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanLock | tfMPTCanClawback});
+
+            // bob creates a MPToken
+            mptAlice.authorize({.account = &bob});
+
+            // alice pays bob 100 tokens
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.set(
+                {.account = &alice, .holder = &bob, .flags = tfMPTLock});
+
+            mptAlice.claw(alice, bob, 100);
+        }
+
+        // Test that unauthorized funds can be clawed back
+        {
+            Env env(*this, features);
+            Account alice{"alice"};
+            Account bob{"bob"};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            // alice creates issuance
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanClawback | tfMPTRequireAuth});
+
+            // bob creates a MPToken
+            mptAlice.authorize({.account = &bob});
+
+            // alice authorizes bob
+            mptAlice.authorize({.account = &alice, .holder = &bob});
+
+            // alice pays bob 100 tokens
+            mptAlice.pay(alice, bob, 100);
+
+            // alice unauthorizes bob
+            mptAlice.authorize(
+                {.account = &alice, .holder = &bob, .flags = tfMPTUnauthorize});
+
+            mptAlice.claw(alice, bob, 100);
+        }
+    }
+
 public:
     void
     run() override
@@ -880,6 +1121,10 @@ public:
         // MPTokenIssuanceSet
         testSetValidation(all);
         testSetEnabled(all);
+
+        // MPT clawback
+        testClawbackValidation(all);
+        testClawback(all);
 
         // Test Direct Payment
         testPayment(all);
