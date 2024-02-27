@@ -126,7 +126,7 @@ Clawback::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
 
         auto const sleRippleState =
-            ctx.view.read(keylet::line(holder, issuer, clawAmount.issue().currency));
+            ctx.view.read(keylet::line(holder, issuer, clawAmount.getCurrency()));
         if (!sleRippleState)
             return tecNO_LINE;
 
