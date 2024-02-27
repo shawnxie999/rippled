@@ -785,7 +785,8 @@ ValidClawback::finalize(
             return false;
         }
 
-        if (trustlinesChanged == 1){
+        if (trustlinesChanged == 1)
+        {
             AccountID const issuer = tx.getAccountID(sfAccount);
             STAmount const amount = tx.getFieldAmount(sfAmount);
             AccountID const& holder = amount.getIssuer();
@@ -797,7 +798,7 @@ ValidClawback::finalize(
                 JLOG(j.fatal())
                     << "Invariant failed: trustline balance is negative";
                 return false;
-            }                    
+            }
         }
     }
     else

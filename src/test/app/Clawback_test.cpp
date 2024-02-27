@@ -1106,8 +1106,9 @@ class Clawback_test : public beast::unit_test::suite
             mptAlice.claw(alice, bob, 1, tecINSUFFICIENT_FUNDS);
         }
 
-        // Test that  globalled locked funds can be clawed 
-        if (features[featureMPTokensV1]) {
+        // Test that  globalled locked funds can be clawed
+        if (features[featureMPTokensV1])
+        {
             Env env(*this, features | featureMPTokensV1);
             Account alice{"alice"};
             Account bob{"bob"};
@@ -1116,7 +1117,9 @@ class Clawback_test : public beast::unit_test::suite
 
             // alice creates issuance
             mptAlice.create(
-                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanLock | tfMPTCanClawback});
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanLock | tfMPTCanClawback});
 
             // bob creates a MPToken
             mptAlice.authorize({.account = &bob});
@@ -1129,8 +1132,9 @@ class Clawback_test : public beast::unit_test::suite
             mptAlice.claw(alice, bob, 100);
         }
 
-        // Test that individually locked funds can be clawed 
-        if (features[featureMPTokensV1]) {
+        // Test that individually locked funds can be clawed
+        if (features[featureMPTokensV1])
+        {
             Env env(*this, features | featureMPTokensV1);
             Account alice{"alice"};
             Account bob{"bob"};
@@ -1139,7 +1143,9 @@ class Clawback_test : public beast::unit_test::suite
 
             // alice creates issuance
             mptAlice.create(
-                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanLock | tfMPTCanClawback});
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanLock | tfMPTCanClawback});
 
             // bob creates a MPToken
             mptAlice.authorize({.account = &bob});
@@ -1147,13 +1153,15 @@ class Clawback_test : public beast::unit_test::suite
             // alice pays bob 100 tokens
             mptAlice.pay(alice, bob, 100);
 
-            mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTLock});
+            mptAlice.set(
+                {.account = &alice, .holder = &bob, .flags = tfMPTLock});
 
             mptAlice.claw(alice, bob, 100);
         }
 
         // Test that unauthorized funds can be clawed back
-        if (features[featureMPTokensV1]) {
+        if (features[featureMPTokensV1])
+        {
             Env env(*this, features | featureMPTokensV1);
             Account alice{"alice"};
             Account bob{"bob"};
@@ -1162,7 +1170,9 @@ class Clawback_test : public beast::unit_test::suite
 
             // alice creates issuance
             mptAlice.create(
-                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanClawback | tfMPTRequireAuth});
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanClawback | tfMPTRequireAuth});
 
             // bob creates a MPToken
             mptAlice.authorize({.account = &bob});
@@ -1174,7 +1184,8 @@ class Clawback_test : public beast::unit_test::suite
             mptAlice.pay(alice, bob, 100);
 
             // alice unauthorizes bob
-            mptAlice.authorize({.account = &alice, .holder = &bob, .flags = tfMPTUnauthorize });
+            mptAlice.authorize(
+                {.account = &alice, .holder = &bob, .flags = tfMPTUnauthorize});
 
             mptAlice.claw(alice, bob, 100);
         }

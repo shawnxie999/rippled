@@ -58,16 +58,19 @@ Clawback::preflight(PreflightContext const& ctx)
     AccountID const& holder =
         clawAmount.isMPT() ? *mptHolder : clawAmount.getIssuer();
 
-    if (clawAmount.isMPT()){
+    if (clawAmount.isMPT())
+    {
         if (issuer == holder)
             return temMALFORMED;
 
-        if (clawAmount.mpt() > MPTAmount{maxMPTokenAmount} || clawAmount <= beast::zero)
+        if (clawAmount.mpt() > MPTAmount{maxMPTokenAmount} ||
+            clawAmount <= beast::zero)
             return temBAD_AMOUNT;
     }
-    else {
+    else
+    {
         if (issuer == holder || isXRP(clawAmount) || clawAmount <= beast::zero)
-            return temBAD_AMOUNT;        
+            return temBAD_AMOUNT;
     }
 
     return preflight2(ctx);
@@ -92,7 +95,8 @@ Clawback::preclaim(PreclaimContext const& ctx)
 
     if (clawAmount.isMPT())
     {
-        auto const issuanceKey = keylet::mptIssuance(clawAmount.mptIssue().mpt());
+        auto const issuanceKey =
+            keylet::mptIssuance(clawAmount.mptIssue().mpt());
         auto const sleIssuance = ctx.view.read(issuanceKey);
         if (!sleIssuance)
             return tecOBJECT_NOT_FOUND;
@@ -125,8 +129,8 @@ Clawback::preclaim(PreclaimContext const& ctx)
             (issuerFlagsIn & lsfNoFreeze))
             return tecNO_PERMISSION;
 
-        auto const sleRippleState =
-            ctx.view.read(keylet::line(holder, issuer, clawAmount.getCurrency()));
+        auto const sleRippleState = ctx.view.read(
+            keylet::line(holder, issuer, clawAmount.getCurrency()));
         if (!sleRippleState)
             return tecNO_LINE;
 
@@ -171,7 +175,8 @@ Clawback::doApply()
         ? ctx_.tx[~sfMPTokenHolder].value()
         : clawAmount.getIssuer();  // cannot be reference
 
-    if (clawAmount.isMPT()){
+    if (clawAmount.isMPT())
+    {
         // Get the spendable balance. Must use `accountHolds`.
         STAmount const spendableAmount = accountHolds(
             view(),

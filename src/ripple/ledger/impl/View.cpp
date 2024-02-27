@@ -328,12 +328,17 @@ accountHolds(
         if (amt > locked)
             amount = STAmount{issue, amt - locked};
 
-        // only if auth check is needed, as it needs to do an additional read operation
-        if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED){
-            auto const sleIssuance = view.read(keylet::mptIssuance(issue.getMptID()));
+        // only if auth check is needed, as it needs to do an additional read
+        // operation
+        if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
+        {
+            auto const sleIssuance =
+                view.read(keylet::mptIssuance(issue.getMptID()));
 
-            // if auth is enabled on the issuance and mpt is not authorized, clear amount
-            if (sleIssuance && sleIssuance->isFlag(lsfMPTRequireAuth) && !sleMpt->isFlag(lsfMPTAuthorized))
+            // if auth is enabled on the issuance and mpt is not authorized,
+            // clear amount
+            if (sleIssuance && sleIssuance->isFlag(lsfMPTRequireAuth) &&
+                !sleMpt->isFlag(lsfMPTAuthorized))
                 amount.clear(issue);
         }
     }
