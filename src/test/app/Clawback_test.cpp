@@ -1081,28 +1081,103 @@ class Clawback_test : public beast::unit_test::suite
         testcase("MPT Clawback");
         using namespace test::jtx;
 
-        Env env(*this, features | featureMPTokensV1);
-        Account alice{"alice"};
-        Account bob{"bob"};
+        {
+            Env env(*this, features | featureMPTokensV1);
+            Account alice{"alice"};
+            Account bob{"bob"};
 
-        MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
-        // alice creates issuance
-        mptAlice.create(
-            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanClawback});
+            // alice creates issuance
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanClawback});
 
-        // bob creates a MPToken
-        mptAlice.authorize({.account = &bob});
+            // bob creates a MPToken
+            mptAlice.authorize({.account = &bob});
 
-        // alice pays bob 100 tokens
-        mptAlice.pay(alice, bob, 100);
+            // alice pays bob 100 tokens
+            mptAlice.pay(alice, bob, 100);
 
-        mptAlice.claw(alice, bob, 1);
+            mptAlice.claw(alice, bob, 1);
 
-        mptAlice.claw(alice, bob, 1000);
+            mptAlice.claw(alice, bob, 1000);
 
-        // clawback fails because bob currently has a balance of zero
-        mptAlice.claw(alice, bob, 1, tecINSUFFICIENT_FUNDS);
+            // clawback fails because bob currently has a balance of zero
+            mptAlice.claw(alice, bob, 1, tecINSUFFICIENT_FUNDS);
+        }
+
+        // Test that  globalled locked funds can be clawed 
+        if (features[featureMPTokensV1]) {
+            Env env(*this, features | featureMPTokensV1);
+            Account alice{"alice"};
+            Account bob{"bob"};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            // alice creates issuance
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanLock | tfMPTCanClawback});
+
+            // bob creates a MPToken
+            mptAlice.authorize({.account = &bob});
+
+            // alice pays bob 100 tokens
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.set({.account = &alice, .flags = tfMPTLock});
+
+            mptAlice.claw(alice, bob, 100);
+        }
+
+        // Test that individually locked funds can be clawed 
+        if (features[featureMPTokensV1]) {
+            Env env(*this, features | featureMPTokensV1);
+            Account alice{"alice"};
+            Account bob{"bob"};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            // alice creates issuance
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanLock | tfMPTCanClawback});
+
+            // bob creates a MPToken
+            mptAlice.authorize({.account = &bob});
+
+            // alice pays bob 100 tokens
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTLock});
+
+            mptAlice.claw(alice, bob, 100);
+        }
+
+        // Test that unauthorized funds can be clawed back
+        if (features[featureMPTokensV1]) {
+            Env env(*this, features | featureMPTokensV1);
+            Account alice{"alice"};
+            Account bob{"bob"};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            // alice creates issuance
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanClawback | tfMPTRequireAuth});
+
+            // bob creates a MPToken
+            mptAlice.authorize({.account = &bob});
+
+            // alice authorizes bob
+            mptAlice.authorize({.account = &alice, .holder = &bob});
+
+            // alice pays bob 100 tokens
+            mptAlice.pay(alice, bob, 100);
+
+            // alice unauthorizes bob
+            mptAlice.authorize({.account = &alice, .holder = &bob, .flags = tfMPTUnauthorize });
+
+            mptAlice.claw(alice, bob, 100);
+        }
     }
 
     void
