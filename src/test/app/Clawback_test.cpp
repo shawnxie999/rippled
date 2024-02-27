@@ -1000,7 +1000,7 @@ class Clawback_test : public beast::unit_test::suite
             env(claw(alice, mpt(0), bob), ter(temBAD_AMOUNT));
             env.close();
 
-            // issuer clawing back from thmself fails
+            // alice can't claw back from herself
             env(claw(alice, mpt(5), alice), ter(temMALFORMED));
             env.close();
 
@@ -1106,7 +1106,7 @@ class Clawback_test : public beast::unit_test::suite
             mptAlice.claw(alice, bob, 1, tecINSUFFICIENT_FUNDS);
         }
 
-        // Test that  globalled locked funds can be clawed
+        // Test that globally locked funds can be clawed
         if (features[featureMPTokensV1])
         {
             Env env(*this, features | featureMPTokensV1);
