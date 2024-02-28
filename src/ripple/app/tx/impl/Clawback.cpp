@@ -81,9 +81,8 @@ Clawback::preclaim(PreclaimContext const& ctx)
 {
     AccountID const issuer = ctx.tx[sfAccount];
     STAmount const clawAmount = ctx.tx[sfAmount];
-    AccountID const& holder = clawAmount.isMPT()
-        ? ctx.tx[sfMPTokenHolder]
-        : clawAmount.getIssuer();
+    AccountID const& holder =
+        clawAmount.isMPT() ? ctx.tx[sfMPTokenHolder] : clawAmount.getIssuer();
 
     auto const sleIssuer = ctx.view.read(keylet::account(issuer));
     auto const sleHolder = ctx.view.read(keylet::account(holder));
@@ -172,7 +171,9 @@ Clawback::doApply()
     AccountID const& issuer = account_;
     STAmount clawAmount = ctx_.tx[sfAmount];
     AccountID const holder = clawAmount.isMPT()
-        ? ctx_.tx[sfMPTokenHolder] : clawAmount.getIssuer();  // cannot be reference because clawAmount is modified beblow
+        ? ctx_.tx[sfMPTokenHolder]
+        : clawAmount.getIssuer();  // cannot be reference because clawAmount is
+                                   // modified beblow
 
     if (clawAmount.isMPT())
     {
