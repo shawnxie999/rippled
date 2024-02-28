@@ -868,8 +868,8 @@ class MPToken_test : public beast::unit_test::suite
         // Make sure clawback cannot work when featureMPTokensV1 is disabled
         {
             Env env(*this, features - featureMPTokensV1);
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
 
             env.fund(XRP(1000), alice, bob);
             env.close();
@@ -891,8 +891,8 @@ class MPToken_test : public beast::unit_test::suite
         // Test preflight
         {
             Env env(*this, features);
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
 
             env.fund(XRP(1000), alice, bob);
             env.close();
@@ -925,8 +925,8 @@ class MPToken_test : public beast::unit_test::suite
         // Preclaim - clawback fails when MPTCanClawback is disabled on issuance
         {
             Env env(*this, features);
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
 
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
@@ -950,9 +950,9 @@ class MPToken_test : public beast::unit_test::suite
         // Preclaim - test various scenarios
         {
             Env env(*this, features);
-            Account alice{"alice"};
-            Account bob{"bob"};
-            Account carol{"carol"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
             env.fund(XRP(1000), carol);
             env.close();
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
@@ -994,8 +994,8 @@ class MPToken_test : public beast::unit_test::suite
 
         {
             Env env(*this, features);
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
 
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
@@ -1020,8 +1020,8 @@ class MPToken_test : public beast::unit_test::suite
         // Test that globally locked funds can be clawed
         {
             Env env(*this, features);
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
 
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
@@ -1045,8 +1045,8 @@ class MPToken_test : public beast::unit_test::suite
         // Test that individually locked funds can be clawed
         {
             Env env(*this, features);
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
 
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
@@ -1071,8 +1071,8 @@ class MPToken_test : public beast::unit_test::suite
         // Test that unauthorized funds can be clawed back
         {
             Env env(*this, features);
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
 
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 

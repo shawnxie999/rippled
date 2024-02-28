@@ -787,10 +787,10 @@ ValidClawback::finalize(
 
         if (trustlinesChanged == 1)
         {
-            AccountID const issuer = tx.getAccountID(sfAccount);
-            STAmount const amount = tx.getFieldAmount(sfAmount);
+            AccountID const& issuer = tx.getAccountID(sfAccount);
+            STAmount const& amount = tx.getFieldAmount(sfAmount);
             AccountID const& holder = amount.getIssuer();
-            STAmount const holderBalance = accountHolds(
+            STAmount const& holderBalance = accountHolds(
                 view, holder, amount.getCurrency(), issuer, fhIGNORE_FREEZE, j);
 
             if (holderBalance.signum() < 0)

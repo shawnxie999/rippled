@@ -82,7 +82,7 @@ Clawback::preclaim(PreclaimContext const& ctx)
     AccountID const issuer = ctx.tx[sfAccount];
     STAmount const clawAmount = ctx.tx[sfAmount];
     AccountID const& holder = clawAmount.isMPT()
-        ? ctx.tx[~sfMPTokenHolder].value()
+        ? ctx.tx[sfMPTokenHolder]
         : clawAmount.getIssuer();
 
     auto const sleIssuer = ctx.view.read(keylet::account(issuer));
@@ -134,7 +134,7 @@ Clawback::preclaim(PreclaimContext const& ctx)
         if (!sleRippleState)
             return tecNO_LINE;
 
-        STAmount const balance = (*sleRippleState)[sfBalance];
+        STAmount const& balance = (*sleRippleState)[sfBalance];
 
         // If balance is positive, issuer must have higher address than holder
         if (balance > beast::zero && issuer < holder)
@@ -172,8 +172,7 @@ Clawback::doApply()
     AccountID const& issuer = account_;
     STAmount clawAmount = ctx_.tx[sfAmount];
     AccountID const holder = clawAmount.isMPT()
-        ? ctx_.tx[~sfMPTokenHolder].value()
-        : clawAmount.getIssuer();  // cannot be reference
+        ? ctx_.tx[sfMPTokenHolder] : clawAmount.getIssuer();  // cannot be reference because clawAmount is modified beblow
 
     if (clawAmount.isMPT())
     {
