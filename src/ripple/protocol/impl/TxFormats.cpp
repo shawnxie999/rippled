@@ -375,6 +375,7 @@ TxFormats::TxFormats()
         ttCLAWBACK,
         {
             {sfAmount, soeREQUIRED},
+            {sfMPTokenHolder, soeOPTIONAL},
         },
         commonFields);
 

@@ -78,6 +78,9 @@ hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp);
 /** Controls the treatment of frozen account balances */
 enum FreezeHandling { fhIGNORE_FREEZE, fhZERO_IF_FROZEN };
 
+/** Controls the treatment of unauthorized MPT balances */
+enum AuthHandling { ahIGNORE_AUTH, ahZERO_IF_UNAUTHORIZED };
+
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, AccountID const& issuer);
 
@@ -140,6 +143,15 @@ accountHolds(
     AccountID const& account,
     Issue const& issue,
     FreezeHandling zeroIfFrozen,
+    beast::Journal j);
+
+[[nodiscard]] STAmount
+accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& issue,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
     beast::Journal j);
 
 // Returns the amount an account can spend of the currency type saDefault, or

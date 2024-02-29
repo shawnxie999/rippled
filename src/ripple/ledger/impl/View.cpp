@@ -306,6 +306,47 @@ accountHolds(
 }
 
 STAmount
+accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& issue,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
+    beast::Journal j)
+{
+    STAmount amount;
+
+    auto const sleMpt = view.read(keylet::mptoken(issue.mpt(), account));
+    if (!sleMpt)
+        amount.clear(issue);
+    else if (zeroIfFrozen == fhZERO_IF_FROZEN && isFrozen(view, account, issue))
+        amount.clear(issue);
+    else
+    {
+        auto const amt = sleMpt->getFieldU64(sfMPTAmount);
+        auto const locked = sleMpt->getFieldU64(sfLockedAmount);
+        if (amt > locked)
+            amount = STAmount{issue, amt - locked};
+
+        // only if auth check is needed, as it needs to do an additional read
+        // operation
+        if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
+        {
+            auto const sleIssuance =
+                view.read(keylet::mptIssuance(issue.getMptID()));
+
+            // if auth is enabled on the issuance and mpt is not authorized,
+            // clear amount
+            if (sleIssuance && sleIssuance->isFlag(lsfMPTRequireAuth) &&
+                !sleMpt->isFlag(lsfMPTAuthorized))
+                amount.clear(issue);
+        }
+    }
+
+    return amount;
+}
+
+STAmount
 accountFunds(
     ReadView const& view,
     AccountID const& id,

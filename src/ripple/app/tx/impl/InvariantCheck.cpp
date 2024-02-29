@@ -753,6 +753,9 @@ ValidClawback::visitEntry(
 {
     if (before && before->getType() == ltRIPPLE_STATE)
         trustlinesChanged++;
+
+    if (before && before->getType() == ltMPTOKEN)
+        mptokensChanged++;
 }
 
 bool
@@ -775,17 +778,27 @@ ValidClawback::finalize(
             return false;
         }
 
-        AccountID const issuer = tx.getAccountID(sfAccount);
-        STAmount const amount = tx.getFieldAmount(sfAmount);
-        AccountID const& holder = amount.getIssuer();
-        STAmount const holderBalance = accountHolds(
-            view, holder, amount.getCurrency(), issuer, fhIGNORE_FREEZE, j);
-
-        if (holderBalance.signum() < 0)
+        if (mptokensChanged > 1)
         {
             JLOG(j.fatal())
-                << "Invariant failed: trustline balance is negative";
+                << "Invariant failed: more than one mptokens changed.";
             return false;
+        }
+
+        if (trustlinesChanged == 1)
+        {
+            AccountID const issuer = tx.getAccountID(sfAccount);
+            STAmount const& amount = tx.getFieldAmount(sfAmount);
+            AccountID const& holder = amount.getIssuer();
+            STAmount const holderBalance = accountHolds(
+                view, holder, amount.getCurrency(), issuer, fhIGNORE_FREEZE, j);
+
+            if (holderBalance.signum() < 0)
+            {
+                JLOG(j.fatal())
+                    << "Invariant failed: trustline balance is negative";
+                return false;
+            }
         }
     }
     else
@@ -793,6 +806,13 @@ ValidClawback::finalize(
         if (trustlinesChanged != 0)
         {
             JLOG(j.fatal()) << "Invariant failed: some trustlines were changed "
+                               "despite failure of the transaction.";
+            return false;
+        }
+
+        if (mptokensChanged != 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: some mptokens were changed "
                                "despite failure of the transaction.";
             return false;
         }
