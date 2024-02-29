@@ -185,6 +185,7 @@ install (
     src/ripple/basics/Log.h
     src/ripple/basics/make_SSLContext.h
     src/ripple/basics/MathUtilities.h
+    src/ripple/basics/MPTAmount.h
     src/ripple/basics/mulDiv.h
     src/ripple/basics/Number.h
     src/ripple/basics/partitioned_unordered_map.h
@@ -242,6 +243,7 @@ install (
     src/ripple/protocol/AccountID.h
     src/ripple/protocol/AMMCore.h
     src/ripple/protocol/AmountConversions.h
+    src/ripple/protocol/Asset.h
     src/ripple/protocol/Book.h
     src/ripple/protocol/BuildInfo.h
     src/ripple/protocol/ErrorCodes.h
@@ -257,6 +259,7 @@ install (
     src/ripple/protocol/KnownFormats.h
     src/ripple/protocol/LedgerFormats.h
     src/ripple/protocol/LedgerHeader.h
+    src/ripple/protocol/MPTIssue.h
     src/ripple/protocol/NFTSyntheticSerializer.h
     src/ripple/protocol/NFTokenID.h
     src/ripple/protocol/NFTokenOfferID.h
