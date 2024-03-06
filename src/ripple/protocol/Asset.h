@@ -54,7 +54,7 @@ public:
         return mptIssue();
     }
 
-    Issue const&
+    constexpr Issue const&
     issue() const
     {
         if (!std::holds_alternative<Issue>(asset_))
@@ -69,7 +69,7 @@ public:
         return std::get<Issue>(asset_);
     }
 
-    MPTIssue const&
+    constexpr MPTIssue const&
     mptIssue() const
     {
         if (!std::holds_alternative<MPTIssue>(asset_))
