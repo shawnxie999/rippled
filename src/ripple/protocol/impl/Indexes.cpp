@@ -74,7 +74,6 @@ enum class LedgerNameSpace : std::uint16_t {
     DID = 'I',
     MPTOKEN_ISSUANCE = '~',
     MPTOKEN = 't',
-    MPT_DIR = 'k',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -494,19 +493,6 @@ mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept
 {
     return {
         ltMPTOKEN, indexHash(LedgerNameSpace::MPTOKEN, issuanceKey, holder)};
-}
-
-Keylet
-mpt_dir(uint192 const& id) noexcept
-{
-    return {
-        ltDIR_NODE, indexHash(LedgerNameSpace::MPT_DIR, mptIssuance(id).key)};
-}
-
-Keylet
-mpt_dir(uint256 const& id) noexcept
-{
-    return {ltDIR_NODE, indexHash(LedgerNameSpace::MPT_DIR, id)};
 }
 }  // namespace keylet
 
