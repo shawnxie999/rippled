@@ -87,7 +87,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
             return tecOBJECT_NOT_FOUND;
 
         if (accountID == (*sleMptIssuance)[sfIssuer])
-            return temMALFORMED;
+            return tecNO_PERMISSION;
 
         // if holder wants to use and create a mpt
         if (sleMpt)
@@ -111,7 +111,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     // Note: `accountID` is issuer's account
     //       `holderID` is holder's account
     if (accountID != (*sleMptIssuance)[sfIssuer])
-        return temMALFORMED;
+        return tecNO_PERMISSION;
 
     // If tx is submitted by issuer, it only applies for MPT with
     // lsfMPTRequireAuth set

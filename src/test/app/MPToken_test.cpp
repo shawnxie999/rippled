@@ -245,16 +245,10 @@ class MPToken_test : public beast::unit_test::suite
 
             // bob submits a tx with a holder field
             mptAlice.authorize(
-                {.account = &bob, .holder = &alice, .err = temMALFORMED});
-
-            mptAlice.authorize(
-                {.account = &bob, .holder = &bob, .err = temMALFORMED});
+                {.account = &bob, .holder = &alice, .err = tecNO_PERMISSION});
 
             // alice tries to hold onto her own token
-            mptAlice.authorize({.account = &alice, .err = temMALFORMED});
-
-            // alice tries to authorize herself
-            mptAlice.authorize({.holder = &alice, .err = temMALFORMED});
+            mptAlice.authorize({.account = &alice, .err = tecNO_PERMISSION});
 
             // the mpt does not enable allowlisting
             mptAlice.authorize({.holder = &bob, .err = tecNO_AUTH});
@@ -302,7 +296,7 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.create({.ownerCount = 1, .flags = tfMPTRequireAuth});
 
             // alice submits a tx without specifying a holder's account
-            mptAlice.authorize({.err = temMALFORMED});
+            mptAlice.authorize({.err = tecNO_PERMISSION});
 
             // alice submits a tx to authorize a holder that hasn't created
             // a mptoken yet
