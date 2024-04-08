@@ -29,6 +29,7 @@
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/TxFormats.h>
 #include <ripple/protocol/nftPageMask.h>
+#include <ripple/app/misc/AMMHelpers.h>
 
 namespace ripple {
 
@@ -797,6 +798,74 @@ ValidClawback::finalize(
         }
     }
 
+    return true;
+}
+
+void
+AMMPoolChecks::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (after && after->getType() == ltRIPPLE_STATE)
+    {
+        trustlineAccts_.emplace_back(after->getFieldAmount(sfHighLimit).getIssuer());
+        trustlineAccts_.emplace_back(after->getFieldAmount(sfLowLimit).getIssuer());   
+    }
+  
+    if (after && after->getType() == ltAMM)
+        ammPools_.emplace_back(std::make_pair((*after)[sfAsset], (*after)[sfAsset2]));
+}
+
+bool
+AMMPoolChecks::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (!view.rules().enabled(fixAMMInvariants))
+        return true;
+
+    auto getAssetBalance = [&](AccountID const& ammAccount, Issue const& issue) -> STAmount {
+        if(isXRP(issue.currency))
+            return view.read(keylet::account(ammAccount))->getFieldAmount(sfBalance);
+
+        auto const trustlineSle = view.read(keylet::line(issue.account, ammAccount, issue.currency));
+        STAmount amount = trustlineSle->getFieldAmount(sfBalance);
+        if (amount.negative()) amount.negate();
+
+        return amount;
+    };
+    
+    // auto isAmmAcct = [&](STObject const& sleAcct) -> bool {
+    //     if (sleAcct.isFieldPresent(sfAMMID))
+    //         return true;
+
+    //     return false;
+    // }
+
+    if (tx.getTxnType() == ttAMM_CREATE && result == tesSUCCESS)
+    {
+        if (ammPools_.size() != 1){
+            JLOG(j.fatal()) << "Invariant failed: only one AMM object can be created.";
+            return false;                
+        }
+
+        auto const ammSle = view.read(keylet::amm(ammPools_[0].first, ammPools_[0].second));
+        if (!ammSle)
+            return false;
+        
+        auto const lptBalance = (*ammSle)[sfLPTokenBalance];
+        auto const asset1Balance = getAssetBalance((*ammSle)[sfAccount], (*ammSle)[sfAsset]);
+        auto const asset2Balance = getAssetBalance((*ammSle)[sfAccount], (*ammSle)[sfAsset2]);
+
+        if (ammLPTokens(asset1Balance, asset2Balance, lptBalance.issue()) != lptBalance){
+            JLOG(j.fatal()) << "Invariant failed: LPTokenBalance does not equal to the product of the sqrt of each asset.";
+            return false;                
+        } 
+    }
     return true;
 }
 

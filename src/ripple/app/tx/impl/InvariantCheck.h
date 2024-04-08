@@ -418,6 +418,27 @@ public:
         beast::Journal const&);
 };
 
+class AMMPoolChecks
+{
+    std::vector<AccountID> trustlineAccts_;
+    std::vector<std::pair<Issue, Issue>> ammPools_;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -432,7 +453,8 @@ using InvariantChecks = std::tuple<
     ValidNewAccountRoot,
     ValidNFTokenPage,
     NFTokenCountTracking,
-    ValidClawback>;
+    ValidClawback,
+    AMMPoolChecks>;
 
 /**
  * @brief get a tuple of all invariant checks
