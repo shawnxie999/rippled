@@ -828,15 +828,30 @@ AMMPoolChecks::finalize(
     if (!view.rules().enabled(fixAMMInvariants))
         return true;
 
+    struct ammBalances {
+        STAmount lptBalance, asset1Balance, asset2Balance;
+    };
+
     auto getAssetBalance = [&](AccountID const& ammAccount, Issue const& issue) -> STAmount {
         if(isXRP(issue.currency))
             return view.read(keylet::account(ammAccount))->getFieldAmount(sfBalance);
 
         auto const trustlineSle = view.read(keylet::line(issue.account, ammAccount, issue.currency));
+        // if (!trustlineSle)
+        //     return STAmount{issue};
+
         STAmount amount = trustlineSle->getFieldAmount(sfBalance);
         if (amount.negative()) amount.negate();
 
         return amount;
+    };
+    
+    auto getBalances = [&](std::shared_ptr<SLE const> ammSle) -> ammBalances {
+        auto const lptBalance = (*ammSle)[sfLPTokenBalance];
+        auto const asset1Balance = getAssetBalance((*ammSle)[sfAccount], (*ammSle)[sfAsset]);
+        auto const asset2Balance = getAssetBalance((*ammSle)[sfAccount], (*ammSle)[sfAsset2]);
+
+        return {lptBalance, asset1Balance, asset2Balance};
     };
     
     // auto isAmmAcct = [&](STObject const& sleAcct) -> bool {
@@ -857,15 +872,33 @@ AMMPoolChecks::finalize(
         if (!ammSle)
             return false;
         
-        auto const lptBalance = (*ammSle)[sfLPTokenBalance];
-        auto const asset1Balance = getAssetBalance((*ammSle)[sfAccount], (*ammSle)[sfAsset]);
-        auto const asset2Balance = getAssetBalance((*ammSle)[sfAccount], (*ammSle)[sfAsset2]);
+        auto const [lptBalance, asset1Balance, asset2Balance] = getBalances(ammSle);
 
         if (ammLPTokens(asset1Balance, asset2Balance, lptBalance.issue()) != lptBalance){
             JLOG(j.fatal()) << "Invariant failed: LPTokenBalance does not equal to the product of the sqrt of each asset.";
             return false;                
         } 
     }
+
+    if ((tx.getTxnType() == ttAMM_DEPOSIT || tx.getTxnType() == ttAMM_WITHDRAW) && result == tesSUCCESS)
+    {
+        if (ammPools_.size() != 1){
+            JLOG(j.fatal()) << "Invariant failed: only one AMM object can be modified.";
+            return false;                
+        }
+
+        auto const ammSle = view.read(keylet::amm(ammPools_[0].first, ammPools_[0].second));
+        if (!ammSle)
+            return false;
+        
+        auto const [lptBalance, asset1Balance, asset2Balance] = getBalances(ammSle);
+
+        if (ammLPTokens(asset1Balance, asset2Balance, lptBalance.issue()) < lptBalance){
+            JLOG(j.fatal()) << "Invariant failed: LPTokenBalance must be greater than or equal to the product of the sqrt of each asset.";
+            return false;                
+        } 
+    }
+
     return true;
 }
 
