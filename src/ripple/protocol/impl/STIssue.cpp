@@ -88,7 +88,7 @@ STIssue::isEquivalent(const STBase& t) const
 bool
 STIssue::isDefault() const
 {
-    return issue_ == xrpIssue();
+    return false;
 }
 
 STBase*
