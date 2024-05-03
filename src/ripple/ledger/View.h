@@ -508,6 +508,17 @@ requireAuth(
     MPTIssue const& mpt,
     AccountID const& account);
 
+/** Check if the destination account is allowed
+ *  to receive MPT. Return tecNO_AUTH if it doesn't
+ *  and tesSUCCESS otherwise.
+ */
+[[nodiscard]] TER
+canTransfer(
+    ReadView const& view,
+    MPTIssue const& mpt,
+    AccountID const& from,
+    AccountID const& to);
+
 /** Deleter function prototype. Returns the status of the entry deletion
  * (if should not be skipped) and if the entry should be skipped. The status
  * is always tesSUCCESS if the entry should be skipped.
