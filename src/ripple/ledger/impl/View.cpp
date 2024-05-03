@@ -1699,14 +1699,18 @@ requireAuth(ReadView const& view, MPTIssue const& mpt, AccountID const& account)
 }
 
 TER
-canTransfer(ReadView const& view, MPTIssue const& mpt, AccountID const& from, AccountID const& to)
+canTransfer(
+    ReadView const& view,
+    MPTIssue const& mpt,
+    AccountID const& from,
+    AccountID const& to)
 {
     auto const mptID = keylet::mptIssuance(mpt.mpt());
     if (auto const sle = view.read(mptID);
         sle && !(sle->getFieldU32(sfFlags) & lsfMPTCanTransfer))
     {
-            if(from != (*sle)[sfIssuer] && to != (*sle)[sfIssuer])
-                return TER{tecNO_AUTH};
+        if (from != (*sle)[sfIssuer] && to != (*sle)[sfIssuer])
+            return TER{tecNO_AUTH};
     }
     return tesSUCCESS;
 }
