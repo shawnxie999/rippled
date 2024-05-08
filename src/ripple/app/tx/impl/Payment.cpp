@@ -453,6 +453,11 @@ Payment::doApply()
             ter != tesSUCCESS)
             return ter;
 
+        if (auto const ter = canTransfer(
+                view(), saDstAmount.mptIssue(), account_, uDstAccountID);
+            ter != tesSUCCESS)
+            return ter;
+
         auto const& mpt = saDstAmount.mptIssue();
         auto const& issuer = mpt.account();
         // If globally/individually locked then
