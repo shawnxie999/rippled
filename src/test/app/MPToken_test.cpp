@@ -107,7 +107,7 @@ class MPToken_test : public beast::unit_test::suite
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
             mptAlice.create(
-                {.maxAmt = 0x7FFFFFFFFFFFFFFF,
+                {.maxAmt = 100000000000000000ull,
                  .assetScale = 1,
                  .transferFee = 10,
                  .metadata = "123",
@@ -770,21 +770,21 @@ class MPToken_test : public beast::unit_test::suite
         // the range
         // Issuer fails trying to send more than the default maximum
         // amount allowed
-        // {
-        //     Env env{*this, features};
+        {
+            Env env{*this, features};
 
-        //     MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
-        //     mptAlice.create({.ownerCount = 1, .holderCount = 0});
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
 
-        //     mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = &bob});
 
-        //     // issuer sends holder the default max amount allowed
-        //     mptAlice.pay(alice, bob, maxMPTokenAmount);
+            // issuer sends holder the default max amount allowed
+            mptAlice.pay(alice, bob, maxMPTokenAmount);
 
-        //     // issuer tries to exceed max amount
-        //     mptAlice.pay(alice, bob, 1, tecMPT_MAX_AMOUNT_EXCEEDED);
-        // }
+            // issuer tries to exceed max amount
+            mptAlice.pay(alice, bob, 1, tecMPT_MAX_AMOUNT_EXCEEDED);
+        }
 
         // Transfer fee
         {

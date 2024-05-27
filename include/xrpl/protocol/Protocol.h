@@ -99,7 +99,7 @@ std::size_t constexpr maxDomainLength = 256;
 std::size_t constexpr maxMPTokenMetadataLength = 1024;
 
 /** The maximum amount of MPTokenIssuance */
-std::uint64_t constexpr maxMPTokenAmount = 0x7FFFFFFFFFFFFFFFull;
+std::uint64_t constexpr maxMPTokenAmount = 100000000000000000ull;
 
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;
