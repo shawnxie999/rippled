@@ -174,7 +174,7 @@ SetOracle::preclaim(PreclaimContext const& ctx)
 
     auto const reserve = ctx.view.fees().accountReserve(
         sleSetter->getFieldU32(sfOwnerCount) + adjustReserve);
-    auto const& balance = sleSetter->getFieldAmount(sfBalance);
+    auto const& balance = get<STAmount>(sleSetter->getFieldAmount(sfBalance));
 
     if (balance < reserve)
         return tecINSUFFICIENT_RESERVE;

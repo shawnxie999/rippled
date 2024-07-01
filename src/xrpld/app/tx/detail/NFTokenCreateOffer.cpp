@@ -36,6 +36,9 @@ NFTokenCreateOffer::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
+    if (ctx.rules.enabled(featureMPTokensV1) && isMPT(ctx.tx[sfAmount]))
+        return temMPT_NOT_SUPPORTED;
+
     auto const txFlags = ctx.tx.getFlags();
 
     if (txFlags & tfNFTokenCreateOfferMask)
@@ -46,7 +49,7 @@ NFTokenCreateOffer::preflight(PreflightContext const& ctx)
     // Use implementation shared with NFTokenMint
     if (NotTEC notTec = nft::tokenOfferCreatePreflight(
             ctx.tx[sfAccount],
-            ctx.tx[sfAmount],
+            get<STAmount>(ctx.tx[sfAmount]),
             ctx.tx[~sfDestination],
             ctx.tx[~sfExpiration],
             nftFlags,
@@ -79,7 +82,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
         ctx.view,
         ctx.tx[sfAccount],
         nft::getIssuer(nftokenID),
-        ctx.tx[sfAmount],
+        get<STAmount>(ctx.tx[sfAmount]),
         ctx.tx[~sfDestination],
         nft::getFlags(nftokenID),
         nft::getTransferFee(nftokenID),
@@ -95,7 +98,7 @@ NFTokenCreateOffer::doApply()
     return nft::tokenOfferCreateApply(
         view(),
         ctx_.tx[sfAccount],
-        ctx_.tx[sfAmount],
+        get<STAmount>(ctx_.tx[sfAmount]),
         ctx_.tx[~sfDestination],
         ctx_.tx[~sfExpiration],
         ctx_.tx.getSeqProxy(),

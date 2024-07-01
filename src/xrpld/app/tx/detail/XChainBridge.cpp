@@ -446,7 +446,7 @@ transferHelper(
             auto const reserve = psb.fees().accountReserve(ownerCount);
 
             auto const availableBalance = [&]() -> STAmount {
-                STAmount const curBal = (*sleSrc)[sfBalance];
+                STAmount const curBal = get<STAmount>((*sleSrc)[sfBalance]);
                 // Checking that account == src and postFeeBalance == curBal is
                 // not strictly nessisary, but helps protect against future
                 // changes
@@ -488,8 +488,10 @@ transferHelper(
             psb.insert(sleDst);
         }
 
-        (*sleSrc)[sfBalance] = (*sleSrc)[sfBalance] - amt;
-        (*sleDst)[sfBalance] = (*sleDst)[sfBalance] + amt;
+        (*sleSrc)[sfBalance] =
+            STEitherAmount{get<STAmount>((*sleSrc)[sfBalance]) - amt};
+        (*sleDst)[sfBalance] = STEitherAmount{
+            sfBalance, get<STAmount>((*sleDst)[sfBalance]) + amt};
         psb.update(sleSrc);
         psb.update(sleDst);
 
@@ -933,7 +935,7 @@ applyClaimAttestations(
 
         return ScopeResult{
             newAttResult,
-            (*sleClaimID)[sfSignatureReward],
+            get<STAmount>((*sleClaimID)[sfSignatureReward]),
             (*sleClaimID)[sfAccount]};
     }();
 
@@ -1058,7 +1060,7 @@ applyCreateAccountAttestations(
                 return Unexpected(tecINTERNAL);
 
             // Check reserve
-            auto const balance = (*sleDoor)[sfBalance];
+            auto const balance = get<STAmount>((*sleDoor)[sfBalance]);
             auto const reserve =
                 psb.fees().accountReserve((*sleDoor)[sfOwnerCount] + 1);
 
@@ -1213,6 +1215,10 @@ attestationPreflight(PreflightContext const& ctx)
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
+
+    if (ctx.rules.enabled(featureMPTokensV1) &&
+        (isMPT(ctx.tx[sfAmount]) || isMPT(ctx.tx[~sfSignatureReward])))
+        return temMPT_NOT_SUPPORTED;
 
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
@@ -1381,6 +1387,11 @@ XChainCreateBridge::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
+    if (ctx.rules.enabled(featureMPTokensV1) &&
+        (isMPT(ctx.tx[sfSignatureReward]) ||
+         isMPT(ctx.tx[~sfMinAccountCreateAmount])))
+        return temMPT_NOT_SUPPORTED;
+
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
@@ -1496,7 +1507,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
         if (!sleAcc)
             return terNO_ACCOUNT;
 
-        auto const balance = (*sleAcc)[sfBalance];
+        auto const balance = get<STAmount>((*sleAcc)[sfBalance]);
         auto const reserve =
             ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
 
@@ -1561,6 +1572,11 @@ BridgeModify::preflight(PreflightContext const& ctx)
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
+
+    if (ctx.rules.enabled(featureMPTokensV1) &&
+        (isMPT(ctx.tx[~sfSignatureReward]) ||
+         isMPT(ctx.tx[~sfMinAccountCreateAmount])))
+        return temMPT_NOT_SUPPORTED;
 
     if (ctx.tx.getFlags() & tfBridgeModifyMask)
         return temINVALID_FLAG;
@@ -1672,11 +1688,14 @@ XChainClaim::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
+    if (ctx.rules.enabled(featureMPTokensV1) && isMPT(ctx.tx[sfAmount]))
+        return temMPT_NOT_SUPPORTED;
+
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
-    auto const amount = ctx.tx[sfAmount];
+    auto const amount = get<STAmount>(ctx.tx[sfAmount]);
 
     if (amount.signum() <= 0 ||
         (amount.issue() != bridgeSpec.lockingChainIssue() &&
@@ -1693,7 +1712,7 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
 {
     AccountID const account = ctx.tx[sfAccount];
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
-    STAmount const& thisChainAmount = ctx.tx[sfAmount];
+    STAmount const& thisChainAmount = get<STAmount>(ctx.tx[sfAmount]);
     auto const claimID = ctx.tx[sfXChainClaimID];
 
     auto const sleBridge = readBridge(ctx.view, bridgeSpec);
@@ -1780,7 +1799,7 @@ XChainClaim::doApply()
     AccountID const account = ctx_.tx[sfAccount];
     auto const dst = ctx_.tx[sfDestination];
     STXChainBridge const bridgeSpec = ctx_.tx[sfXChainBridge];
-    STAmount const& thisChainAmount = ctx_.tx[sfAmount];
+    STAmount const& thisChainAmount = get<STAmount>(ctx_.tx[sfAmount]);
     auto const claimID = ctx_.tx[sfXChainClaimID];
     auto const claimIDKeylet = keylet::xChainClaimID(bridgeSpec, claimID);
 
@@ -1852,7 +1871,7 @@ XChainClaim::doApply()
             (*sleClaimID)[sfAccount],
             sendingAmount,
             srcChain,
-            (*sleClaimID)[sfSignatureReward],
+            get<STAmount>((*sleClaimID)[sfSignatureReward]),
         };
     }();
 
@@ -1892,7 +1911,7 @@ TxConsequences
 XChainCommit::makeTxConsequences(PreflightContext const& ctx)
 {
     auto const maxSpend = [&] {
-        auto const amount = ctx.tx[sfAmount];
+        auto const amount = get<STAmount>(ctx.tx[sfAmount]);
         if (amount.native() && amount.signum() > 0)
             return amount.xrp();
         return XRPAmount{beast::zero};
@@ -1910,10 +1929,13 @@ XChainCommit::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
+    if (ctx.rules.enabled(featureMPTokensV1) && isMPT(ctx.tx[sfAmount]))
+        return temMPT_NOT_SUPPORTED;
+
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    auto const amount = ctx.tx[sfAmount];
+    auto const amount = get<STAmount>(ctx.tx[sfAmount]);
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
 
     if (amount.signum() <= 0 || !isLegalNet(amount))
@@ -1959,12 +1981,14 @@ XChainCommit::preclaim(PreclaimContext const& ctx)
 
     if (isLockingChain)
     {
-        if (bridgeSpec.lockingChainIssue() != ctx.tx[sfAmount].issue())
+        if (bridgeSpec.lockingChainIssue() !=
+            get<STAmount>(ctx.tx[sfAmount]).issue())
             return tecXCHAIN_BAD_TRANSFER_ISSUE;
     }
     else
     {
-        if (bridgeSpec.issuingChainIssue() != ctx.tx[sfAmount].issue())
+        if (bridgeSpec.issuingChainIssue() !=
+            get<STAmount>(ctx.tx[sfAmount]).issue())
             return tecXCHAIN_BAD_TRANSFER_ISSUE;
     }
 
@@ -1977,7 +2001,7 @@ XChainCommit::doApply()
     PaymentSandbox psb(&ctx_.view());
 
     auto const account = ctx_.tx[sfAccount];
-    auto const amount = ctx_.tx[sfAmount];
+    auto const amount = get<STAmount>(ctx_.tx[sfAmount]);
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
 
     if (!psb.read(keylet::account(account)))
@@ -2024,6 +2048,10 @@ XChainCreateClaimID::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
+    if (ctx.rules.enabled(featureMPTokensV1) &&
+        isMPT(ctx.tx[sfSignatureReward]))
+        return temMPT_NOT_SUPPORTED;
+
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
@@ -2061,7 +2089,7 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
         if (!sleAcc)
             return terNO_ACCOUNT;
 
-        auto const balance = (*sleAcc)[sfBalance];
+        auto const balance = get<STAmount>((*sleAcc)[sfBalance]);
         auto const reserve =
             ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
 
@@ -2179,15 +2207,19 @@ XChainCreateAccountCommit::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
+    if (ctx.rules.enabled(featureMPTokensV1) &&
+        (isMPT(ctx.tx[sfAmount]) || isMPT(ctx.tx[sfSignatureReward])))
+        return temMPT_NOT_SUPPORTED;
+
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    auto const amount = ctx.tx[sfAmount];
+    auto const amount = get<STAmount>(ctx.tx[sfAmount]);
 
     if (amount.signum() <= 0 || !amount.native())
         return temBAD_AMOUNT;
 
-    auto const reward = ctx.tx[sfSignatureReward];
+    auto const reward = get<STAmount>(ctx.tx[sfSignatureReward]);
     if (reward.signum() < 0 || !reward.native())
         return temBAD_AMOUNT;
 
@@ -2201,8 +2233,8 @@ TER
 XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
 {
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
-    STAmount const amount = ctx.tx[sfAmount];
-    STAmount const reward = ctx.tx[sfSignatureReward];
+    STAmount const amount = get<STAmount>(ctx.tx[sfAmount]);
+    STEitherAmount const reward = ctx.tx[sfSignatureReward];
 
     auto const sleBridge = readBridge(ctx.view, bridgeSpec);
     if (!sleBridge)
@@ -2216,7 +2248,7 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
     }
 
     std::optional<STAmount> const minCreateAmount =
-        (*sleBridge)[~sfMinAccountCreateAmount];
+        get<STAmount>((*sleBridge)[~sfMinAccountCreateAmount]);
 
     if (!minCreateAmount)
         return tecXCHAIN_CREATE_ACCOUNT_DISABLED;
@@ -2247,7 +2279,7 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
     STXChainBridge::ChainType const dstChain =
         STXChainBridge::otherChain(srcChain);
 
-    if (bridgeSpec.issue(srcChain) != ctx.tx[sfAmount].issue())
+    if (bridgeSpec.issue(srcChain) != get<STAmount>(ctx.tx[sfAmount]).issue())
         return tecXCHAIN_BAD_TRANSFER_ISSUE;
 
     if (!isXRP(bridgeSpec.issue(dstChain)))
@@ -2262,8 +2294,8 @@ XChainCreateAccountCommit::doApply()
     PaymentSandbox psb(&ctx_.view());
 
     AccountID const account = ctx_.tx[sfAccount];
-    STAmount const amount = ctx_.tx[sfAmount];
-    STAmount const reward = ctx_.tx[sfSignatureReward];
+    STAmount const amount = get<STAmount>(ctx_.tx[sfAmount]);
+    STAmount const reward = get<STAmount>(ctx_.tx[sfSignatureReward]);
     STXChainBridge const bridge = ctx_.tx[sfXChainBridge];
 
     auto const sle = psb.peek(keylet::account(account));

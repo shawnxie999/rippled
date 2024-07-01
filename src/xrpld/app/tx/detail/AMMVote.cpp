@@ -93,7 +93,7 @@ applyVote(
     auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
         return {tecINTERNAL, false};
-    STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
+    STAmount const lptAMMBalance = get<STAmount>((*ammSle)[sfLPTokenBalance]);
     auto const lpTokensNew = ammLPHolds(sb, *ammSle, account_, ctx_.journal);
     std::optional<STAmount> minTokens;
     std::size_t minPos{0};

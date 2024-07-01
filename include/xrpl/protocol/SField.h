@@ -42,7 +42,7 @@ Some fields have a different meaning for their
 
 // Forwards
 class STAccount;
-class STAmount;
+class STEitherAmount;
 class STIssue;
 class STBlob;
 template <int>
@@ -346,7 +346,7 @@ using SF_UINT384 = TypedField<STBitString<384>>;
 using SF_UINT512 = TypedField<STBitString<512>>;
 
 using SF_ACCOUNT = TypedField<STAccount>;
-using SF_AMOUNT = TypedField<STAmount>;
+using SF_AMOUNT = TypedField<STEitherAmount>;
 using SF_ISSUE = TypedField<STIssue>;
 using SF_CURRENCY = TypedField<STCurrency>;
 using SF_VL = TypedField<STBlob>;

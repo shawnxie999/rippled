@@ -278,7 +278,7 @@ accountHolds(
     }
     else
     {
-        amount = sle->getFieldAmount(sfBalance);
+        amount = get<STAmount>(sle->getFieldAmount(sfBalance));
         if (account > issuer)
         {
             // Put balance in account terms.
@@ -305,7 +305,7 @@ accountHolds(
         view, account, issue.currency, issue.account, zeroIfFrozen, j);
 }
 
-STAmount
+STMPTAmount
 accountHolds(
     ReadView const& view,
     AccountID const& account,
@@ -314,7 +314,7 @@ accountHolds(
     AuthHandling zeroIfUnauthorized,
     beast::Journal j)
 {
-    STAmount amount;
+    STMPTAmount amount;
 
     auto const sleMpt = view.read(keylet::mptoken(issue.mpt(), account));
     if (!sleMpt)
@@ -326,7 +326,7 @@ accountHolds(
         auto const amt = sleMpt->getFieldU64(sfMPTAmount);
         auto const locked = sleMpt->getFieldU64(sfLockedAmount);
         if (amt > locked)
-            amount = STAmount{issue, amt - locked};
+            amount = STMPTAmount{issue, amt - locked};
 
         // only if auth check is needed, as it needs to do an additional read
         // operation
@@ -430,7 +430,7 @@ xrpLiquid(
         ? XRPAmount{0}
         : view.fees().accountReserve(ownerCount);
 
-    auto const fullBalance = sle->getFieldAmount(sfBalance);
+    auto const fullBalance = get<STAmount>(sle->getFieldAmount(sfBalance));
 
     auto const balance = view.balanceHook(id, xrpAccount(), fullBalance);
 
@@ -564,7 +564,7 @@ transferRate(ReadView const& view, AccountID const& issuer)
 }
 
 Rate
-transferRateMPT(ReadView const& view, MPT const& id)
+transferRate(ReadView const& view, MPT const& id)
 {
     auto const sle = view.read(keylet::mptIssuance(id));
 
@@ -900,8 +900,9 @@ trustCreate(
         bSetHigh ? sfHighLimit : sfLowLimit, saLimit);
     sleRippleState->setFieldAmount(
         bSetHigh ? sfLowLimit : sfHighLimit,
-        STAmount(Issue{
-            saBalance.getCurrency(), bSetDst ? uSrcAccountID : uDstAccountID}));
+        STAmount(
+            {saBalance.getCurrency(),
+             bSetDst ? uSrcAccountID : uDstAccountID}));
 
     if (uQualityIn)
         sleRippleState->setFieldU32(
@@ -1053,7 +1054,8 @@ rippleCredit(
     // If the line exists, modify it accordingly.
     if (auto const sleRippleState = view.peek(index))
     {
-        STAmount saBalance = sleRippleState->getFieldAmount(sfBalance);
+        STAmount saBalance =
+            get<STAmount>(sleRippleState->getFieldAmount(sfBalance));
 
         if (bSenderHigh)
             saBalance.negate();  // Put balance in sender terms.
@@ -1088,8 +1090,8 @@ rippleCredit(
                     view.read(keylet::account(uSenderID))->getFlags() &
                     lsfDefaultRipple) &&
             !(uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
-            !sleRippleState->getFieldAmount(
-                !bSenderHigh ? sfLowLimit : sfHighLimit)
+            !get<STAmount>(sleRippleState->getFieldAmount(
+                !bSenderHigh ? sfLowLimit : sfHighLimit))
             // Sender trust limit is 0.
             && !sleRippleState->getFieldU32(
                    !bSenderHigh ? sfLowQualityIn : sfHighQualityIn)
@@ -1134,7 +1136,7 @@ rippleCredit(
         return tesSUCCESS;
     }
 
-    STAmount const saReceiverLimit(Issue{currency, uReceiverID});
+    STAmount const saReceiverLimit({currency, uReceiverID});
     STAmount saBalance{saAmount};
 
     saBalance.setIssuer(noAccount());
@@ -1235,7 +1237,7 @@ accountSend(
     }
     else
     {
-        assert(saAmount >= beast::zero && !saAmount.isMPT());
+        assert(saAmount >= beast::zero);
     }
 
     /* If we aren't sending anything or if the sender is the same as the
@@ -1288,7 +1290,7 @@ accountSend(
 
     if (sender)
     {
-        if (sender->getFieldAmount(sfBalance) < saAmount)
+        if (get<STAmount>(sender->getFieldAmount(sfBalance)) < saAmount)
         {
             // VFALCO Its laborious to have to mutate the
             //        TER based on params everywhere
@@ -1297,7 +1299,8 @@ accountSend(
         }
         else
         {
-            auto const sndBal = sender->getFieldAmount(sfBalance);
+            auto const sndBal =
+                get<STAmount>(sender->getFieldAmount(sfBalance));
             view.creditHook(uSenderID, xrpAccount(), saAmount, sndBal);
 
             // Decrement XRP balance.
@@ -1309,7 +1312,7 @@ accountSend(
     if (tesSUCCESS == terResult && receiver)
     {
         // Increment XRP balance.
-        auto const rcvBal = receiver->getFieldAmount(sfBalance);
+        auto const rcvBal = get<STAmount>(receiver->getFieldAmount(sfBalance));
         receiver->setFieldAmount(sfBalance, rcvBal + saAmount);
         view.creditHook(xrpAccount(), uReceiverID, saAmount, -rcvBal);
 
@@ -1336,25 +1339,25 @@ accountSend(
 }
 
 static TER
-rippleSendMPT(
+rippleSend(
     ApplyView& view,
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
-    STAmount const& saAmount,
-    STAmount& saActual,
+    STMPTAmount const& saAmount,
+    STMPTAmount& saActual,
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
     assert(uSenderID != uReceiverID);
 
-    // Safe to get MPT since rippleSendMPT is only called by accountSendMPT
+    // Safe to get MPT since rippleSend is only called by accountSend
     auto const issuer = saAmount.getIssuer();
 
     if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
         auto const ter =
-            rippleMPTCredit(view, uSenderID, uReceiverID, saAmount, j);
+            rippleCredit(view, uSenderID, uReceiverID, saAmount, j);
         if (view.rules().enabled(featureDeletableAccounts) && ter != tesSUCCESS)
             return ter;
         saActual = saAmount;
@@ -1362,15 +1365,11 @@ rippleSendMPT(
     }
 
     // Sending 3rd party MPTs: transit.
-    if (auto const sle =
-            view.read(keylet::mptIssuance(saAmount.mptIssue().mpt())))
+    if (auto const sle = view.read(keylet::mptIssuance(saAmount.issue().mpt())))
     {
         saActual = (waiveFee == WaiveTransferFee::Yes)
             ? saAmount
-            : multiply(
-                  saAmount,
-                  transferRateMPT(
-                      view, static_cast<MPT>(saAmount.mptIssue().mpt())));
+            : multiply(saAmount, transferRate(view, saAmount.issue().mpt()));
 
         JLOG(j.debug()) << "rippleSend> " << to_string(uSenderID) << " - > "
                         << to_string(uReceiverID)
@@ -1378,26 +1377,26 @@ rippleSendMPT(
                         << " cost=" << saActual.getFullText();
 
         if (auto const terResult =
-                rippleMPTCredit(view, issuer, uReceiverID, saAmount, j);
+                rippleCredit(view, issuer, uReceiverID, saAmount, j);
             terResult != tesSUCCESS)
             return terResult;
         else
-            return rippleMPTCredit(view, uSenderID, issuer, saActual, j);
+            return rippleCredit(view, uSenderID, issuer, saActual, j);
     }
 
     return tecINTERNAL;
 }
 
 TER
-accountSendMPT(
+accountSend(
     ApplyView& view,
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
-    STAmount const& saAmount,
+    STMPTAmount const& saAmount,
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
-    assert(saAmount >= beast::zero && saAmount.isMPT());
+    assert(saAmount >= beast::zero);
 
     /* If we aren't sending anything or if the sender is the same as the
      * receiver then we don't need to do anything.
@@ -1405,9 +1404,10 @@ accountSendMPT(
     if (!saAmount || (uSenderID == uReceiverID))
         return tesSUCCESS;
 
-    STAmount saActual{saAmount.asset()};
+    // STAmount saActual{saAmount.asset()};
+    STMPTAmount saActual{};
 
-    return rippleSendMPT(
+    return rippleSend(
         view, uSenderID, uReceiverID, saAmount, saActual, j, waiveFee);
 }
 
@@ -1440,7 +1440,8 @@ updateTrustLine(
                flags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
             static_cast<bool>(sle->getFlags() & lsfDefaultRipple) &&
         !(flags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
-        !state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
+        !get<STAmount>(
+            state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit))
         // Sender trust limit is 0.
         && !state->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)
         // Sender quality in is 0.
@@ -1489,7 +1490,8 @@ issueIOU(
 
     if (auto state = view.peek(index))
     {
-        STAmount final_balance = state->getFieldAmount(sfBalance);
+        STAmount final_balance =
+            get<STAmount>(state->getFieldAmount(sfBalance));
 
         if (bSenderHigh)
             final_balance.negate();  // Put balance in sender terms.
@@ -1532,7 +1534,7 @@ issueIOU(
     // NIKB TODO: The limit uses the receiver's account as the issuer and
     // this is unnecessarily inefficient as copying which could be avoided
     // is now required. Consider available options.
-    STAmount const limit(Issue{issue.currency, account});
+    STAmount const limit({issue.currency, account});
     STAmount final_balance = amount;
 
     final_balance.setIssuer(noAccount());
@@ -1584,7 +1586,8 @@ redeemIOU(
     if (auto state =
             view.peek(keylet::line(account, issue.account, issue.currency)))
     {
-        STAmount final_balance = state->getFieldAmount(sfBalance);
+        STAmount final_balance =
+            get<STAmount>(state->getFieldAmount(sfBalance));
 
         if (bSenderHigh)
             final_balance.negate();  // Put balance in sender terms.
@@ -1651,7 +1654,7 @@ transferXRP(
     JLOG(j.trace()) << "transferXRP: " << to_string(from) << " -> "
                     << to_string(to) << ") : " << amount.getFullText();
 
-    if (sender->getFieldAmount(sfBalance) < amount)
+    if (get<STAmount>(sender->getFieldAmount(sfBalance)) < amount)
     {
         // VFALCO Its unfortunate we have to keep
         //        mutating these TER everywhere
@@ -1662,11 +1665,11 @@ transferXRP(
 
     // Decrement XRP balance.
     sender->setFieldAmount(
-        sfBalance, sender->getFieldAmount(sfBalance) - amount);
+        sfBalance, get<STAmount>(sender->getFieldAmount(sfBalance)) - amount);
     view.update(sender);
 
     receiver->setFieldAmount(
-        sfBalance, receiver->getFieldAmount(sfBalance) + amount);
+        sfBalance, get<STAmount>(receiver->getFieldAmount(sfBalance)) + amount);
     view.update(receiver);
 
     return tesSUCCESS;
@@ -1851,14 +1854,14 @@ deleteAMMTrustLine(
 }
 
 TER
-rippleMPTCredit(
+rippleCredit(
     ApplyView& view,
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
-    STAmount saAmount,
+    STMPTAmount saAmount,
     beast::Journal j)
 {
-    auto const mptID = keylet::mptIssuance(saAmount.mptIssue().mpt());
+    auto const mptID = keylet::mptIssuance(saAmount.issue().mpt());
     auto const issuer = saAmount.getIssuer();
     if (uSenderID == issuer)
     {
@@ -1866,7 +1869,7 @@ rippleMPTCredit(
         {
             sle->setFieldU64(
                 sfOutstandingAmount,
-                sle->getFieldU64(sfOutstandingAmount) + saAmount.mpt().mpt());
+                sle->getFieldU64(sfOutstandingAmount) + saAmount.value());
 
             if (sle->getFieldU64(sfOutstandingAmount) >
                 (*sle)[~sfMaximumAmount].value_or(maxMPTokenAmount))
@@ -1883,7 +1886,7 @@ rippleMPTCredit(
         if (auto sle = view.peek(mptokenID))
         {
             auto const amt = sle->getFieldU64(sfMPTAmount);
-            auto const pay = saAmount.mpt().mpt();
+            auto const pay = saAmount.value();
             if (amt >= pay)
             {
                 if (amt == pay)
@@ -1902,7 +1905,7 @@ rippleMPTCredit(
         if (auto sle = view.peek(mptID))
         {
             auto const outstanding = sle->getFieldU64(sfOutstandingAmount);
-            auto const redeem = saAmount.mpt().mpt();
+            auto const redeem = saAmount.value();
             if (outstanding >= redeem)
             {
                 sle->setFieldU64(sfOutstandingAmount, outstanding - redeem);
@@ -1920,8 +1923,7 @@ rippleMPTCredit(
         if (auto sle = view.peek(mptokenID))
         {
             sle->setFieldU64(
-                sfMPTAmount,
-                sle->getFieldU64(sfMPTAmount) + saAmount.mpt().mpt());
+                sfMPTAmount, sle->getFieldU64(sfMPTAmount) + saAmount.value());
             view.update(sle);
         }
     }

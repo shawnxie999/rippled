@@ -41,6 +41,14 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
+    if (ctx.rules.enabled(featureMPTokensV1))
+    {
+        if (isMPT(ctx.tx[~sfAmount]) || isMPT(ctx.tx[~sfAmount2]))
+            return temMPT_NOT_SUPPORTED;
+        if (isMPT(ctx.tx[~sfEPrice]) || isMPT(ctx.tx[~sfLPTokenOut]))
+            return temMPT_INVALID_USAGE;
+    }
+
     auto const flags = ctx.tx.getFlags();
     if (flags & tfDepositMask)
     {
@@ -48,10 +56,10 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    auto const amount = ctx.tx[~sfAmount];
-    auto const amount2 = ctx.tx[~sfAmount2];
-    auto const ePrice = ctx.tx[~sfEPrice];
-    auto const lpTokens = ctx.tx[~sfLPTokenOut];
+    auto const amount = get<STAmount>(ctx.tx[~sfAmount]);
+    auto const amount2 = get<STAmount>(ctx.tx[~sfAmount2]);
+    auto const ePrice = get<STAmount>(ctx.tx[~sfEPrice]);
+    auto const lpTokens = get<STAmount>(ctx.tx[~sfLPTokenOut]);
     auto const tradingFee = ctx.tx[~sfTradingFee];
     // Valid options for the flags are:
     //   tfLPTokens: LPTokenOut, [Amount, Amount2]
@@ -223,7 +231,8 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     auto balance = [&](auto const& deposit) -> TER {
         if (isXRP(deposit))
         {
-            auto const lpIssue = (*ammSle)[sfLPTokenBalance].issue();
+            auto const lpIssue =
+                get<STAmount>((*ammSle)[sfLPTokenBalance]).issue();
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle = ctx.view.read(
                 keylet::line(accountID, lpIssue.account, lpIssue.currency));
@@ -244,8 +253,8 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             : tecUNFUNDED_AMM;
     };
 
-    auto const amount = ctx.tx[~sfAmount];
-    auto const amount2 = ctx.tx[~sfAmount2];
+    auto const amount = get<STAmount>(ctx.tx[~sfAmount]);
+    auto const amount2 = get<STAmount>(ctx.tx[~sfAmount2]);
     auto const ammAccountID = ammSle->getAccountID(sfAccount);
 
     auto checkAmount = [&](std::optional<STAmount> const& amount,
@@ -313,7 +322,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     }
 
     // Equal deposit lp tokens
-    if (auto const lpTokens = ctx.tx[~sfLPTokenOut];
+    if (auto const lpTokens = get<STAmount>(ctx.tx[~sfLPTokenOut]);
         lpTokens && lpTokens->issue() != lptAMMBalance.issue())
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid LPTokens.";
@@ -339,10 +348,10 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 std::pair<TER, bool>
 AMMDeposit::applyGuts(Sandbox& sb)
 {
-    auto const amount = ctx_.tx[~sfAmount];
-    auto const amount2 = ctx_.tx[~sfAmount2];
-    auto const ePrice = ctx_.tx[~sfEPrice];
-    auto const lpTokensDeposit = ctx_.tx[~sfLPTokenOut];
+    auto const amount = get<STAmount>(ctx_.tx[~sfAmount]);
+    auto const amount2 = get<STAmount>(ctx_.tx[~sfAmount2]);
+    auto const ePrice = get<STAmount>(ctx_.tx[~sfEPrice]);
+    auto const lpTokensDeposit = get<STAmount>(ctx_.tx[~sfLPTokenOut]);
     auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE

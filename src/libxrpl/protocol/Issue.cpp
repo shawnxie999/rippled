@@ -26,10 +26,6 @@
 
 namespace ripple {
 
-Issue::Issue(Currency const& c, AccountID const& a) : currency(c), account(a)
-{
-}
-
 AccountID const&
 Issue::getIssuer() const
 {

@@ -26,10 +26,10 @@
 #include <xrpld/ledger/RawView.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STMPTAmount.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
@@ -146,7 +146,7 @@ accountHolds(
     FreezeHandling zeroIfFrozen,
     beast::Journal j);
 
-[[nodiscard]] STAmount
+[[nodiscard]] STMPTAmount
 accountHolds(
     ReadView const& view,
     AccountID const& account,
@@ -235,7 +235,7 @@ forEachItemAfter(
 transferRate(ReadView const& view, AccountID const& issuer);
 
 [[nodiscard]] Rate
-transferRateMPT(ReadView const& view, MPT const& id);
+transferRate(ReadView const& view, MPT const& id);
 
 /** Returns `true` if the directory is empty
     @param key The key of the directory
@@ -448,11 +448,11 @@ rippleCredit(
     beast::Journal j);
 
 [[nodiscard]] TER
-rippleMPTCredit(
+rippleCredit(
     ApplyView& view,
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
-    STAmount saAmount,
+    STMPTAmount saAmount,
     beast::Journal j);
 
 [[nodiscard]] TER
@@ -465,11 +465,11 @@ accountSend(
     WaiveTransferFee waiveFee = WaiveTransferFee::No);
 
 [[nodiscard]] TER
-accountSendMPT(
+accountSend(
     ApplyView& view,
     AccountID const& from,
     AccountID const& to,
-    const STAmount& saAmount,
+    const STMPTAmount& saAmount,
     beast::Journal j,
     WaiveTransferFee waiveFee = WaiveTransferFee::No);
 

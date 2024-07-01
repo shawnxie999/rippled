@@ -17,54 +17,69 @@
 */
 //==============================================================================
 
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/basics/MPTAmount.h>
 
 namespace ripple {
 
-MPTIssue::MPTIssue(MPT const& mpt) : mpt_(mpt)
+MPTAmount&
+MPTAmount::operator+=(MPTAmount const& other)
 {
+    value_ += other.value();
+    return *this;
 }
 
-MPTIssue::MPTIssue(uint192 const& id)
+MPTAmount&
+MPTAmount::operator-=(MPTAmount const& other)
 {
-    mpt_ = getMPT(id);
+    value_ -= other.value();
+    return *this;
 }
 
-AccountID const&
-MPTIssue::getIssuer() const
+MPTAmount
+MPTAmount::operator-() const
 {
-    return mpt_.second;
+    return MPTAmount{-value_};
 }
 
-MPT const&
-MPTIssue::mpt() const
+bool
+MPTAmount::operator==(MPTAmount const& other) const
 {
-    return mpt_;
+    return value_ == other.value_;
 }
 
-MPT&
-MPTIssue::mpt()
+bool
+MPTAmount::operator==(value_type other) const
 {
-    return mpt_;
+    return value_ == other;
 }
 
-uint192
-MPTIssue::getMptID() const
+bool
+MPTAmount::operator<(MPTAmount const& other) const
 {
-    return ripple::getMptID(mpt_.second, mpt_.first);
+    return value_ < other.value_;
 }
 
-MPT
-getMPT(uint192 const& id)
+Json::Value
+MPTAmount::jsonClipped() const
 {
-    std::uint32_t sequence;
-    AccountID account;
+    static_assert(
+        std::is_signed_v<value_type> && std::is_integral_v<value_type>,
+        "Expected MPTAmount to be a signed integral type");
 
-    memcpy(&sequence, id.data(), sizeof(sequence));
-    sequence = boost::endian::big_to_native(sequence);
-    memcpy(account.data(), id.data() + sizeof(sequence), sizeof(AccountID));
-    return std::make_pair(sequence, account);
+    constexpr auto min = std::numeric_limits<Json::Int>::min();
+    constexpr auto max = std::numeric_limits<Json::Int>::max();
+
+    if (value_ < min)
+        return min;
+    if (value_ > max)
+        return max;
+    return static_cast<Json::Int>(value_);
+}
+
+MPTAmount
+MPTAmount::minPositiveAmount()
+{
+    return MPTAmount{1};
 }
 
 }  // namespace ripple

@@ -35,7 +35,8 @@ balance::operator()(Env& env) const
         }
         else if (env.test.expect(sle))
         {
-            env.test.expect(sle->getFieldAmount(sfBalance) == value_);
+            env.test.expect(
+                get<STAmount>(sle->getFieldAmount(sfBalance)) == value_);
         }
     }
     else
@@ -47,7 +48,7 @@ balance::operator()(Env& env) const
         }
         else if (env.test.expect(sle))
         {
-            auto amount = sle->getFieldAmount(sfBalance);
+            auto amount = get<STAmount>(sle->getFieldAmount(sfBalance));
             amount.setIssuer(value_.issue().account);
             if (account_.id() > value_.issue().account)
                 amount.negate();

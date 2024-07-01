@@ -39,7 +39,7 @@ getFeeLevelPaid(ReadView const& view, STTx const& tx)
 {
     auto const [baseFee, effectiveFeePaid] = [&view, &tx]() {
         XRPAmount baseFee = calculateBaseFee(view, tx);
-        XRPAmount feePaid = tx[sfFee].xrp();
+        XRPAmount feePaid = get<STAmount>(tx[sfFee]).xrp();
 
         // If baseFee is 0 then the cost of a basic transaction is free, but we
         // need the effective fee level to be non-zero.
@@ -1078,7 +1078,7 @@ TxQ::apply(
                 Transactions stuck in the queue are mitigated by
                 LastLedgerSeq and MaybeTx::retriesRemaining.
             */
-            auto const balance = (*sleAccount)[sfBalance].xrp();
+            auto const balance = get<STAmount>((*sleAccount)[sfBalance]).xrp();
             /* Get the minimum possible account reserve. If it
                is at least 10 * the base fee, and fees exceed
                this amount, the transaction can't be queued.

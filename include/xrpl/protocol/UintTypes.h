@@ -46,12 +46,6 @@ public:
     explicit NodeIDTag() = default;
 };
 
-class MPTTag
-{
-public:
-    explicit MPTTag() = default;
-};
-
 }  // namespace detail
 
 /** Directory is an index into the directory of offer books.

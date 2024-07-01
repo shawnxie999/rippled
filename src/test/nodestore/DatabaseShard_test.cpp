@@ -377,7 +377,9 @@ class DatabaseShard_test : public TestBase
             if (tx.first->getTxnType() == ttPAYMENT)
             {
                 std::int64_t xrpAmount =
-                    tx.first->getFieldAmount(sfAmount).xrp().decimalXRP();
+                    get<STAmount>(tx.first->getFieldAmount(sfAmount))
+                        .xrp()
+                        .decimalXRP();
                 if (xrpAmount == iniAmount)
                     ++iniCount;
                 else

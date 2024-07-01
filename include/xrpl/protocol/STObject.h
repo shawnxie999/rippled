@@ -26,10 +26,11 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SOTemplate.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STEitherAmount.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
@@ -235,7 +236,7 @@ public:
 
     Blob
     getFieldVL(SField const& field) const;
-    STAmount const&
+    STEitherAmount const&
     getFieldAmount(SField const& field) const;
     STPathSet const&
     getFieldPathSet(SField const& field) const;
@@ -370,7 +371,7 @@ public:
     setAccountID(SField const& field, AccountID const&);
 
     void
-    setFieldAmount(SField const& field, STAmount const&);
+    setFieldAmount(SField const& field, STEitherAmount const&);
     void
     setFieldIssue(SField const& field, STIssue const&);
     void

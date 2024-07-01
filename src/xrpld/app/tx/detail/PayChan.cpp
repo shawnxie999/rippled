@@ -149,9 +149,11 @@ closeChannel(
     if (!sle)
         return tefINTERNAL;
 
-    assert((*slep)[sfAmount] >= (*slep)[sfBalance]);
-    (*sle)[sfBalance] =
-        (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
+    assert(
+        get<STAmount>((*slep)[sfAmount]) >= get<STAmount>((*slep)[sfBalance]));
+    (*sle)[sfBalance] = STEitherAmount{
+        get<STAmount>((*sle)[sfBalance]) + get<STAmount>((*slep)[sfAmount]) -
+        get<STAmount>((*slep)[sfBalance])};
     adjustOwnerCount(view, sle, -1, j);
     view.update(sle);
 
@@ -165,7 +167,7 @@ closeChannel(
 TxConsequences
 PayChanCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
+    return TxConsequences{ctx.tx, get<STAmount>(ctx.tx[sfAmount]).xrp()};
 }
 
 NotTEC
@@ -177,7 +179,8 @@ PayChanCreate::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
+    if (!isXRP(ctx.tx[sfAmount]) ||
+        (get<STAmount>(ctx.tx[sfAmount]) <= beast::zero))
         return temBAD_AMOUNT;
 
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
@@ -199,14 +202,14 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
 
     // Check reserve and funds availability
     {
-        auto const balance = (*sle)[sfBalance];
+        auto const balance = get<STAmount>((*sle)[sfBalance]);
         auto const reserve =
             ctx.view.fees().accountReserve((*sle)[sfOwnerCount] + 1);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
 
-        if (balance < reserve + ctx.tx[sfAmount])
+        if (balance < reserve + get<STAmount>(ctx.tx[sfAmount]))
             return tecUNFUNDED;
     }
 
@@ -295,7 +298,8 @@ PayChanCreate::doApply()
     }
 
     // Deduct owner's balance, increment owner count
-    (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
+    (*sle)[sfBalance] = STEitherAmount{
+        get<STAmount>((*sle)[sfBalance]) - get<STAmount>(ctx_.tx[sfAmount])};
     adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
     ctx_.view().update(sle);
 
@@ -307,7 +311,7 @@ PayChanCreate::doApply()
 TxConsequences
 PayChanFund::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
+    return TxConsequences{ctx.tx, get<STAmount>(ctx.tx[sfAmount]).xrp()};
 }
 
 NotTEC
@@ -319,7 +323,8 @@ PayChanFund::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
+    if (!isXRP(ctx.tx[sfAmount]) ||
+        (get<STAmount>(ctx.tx[sfAmount]) <= beast::zero))
         return temBAD_AMOUNT;
 
     return preflight2(ctx);
@@ -371,14 +376,14 @@ PayChanFund::doApply()
 
     {
         // Check reserve and funds availability
-        auto const balance = (*sle)[sfBalance];
+        auto const balance = get<STAmount>((*sle)[sfBalance]);
         auto const reserve =
             ctx_.view().fees().accountReserve((*sle)[sfOwnerCount]);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
 
-        if (balance < reserve + ctx_.tx[sfAmount])
+        if (balance < reserve + get<STAmount>(ctx_.tx[sfAmount]))
             return tecUNFUNDED;
     }
 
@@ -389,10 +394,12 @@ PayChanFund::doApply()
         return tecNO_DST;
     }
 
-    (*slep)[sfAmount] = (*slep)[sfAmount] + ctx_.tx[sfAmount];
+    (*slep)[sfAmount] = STEitherAmount{
+        get<STAmount>((*slep)[sfAmount]) + get<STAmount>(ctx_.tx[sfAmount])};
     ctx_.view().update(slep);
 
-    (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
+    (*sle)[sfBalance] = STEitherAmount{
+        get<STAmount>((*sle)[sfBalance]) - get<STAmount>(ctx_.tx[sfAmount])};
     ctx_.view().update(sle);
 
     return tesSUCCESS;
@@ -406,11 +413,11 @@ PayChanClaim::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    auto const bal = ctx.tx[~sfBalance];
+    auto const bal = get<STAmount>(ctx.tx[~sfBalance]);
     if (bal && (!isXRP(*bal) || *bal <= beast::zero))
         return temBAD_AMOUNT;
 
-    auto const amt = ctx.tx[~sfAmount];
+    auto const amt = get<STAmount>(ctx.tx[~sfAmount]);
     if (amt && (!isXRP(*amt) || *amt <= beast::zero))
         return temBAD_AMOUNT;
 
@@ -484,9 +491,11 @@ PayChanClaim::doApply()
 
     if (ctx_.tx[~sfBalance])
     {
-        auto const chanBalance = slep->getFieldAmount(sfBalance).xrp();
-        auto const chanFunds = slep->getFieldAmount(sfAmount).xrp();
-        auto const reqBalance = ctx_.tx[sfBalance].xrp();
+        auto const chanBalance =
+            get<STAmount>(slep->getFieldAmount(sfBalance)).xrp();
+        auto const chanFunds =
+            get<STAmount>(slep->getFieldAmount(sfAmount)).xrp();
+        auto const reqBalance = get<STAmount>(ctx_.tx[sfBalance]).xrp();
 
         if (txAccount == dst && !ctx_.tx[~sfSignature])
             return temBAD_SIGNATURE;
@@ -533,7 +542,8 @@ PayChanClaim::doApply()
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
         XRPAmount const reqDelta = reqBalance - chanBalance;
         assert(reqDelta >= beast::zero);
-        (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
+        (*sled)[sfBalance] =
+            STEitherAmount{get<STAmount>((*sled)[sfBalance]) + reqDelta};
         ctx_.view().update(sled);
         ctx_.view().update(slep);
     }
@@ -549,7 +559,9 @@ PayChanClaim::doApply()
     if (ctx_.tx.getFlags() & tfClose)
     {
         // Channel will close immediately if dry or the receiver closes
-        if (dst == txAccount || (*slep)[sfBalance] == (*slep)[sfAmount])
+        if (dst == txAccount ||
+            get<STAmount>((*slep)[sfBalance]) ==
+                get<STAmount>((*slep)[sfAmount]))
             return closeChannel(
                 slep, ctx_.view(), k.key, ctx_.app.journal("View"));
 

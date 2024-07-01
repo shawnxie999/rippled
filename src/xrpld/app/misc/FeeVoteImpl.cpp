@@ -217,7 +217,7 @@ FeeVoteImpl::doVoting(
         auto doVote = [](std::shared_ptr<STValidation> const& val,
                          detail::VotableValue& value,
                          SF_AMOUNT const& xrpField) {
-            if (auto const field = ~val->at(~xrpField);
+            if (auto const field = get<STAmount>(~val->at(~xrpField));
                 field && field->native())
             {
                 auto const vote = field->xrp();

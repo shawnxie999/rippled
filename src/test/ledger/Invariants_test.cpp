@@ -106,7 +106,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto const sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
-                auto amt = sle->getFieldAmount(sfBalance);
+                auto amt = get<STAmount>(sle->getFieldAmount(sfBalance));
                 sle->setFieldAmount(sfBalance, amt + STAmount{500});
                 ac.view().update(sle);
                 return true;

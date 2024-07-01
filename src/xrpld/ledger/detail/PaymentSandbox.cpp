@@ -299,13 +299,13 @@ PaymentSandbox::balanceChanges(ReadView const& view) const
                 case ltACCOUNT_ROOT:
                     lowID = xrpAccount();
                     highID = (*before)[sfAccount];
-                    oldBalance = (*before)[sfBalance];
+                    oldBalance = get<STAmount>((*before)[sfBalance]);
                     newBalance = oldBalance.zeroed();
                     break;
                 case ltRIPPLE_STATE:
                     lowID = (*before)[sfLowLimit].getIssuer();
                     highID = (*before)[sfHighLimit].getIssuer();
-                    oldBalance = (*before)[sfBalance];
+                    oldBalance = get<STAmount>((*before)[sfBalance]);
                     newBalance = oldBalance.zeroed();
                     break;
                 case ltOFFER:
@@ -324,13 +324,13 @@ PaymentSandbox::balanceChanges(ReadView const& view) const
                 case ltACCOUNT_ROOT:
                     lowID = xrpAccount();
                     highID = (*after)[sfAccount];
-                    newBalance = (*after)[sfBalance];
+                    newBalance = get<STAmount>((*after)[sfBalance]);
                     oldBalance = newBalance.zeroed();
                     break;
                 case ltRIPPLE_STATE:
                     lowID = (*after)[sfLowLimit].getIssuer();
                     highID = (*after)[sfHighLimit].getIssuer();
-                    newBalance = (*after)[sfBalance];
+                    newBalance = get<STAmount>((*after)[sfBalance]);
                     oldBalance = newBalance.zeroed();
                     break;
                 case ltOFFER:
@@ -350,14 +350,14 @@ PaymentSandbox::balanceChanges(ReadView const& view) const
                 case ltACCOUNT_ROOT:
                     lowID = xrpAccount();
                     highID = (*after)[sfAccount];
-                    oldBalance = (*before)[sfBalance];
-                    newBalance = (*after)[sfBalance];
+                    oldBalance = get<STAmount>((*before)[sfBalance]);
+                    newBalance = get<STAmount>((*after)[sfBalance]);
                     break;
                 case ltRIPPLE_STATE:
                     lowID = (*after)[sfLowLimit].getIssuer();
                     highID = (*after)[sfHighLimit].getIssuer();
-                    oldBalance = (*before)[sfBalance];
-                    newBalance = (*after)[sfBalance];
+                    oldBalance = get<STAmount>((*before)[sfBalance]);
+                    newBalance = get<STAmount>((*after)[sfBalance]);
                     break;
                 case ltOFFER:
                     // TBD

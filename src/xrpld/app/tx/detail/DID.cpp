@@ -90,7 +90,7 @@ addSLE(
 
     // Check reserve availability for new object creation
     {
-        auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
+        auto const balance = get<STAmount>((*sleAccount)[sfBalance]).xrp();
         auto const reserve =
             ctx.view().fees().accountReserve((*sleAccount)[sfOwnerCount] + 1);
 

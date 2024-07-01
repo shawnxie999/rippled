@@ -107,7 +107,7 @@ AttestationBase::AttestationBase(STObject const& o)
     , publicKey{o[sfPublicKey]}
     , signature{o[sfSignature]}
     , sendingAccount{o[sfAccount]}
-    , sendingAmount{o[sfAmount]}
+    , sendingAmount{get<STAmount>(o[sfAmount])}
     , rewardAccount{o[sfAttestationRewardAccount]}
     , wasLockingChainSend{bool(o[sfWasLockingChainSend])}
 {
@@ -132,7 +132,7 @@ AttestationBase::addHelper(STObject& o) const
     o[sfAttestationSignerAccount] = attestationSignerAccount;
     o[sfPublicKey] = publicKey;
     o[sfSignature] = signature;
-    o[sfAmount] = sendingAmount;
+    o[sfAmount] = STEitherAmount{sendingAmount};
     o[sfAccount] = sendingAccount;
     o[sfAttestationRewardAccount] = rewardAccount;
     o[sfWasLockingChainSend] = wasLockingChainSend;
@@ -225,7 +225,7 @@ AttestationClaim::message(
     STObject o{sfGeneric};
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainClaimID] = claimID;
-    o[sfAmount] = sendingAmount;
+    o[sfAmount] = STEitherAmount{sendingAmount};
     if (dst)
         o[sfDestination] = *dst;
     o[sfOtherChainSource] = sendingAccount;
@@ -276,7 +276,7 @@ AttestationCreateAccount::AttestationCreateAccount(STObject const& o)
     : AttestationBase(o)
     , createCount{o[sfXChainAccountCreateCount]}
     , toCreate{o[sfDestination]}
-    , rewardAmount{o[sfSignatureReward]}
+    , rewardAmount{get<STAmount>(o[sfSignatureReward])}
 {
 }
 
@@ -352,7 +352,7 @@ AttestationCreateAccount::toSTObject() const
 
     o[sfXChainAccountCreateCount] = createCount;
     o[sfDestination] = toCreate;
-    o[sfSignatureReward] = rewardAmount;
+    o[sfSignatureReward] = STEitherAmount{rewardAmount};
 
     return o;
 }
@@ -371,8 +371,8 @@ AttestationCreateAccount::message(
     STObject o{sfGeneric};
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainAccountCreateCount] = createCount;
-    o[sfAmount] = sendingAmount;
-    o[sfSignatureReward] = rewardAmount;
+    o[sfAmount] = STEitherAmount{sendingAmount};
+    o[sfSignatureReward] = STEitherAmount{rewardAmount};
     o[sfDestination] = dst;
     o[sfOtherChainSource] = sendingAccount;
     o[sfAttestationRewardAccount] = rewardAccount;
@@ -466,7 +466,7 @@ XChainClaimAttestation::XChainClaimAttestation(STObject const& o)
     : XChainClaimAttestation{
           o[sfAttestationSignerAccount],
           PublicKey{o[sfPublicKey]},
-          o[sfAmount],
+          get<STAmount>(o[sfAmount]),
           o[sfAttestationRewardAccount],
           o[sfWasLockingChainSend] != 0,
           o[~sfDestination]} {};
@@ -503,7 +503,7 @@ XChainClaimAttestation::toSTObject() const
     o[sfAttestationSignerAccount] =
         STAccount{sfAttestationSignerAccount, keyAccount};
     o[sfPublicKey] = publicKey;
-    o[sfAmount] = STAmount{sfAmount, amount};
+    o[sfAmount] = STEitherAmount(amount);
     o[sfAttestationRewardAccount] =
         STAccount{sfAttestationRewardAccount, rewardAccount};
     o[sfWasLockingChainSend] = wasLockingChainSend;
@@ -576,8 +576,8 @@ XChainCreateAccountAttestation::XChainCreateAccountAttestation(
     : XChainCreateAccountAttestation{
           o[sfAttestationSignerAccount],
           PublicKey{o[sfPublicKey]},
-          o[sfAmount],
-          o[sfSignatureReward],
+          get<STAmount>(o[sfAmount]),
+          get<STAmount>(o[sfSignatureReward]),
           o[sfAttestationRewardAccount],
           o[sfWasLockingChainSend] != 0,
           o[sfDestination]} {};
@@ -616,8 +616,8 @@ XChainCreateAccountAttestation::toSTObject() const
     o[sfAttestationSignerAccount] =
         STAccount{sfAttestationSignerAccount, keyAccount};
     o[sfPublicKey] = publicKey;
-    o[sfAmount] = STAmount{sfAmount, amount};
-    o[sfSignatureReward] = STAmount{sfSignatureReward, rewardAmount};
+    o[sfAmount] = STEitherAmount{sfAmount, amount};
+    o[sfSignatureReward] = STEitherAmount{sfSignatureReward, rewardAmount};
     o[sfAttestationRewardAccount] =
         STAccount{sfAttestationRewardAccount, rewardAccount};
     o[sfWasLockingChainSend] = wasLockingChainSend;

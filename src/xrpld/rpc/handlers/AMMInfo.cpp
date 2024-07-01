@@ -189,7 +189,7 @@ doAMMInfo(RPC::JsonContext& context)
         context.j);
     auto const lptAMMBalance = accountID
         ? ammLPHolds(*ledger, *amm, *accountID, context.j)
-        : (*amm)[sfLPTokenBalance];
+        : get<STAmount>((*amm)[sfLPTokenBalance]);
 
     Json::Value ammResult;
     asset1Balance.setJson(ammResult[jss::amount]);
@@ -226,7 +226,7 @@ doAMMInfo(RPC::JsonContext& context)
                 auctionSlot);
             auction[jss::time_interval] =
                 timeSlot ? *timeSlot : AUCTION_SLOT_TIME_INTERVALS;
-            auctionSlot[sfPrice].setJson(auction[jss::price]);
+            get<STAmount>(auctionSlot[sfPrice]).setJson(auction[jss::price]);
             auction[jss::discounted_fee] = auctionSlot[sfDiscountedFee];
             auction[jss::account] =
                 to_string(auctionSlot.getAccountID(sfAccount));

@@ -337,7 +337,8 @@ class MPToken_test : public beast::unit_test::suite
                 env,
                 alice,
                 {.holders = {&bob},
-                 .xrpHolders = acctReserve + XRP(1).value().xrp()});
+                 .xrpHolders =
+                     acctReserve + get<STAmount>(XRP(1).value()).xrp()});
             mptAlice1.create();
 
             MPTTester mptAlice2(env, alice, {.fund = false});
@@ -853,17 +854,33 @@ class MPToken_test : public beast::unit_test::suite
     {
         testcase("MPT Amount Invalid in Transaction");
         using namespace test::jtx;
-        Env env{*this, features};
-        Account const alice("alice");  // issuer
 
-        MPTTester mptAlice(env, alice);
+        {
+            Env env{*this, features};
+            Account const alice("alice");  // issuer
 
-        mptAlice.create();
+            MPTTester mptAlice(env, alice);
 
-        env(offer(alice, mptAlice.mpt(100), XRP(100)), ter(telENV_RPC_FAILED));
-        env.close();
+            mptAlice.create();
 
-        BEAST_EXPECT(expectOffers(env, alice, 0));
+            env(offer(alice, mptAlice.mpt(100), XRP(100)), ter(temMALFORMED));
+            env.close();
+
+            BEAST_EXPECT(expectOffers(env, alice, 0));
+        }
+
+        {
+            Env env{*this, features - featureMPTokensV1};
+            Account const alice("alice");
+
+            env.fund(XRP(1'000), alice);
+            STMPTAmount mpt{MPTIssue{std::make_pair(1, alice.id())}, 100llu};
+
+            env(offer(alice, mpt, XRP(100)), ter(temMALFORMED));
+            env.close();
+
+            BEAST_EXPECT(expectOffers(env, alice, 0));
+        }
     }
 
     void

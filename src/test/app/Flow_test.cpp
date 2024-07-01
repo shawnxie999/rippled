@@ -551,7 +551,8 @@ struct Flow_test : public beast::unit_test::suite
                         return std::stoull(bookDirStr, nullptr, 16);
                     }();
                     std::uint64_t const actualRate = getRate(
-                        usdOffer->at(sfTakerGets), usdOffer->at(sfTakerPays));
+                        get<STAmount>(usdOffer->at(sfTakerGets)),
+                        get<STAmount>(usdOffer->at(sfTakerPays)));
 
                     // We expect the actual rate of the offer to be worse
                     // (larger) than the rate of the book page holding the
@@ -763,7 +764,7 @@ struct Flow_test : public beast::unit_test::suite
             sendmax(EUR(500)),
             txflags(tfNoRippleDirect | tfPartialPayment));
 
-        auto const carolUSD = env.balance(carol, USD).value();
+        auto const carolUSD = get<STAmount>(env.balance(carol, USD));
         BEAST_EXPECT(carolUSD > USD(0) && carolUSD < USD(50));
     }
 

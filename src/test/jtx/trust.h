@@ -43,7 +43,7 @@ trust(
 Json::Value
 claw(
     Account const& account,
-    STAmount const& amount,
+    STEitherAmount const& amount,
     std::optional<Account> const& mptHolder = std::nullopt);
 
 }  // namespace jtx

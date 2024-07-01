@@ -31,14 +31,14 @@ creditLimit(
     AccountID const& issuer,
     Currency const& currency)
 {
-    STAmount result(Issue{currency, account});
+    STAmount result({currency, account});
 
     auto sleRippleState = view.read(keylet::line(account, issuer, currency));
 
     if (sleRippleState)
     {
-        result = sleRippleState->getFieldAmount(
-            account < issuer ? sfLowLimit : sfHighLimit);
+        result = get<STAmount>(sleRippleState->getFieldAmount(
+            account < issuer ? sfLowLimit : sfHighLimit));
         result.setIssuer(account);
     }
 
@@ -64,13 +64,13 @@ creditBalance(
     AccountID const& issuer,
     Currency const& currency)
 {
-    STAmount result(Issue{currency, account});
+    STAmount result({currency, account});
 
     auto sleRippleState = view.read(keylet::line(account, issuer, currency));
 
     if (sleRippleState)
     {
-        result = sleRippleState->getFieldAmount(sfBalance);
+        result = get<STAmount>(sleRippleState->getFieldAmount(sfBalance));
         if (account < issuer)
             result.negate();
         result.setIssuer(account);

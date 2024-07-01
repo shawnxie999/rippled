@@ -41,14 +41,18 @@ AMMCreate::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
+    if (ctx.rules.enabled(featureMPTokensV1) &&
+        (isMPT(ctx.tx[sfAmount]) || isMPT(ctx.tx[sfAmount2])))
+        return temMPT_NOT_SUPPORTED;
+
     if (ctx.tx.getFlags() & tfUniversalMask)
     {
         JLOG(ctx.j.debug()) << "AMM Instance: invalid flags.";
         return temINVALID_FLAG;
     }
 
-    auto const amount = ctx.tx[sfAmount];
-    auto const amount2 = ctx.tx[sfAmount2];
+    auto const amount = get<STAmount>(ctx.tx[sfAmount]);
+    auto const amount2 = get<STAmount>(ctx.tx[sfAmount2]);
 
     if (amount.issue() == amount2.issue())
     {
@@ -89,8 +93,8 @@ TER
 AMMCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
-    auto const amount = ctx.tx[sfAmount];
-    auto const amount2 = ctx.tx[sfAmount2];
+    auto const amount = get<STAmount>(ctx.tx[sfAmount]);
+    auto const amount2 = get<STAmount>(ctx.tx[sfAmount2]);
 
     // Check if AMM already exists for the token pair
     if (auto const ammKeylet = keylet::amm(amount.issue(), amount2.issue());
@@ -208,8 +212,8 @@ applyCreate(
     AccountID const& account_,
     beast::Journal j_)
 {
-    auto const amount = ctx_.tx[sfAmount];
-    auto const amount2 = ctx_.tx[sfAmount2];
+    auto const amount = get<STAmount>(ctx_.tx[sfAmount]);
+    auto const amount2 = get<STAmount>(ctx_.tx[sfAmount2]);
 
     auto const ammKeylet = keylet::amm(amount.issue(), amount2.issue());
 

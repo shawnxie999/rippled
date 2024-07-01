@@ -104,7 +104,8 @@ ammHolds(
         issues->second,
         freezeHandling,
         j);
-    return std::make_tuple(asset1, asset2, ammSle[sfLPTokenBalance]);
+    return std::make_tuple(
+        asset1, asset2, get<STAmount>(ammSle[sfLPTokenBalance]));
 }
 
 STAmount
@@ -181,14 +182,14 @@ ammAccountHolds(
     if (isXRP(issue))
     {
         if (auto const sle = view.read(keylet::account(ammAccountID)))
-            return (*sle)[sfBalance];
+            return get<STAmount>((*sle)[sfBalance]);
     }
     else if (auto const sle = view.read(
                  keylet::line(ammAccountID, issue.account, issue.currency));
              sle &&
              !isFrozen(view, ammAccountID, issue.currency, issue.account))
     {
-        auto amount = (*sle)[sfBalance];
+        auto amount = get<STAmount>((*sle)[sfBalance]);
         if (ammAccountID > issue.account)
             amount.negate();
         amount.setIssuer(issue.account);
@@ -392,8 +393,10 @@ isOnlyLiquidityProvider(
             }
             if (sle->getFieldU16(sfLedgerEntryType) != ltRIPPLE_STATE)
                 return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
-            auto const lowLimit = sle->getFieldAmount(sfLowLimit);
-            auto const highLimit = sle->getFieldAmount(sfHighLimit);
+            auto const lowLimit =
+                get<STAmount>(sle->getFieldAmount(sfLowLimit));
+            auto const highLimit =
+                get<STAmount>(sle->getFieldAmount(sfHighLimit));
             auto const isLPTrustline = lowLimit.getIssuer() == lpAccount ||
                 highLimit.getIssuer() == lpAccount;
             auto const isLPTokenTrustline =

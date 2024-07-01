@@ -35,6 +35,8 @@ public:
 
     MPTIssue(MPT const& mpt);
 
+    MPTIssue(uint192 const& id);
+
     AccountID const&
     getIssuer() const;
 
@@ -64,6 +66,22 @@ constexpr bool
 operator!=(MPTIssue const& lhs, MPTIssue const& rhs)
 {
     return !(lhs.mpt_ == rhs.mpt_);
+}
+
+MPT
+getMPT(uint192 const&);
+
+inline MPT
+badMPT()
+{
+    static MPT mpt{0, AccountID{0}};
+    return mpt;
+}
+
+inline bool
+isXRP(uint192 const&)
+{
+    return false;
 }
 
 }  // namespace ripple

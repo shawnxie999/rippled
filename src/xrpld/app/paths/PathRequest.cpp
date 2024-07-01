@@ -562,7 +562,7 @@ PathRequest::findPaths(
         }();
 
         STAmount saMaxAmount = saSendMax.value_or(
-            STAmount(Issue{issue.currency, sourceAccount}, 1u, 0, true));
+            STAmount({issue.currency, sourceAccount}, 1u, 0, true));
 
         JLOG(m_journal.debug())
             << iIdentifier << " Paths found, calling rippleCalc";

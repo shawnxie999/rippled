@@ -117,11 +117,12 @@ expectLine(
             low.setIssuer(accountLow ? account : issue.account);
             high.setIssuer(accountLow ? issue.account : account);
 
-            expectDefaultTrustLine = sle->getFieldAmount(sfLowLimit) == low &&
-                sle->getFieldAmount(sfHighLimit) == high;
+            expectDefaultTrustLine =
+                get<STAmount>(sle->getFieldAmount(sfLowLimit)) == low &&
+                get<STAmount>(sle->getFieldAmount(sfHighLimit)) == high;
         }
 
-        auto amount = sle->getFieldAmount(sfBalance);
+        auto amount = get<STAmount>(sle->getFieldAmount(sfBalance));
         amount.setIssuer(value.issue().account);
         if (!accountLow)
             amount.negate();
@@ -154,8 +155,11 @@ expectOffers(
                 ++cnt;
                 if (std::find_if(
                         toMatch.begin(), toMatch.end(), [&](auto const& a) {
-                            return a.in == sle->getFieldAmount(sfTakerPays) &&
-                                a.out == sle->getFieldAmount(sfTakerGets);
+                            return a.in ==
+                                get<STAmount>(
+                                       sle->getFieldAmount(sfTakerPays)) &&
+                                a.out ==
+                                get<STAmount>(sle->getFieldAmount(sfTakerGets));
                         }) != toMatch.end())
                     ++matched;
             }
@@ -330,7 +334,7 @@ channelBalance(ReadView const& view, uint256 const& chan)
     auto const slep = view.read({ltPAYCHAN, chan});
     if (!slep)
         return XRPAmount{-1};
-    return (*slep)[sfBalance];
+    return get<STAmount>((*slep)[sfBalance]);
 }
 
 bool

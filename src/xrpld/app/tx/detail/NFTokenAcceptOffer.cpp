@@ -36,6 +36,10 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
+    if (ctx.rules.enabled(featureMPTokensV1) &&
+        isMPT(ctx.tx[~sfNFTokenBrokerFee]))
+        return temMPT_INVALID_USAGE;
+
     if (ctx.tx.getFlags() & tfNFTokenAcceptOfferMask)
         return temINVALID_FLAG;
 
@@ -48,7 +52,7 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 
     // The `BrokerFee` field must not be present in direct mode but may be
     // present and greater than zero in brokered mode.
-    if (auto const bf = ctx.tx[~sfNFTokenBrokerFee])
+    if (auto const bf = get<STAmount>(ctx.tx[~sfNFTokenBrokerFee]))
     {
         if (!bo || !so)
             return temMALFORMED;
@@ -104,7 +108,8 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             return tecNFTOKEN_BUY_SELL_MISMATCH;
 
         // The two offers being brokered must be for the same asset:
-        if ((*bo)[sfAmount].issue() != (*so)[sfAmount].issue())
+        if (get<STAmount>((*bo)[sfAmount]).issue() !=
+            get<STAmount>((*so)[sfAmount]).issue())
             return tecNFTOKEN_BUY_SELL_MISMATCH;
 
         // The two offers may not form a loop.  A broker may not sell the
@@ -115,7 +120,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
         // Ensure that the buyer is willing to pay at least as much as the
         // seller is requesting:
-        if ((*so)[sfAmount] > (*bo)[sfAmount])
+        if (get<STAmount>((*so)[sfAmount]) > get<STAmount>((*bo)[sfAmount]))
             return tecINSUFFICIENT_PAYMENT;
 
         // If the buyer specified a destination
@@ -150,15 +155,16 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // have, ensure that the seller will get at least as much as they want
         // to get *after* this fee is accounted for (but before the issuer's
         // cut, if any).
-        if (auto const brokerFee = ctx.tx[~sfNFTokenBrokerFee])
+        if (auto const brokerFee = get<STAmount>(ctx.tx[~sfNFTokenBrokerFee]))
         {
-            if (brokerFee->issue() != (*bo)[sfAmount].issue())
+            if (brokerFee->issue() != get<STAmount>((*bo)[sfAmount]).issue())
                 return tecNFTOKEN_BUY_SELL_MISMATCH;
 
-            if (brokerFee >= (*bo)[sfAmount])
+            if (brokerFee >= get<STAmount>((*bo)[sfAmount]))
                 return tecINSUFFICIENT_PAYMENT;
 
-            if ((*so)[sfAmount] > (*bo)[sfAmount] - *brokerFee)
+            if (get<STAmount>((*so)[sfAmount]) >
+                get<STAmount>((*bo)[sfAmount]) - *brokerFee)
                 return tecINSUFFICIENT_PAYMENT;
         }
     }
@@ -191,7 +197,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         //
         // After this amendment, we allow an IOU issuer to buy an NFT with their
         // own currency
-        auto const needed = bo->at(sfAmount);
+        auto const needed = get<STAmount>(bo->at(sfAmount));
         if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
         {
             if (accountFunds(
@@ -234,7 +240,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         }
 
         // The account offering to buy must have funds:
-        auto const needed = so->at(sfAmount);
+        auto const needed = get<STAmount>(so->at(sfAmount));
         if (!ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
         {
             if (accountHolds(
@@ -280,7 +286,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             return tecINTERNAL;
 
         uint256 const& tokenID = offer->at(sfNFTokenID);
-        STAmount const& amount = offer->at(sfAmount);
+        STAmount const& amount = get<STAmount>(offer->at(sfAmount));
         if (nft::getTransferFee(tokenID) != 0 &&
             (nft::getFlags(tokenID) & nft::flagCreateTrustLines) == 0 &&
             !amount.native())
@@ -362,7 +368,8 @@ NFTokenAcceptOffer::transferNFToken(
         // the deduction of the potential offer price. A small caveat here is
         // that the balance has already deducted the transaction fee, meaning
         // that the reserve requirement is a few drops higher.
-        auto const buyerBalance = sleBuyer->getFieldAmount(sfBalance);
+        auto const buyerBalance =
+            get<STAmount>(sleBuyer->getFieldAmount(sfBalance));
 
         auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
         if (buyerOwnerCountAfter > buyerOwnerCountBefore)
@@ -387,7 +394,8 @@ NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
 
     auto const nftokenID = (*offer)[sfNFTokenID];
 
-    if (auto amount = offer->getFieldAmount(sfAmount); amount != beast::zero)
+    if (auto amount = get<STAmount>(offer->getFieldAmount(sfAmount));
+        amount != beast::zero)
     {
         // Calculate the issuer's cut from this sale, if any:
         if (auto const fee = nft::getTransferFee(nftokenID); fee != 0)
@@ -448,7 +456,7 @@ NFTokenAcceptOffer::doApply()
         auto const nftokenID = (*so)[sfNFTokenID];
 
         // The amount is what the buyer of the NFT pays:
-        STAmount amount = (*bo)[sfAmount];
+        STAmount amount = get<STAmount>((*bo)[sfAmount]);
 
         // Three different folks may be paid.  The order of operations is
         // important.
@@ -464,7 +472,7 @@ NFTokenAcceptOffer::doApply()
         // being paid out than the seller authorized.  That would be bad!
 
         // Send the broker the amount they requested.
-        if (auto const cut = ctx_.tx[~sfNFTokenBrokerFee];
+        if (auto const cut = get<STAmount>(ctx_.tx[~sfNFTokenBrokerFee]);
             cut && cut.value() != beast::zero)
         {
             if (auto const r = pay(buyer, account_, cut.value());

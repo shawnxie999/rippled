@@ -165,6 +165,14 @@ STObject::applyTemplate(const SOTemplate& type)
                     e.sField().fieldName,
                     "may not be explicitly set to default.");
             }
+            if (iter->get().getSType() == STI_AMOUNT && !e.supportMPT())
+            {
+                if (auto const v = dynamic_cast<STEitherAmount*>(&iter->get());
+                    v && v->isMPT())
+                {
+                    throwFieldErr(e.sField().fieldName, "doesn't support MPT");
+                }
+            }
             v.emplace_back(std::move(*iter));
             v_.erase(iter);
         }
@@ -630,11 +638,11 @@ STObject::getFieldVL(SField const& field) const
     return Blob(b.data(), b.data() + b.size());
 }
 
-STAmount const&
+STEitherAmount const&
 STObject::getFieldAmount(SField const& field) const
 {
-    static STAmount const empty{};
-    return getFieldByConstRef<STAmount>(field, empty);
+    static STEitherAmount const empty{};
+    return getFieldByConstRef<STEitherAmount>(field, empty);
 }
 
 STPathSet const&
@@ -748,7 +756,7 @@ STObject::setFieldVL(SField const& field, Slice const& s)
 }
 
 void
-STObject::setFieldAmount(SField const& field, STAmount const& v)
+STObject::setFieldAmount(SField const& field, STEitherAmount const& v)
 {
     setFieldUsingAssignment(field, v);
 }

@@ -185,7 +185,7 @@ Env::balance(Account const& account) const
     auto const sle = le(account);
     if (!sle)
         return XRP(0);
-    return {sle->getFieldAmount(sfBalance), ""};
+    return {get<STAmount>(sle->getFieldAmount(sfBalance)), ""};
 }
 
 PrettyAmount
@@ -196,7 +196,7 @@ Env::balance(Account const& account, Issue const& issue) const
     auto const sle = le(keylet::line(account.id(), issue));
     if (!sle)
         return {STAmount(issue, 0), account.name()};
-    auto amount = sle->getFieldAmount(sfBalance);
+    auto amount = get<STAmount>(sle->getFieldAmount(sfBalance));
     amount.setIssuer(issue.account);
     if (account.id() > issue.account)
         amount.negate();

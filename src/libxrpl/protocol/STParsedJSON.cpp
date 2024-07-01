@@ -556,8 +556,8 @@ parseLeaf(
         case STI_AMOUNT:
             try
             {
-                ret =
-                    detail::make_stvar<STAmount>(amountFromJson(field, value));
+                ret = detail::make_stvar<STEitherAmount>(
+                    amountFromJson(field, value));
             }
             catch (std::exception const&)
             {

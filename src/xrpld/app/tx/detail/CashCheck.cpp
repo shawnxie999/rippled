@@ -42,6 +42,10 @@ CashCheck::preflight(PreflightContext const& ctx)
     if (!isTesSuccess(ret))
         return ret;
 
+    if (ctx.rules.enabled(featureMPTokensV1) &&
+        (isMPT(ctx.tx[~sfAmount]) || isMPT(ctx.tx[~sfDeliverMin])))
+        return temMPT_NOT_SUPPORTED;
+
     if (ctx.tx.getFlags() & tfUniversalMask)
     {
         // There are no flags (other than universal) for CashCheck yet.
@@ -50,8 +54,8 @@ CashCheck::preflight(PreflightContext const& ctx)
     }
 
     // Exactly one of Amount or DeliverMin must be present.
-    auto const optAmount = ctx.tx[~sfAmount];
-    auto const optDeliverMin = ctx.tx[~sfDeliverMin];
+    auto const optAmount = get<STAmount>(ctx.tx[~sfAmount]);
+    auto const optDeliverMin = get<STAmount>(ctx.tx[~sfDeliverMin]);
 
     if (static_cast<bool>(optAmount) == static_cast<bool>(optDeliverMin))
     {
@@ -136,11 +140,11 @@ CashCheck::preclaim(PreclaimContext const& ctx)
         // Preflight verified exactly one of Amount or DeliverMin is present.
         // Make sure the requested amount is reasonable.
         STAmount const value{[](STTx const& tx) {
-            auto const optAmount = tx[~sfAmount];
-            return optAmount ? *optAmount : tx[sfDeliverMin];
+            auto const optAmount = get<STAmount>(tx[~sfAmount]);
+            return optAmount ? *optAmount : get<STAmount>(tx[sfDeliverMin]);
         }(ctx.tx)};
 
-        STAmount const sendMax = sleCheck->at(sfSendMax);
+        STAmount const sendMax = get<STAmount>(sleCheck->at(sfSendMax));
         Currency const currency{value.getCurrency()};
         if (currency != sendMax.getCurrency())
         {
@@ -283,12 +287,12 @@ CashCheck::doApply()
     // If it is not a check to self (as should be the case), then there's
     // work to do...
     auto viewJ = ctx_.app.journal("View");
-    auto const optDeliverMin = ctx_.tx[~sfDeliverMin];
+    auto const optDeliverMin = get<STAmount>(ctx_.tx[~sfDeliverMin]);
     bool const doFix1623{psb.rules().enabled(fix1623)};
 
     if (srcId != account_)
     {
-        STAmount const sendMax = sleCheck->at(sfSendMax);
+        STAmount const sendMax = get<STAmount>(sleCheck->at(sfSendMax));
 
         // Flow() doesn't do XRP to XRP transfers.
         if (sendMax.native())
@@ -307,7 +311,7 @@ CashCheck::doApply()
             STAmount const xrpDeliver{
                 optDeliverMin
                     ? std::max(*optDeliverMin, std::min(sendMax, srcLiquid))
-                    : ctx_.tx.getFieldAmount(sfAmount)};
+                    : get<STAmount>(ctx_.tx.getFieldAmount(sfAmount))};
 
             if (srcLiquid < xrpDeliver)
             {
@@ -340,11 +344,12 @@ CashCheck::doApply()
             // transfer rate to account for.  Since the transfer rate cannot
             // exceed 200%, we use 1/2 maxValue as our limit.
             STAmount const flowDeliver{
-                optDeliverMin ? STAmount(
-                                    optDeliverMin->issue(),
-                                    STAmount::cMaxValue / 2,
-                                    STAmount::cMaxOffset)
-                              : ctx_.tx.getFieldAmount(sfAmount)};
+                optDeliverMin
+                    ? STAmount(
+                          optDeliverMin->issue(),
+                          STAmount::cMaxValue / 2,
+                          STAmount::cMaxOffset)
+                    : get<STAmount>(ctx_.tx.getFieldAmount(sfAmount))};
 
             // If a trust line does not exist yet create one.
             Issue const& trustLineIssue = flowDeliver.issue();
@@ -419,7 +424,7 @@ CashCheck::doApply()
                 return tecNO_LINE;
 
             SF_AMOUNT const& tweakedLimit = destLow ? sfLowLimit : sfHighLimit;
-            STAmount const savedLimit = sleTrustLine->at(tweakedLimit);
+            STEitherAmount const savedLimit = sleTrustLine->at(tweakedLimit);
 
             // Make sure the tweaked limits are restored when we leave scope.
             scope_exit fixup(
@@ -434,7 +439,7 @@ CashCheck::doApply()
                 // while flow runs.
                 STAmount const bigAmount(
                     trustLineIssue, STAmount::cMaxValue, STAmount::cMaxOffset);
-                sleTrustLine->at(tweakedLimit) = bigAmount;
+                sleTrustLine->at(tweakedLimit) = STEitherAmount{bigAmount};
             }
 
             // Let flow() do the heavy lifting on a check for an IOU.
@@ -449,7 +454,7 @@ CashCheck::doApply()
                 true,                              // owner pays transfer fee
                 OfferCrossing::no,
                 std::nullopt,
-                sleCheck->getFieldAmount(sfSendMax),
+                get<STAmount>(sleCheck->getFieldAmount(sfSendMax)),
                 viewJ);
 
             if (result.result() != tesSUCCESS)

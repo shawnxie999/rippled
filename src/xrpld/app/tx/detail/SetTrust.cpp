@@ -34,6 +34,9 @@ SetTrust::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
+    if (ctx.rules.enabled(featureMPTokensV1) && isMPT(ctx.tx[~sfLimitAmount]))
+        return temMPT_INVALID_USAGE;
+
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
@@ -45,7 +48,8 @@ SetTrust::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    STAmount const saLimitAmount(tx.getFieldAmount(sfLimitAmount));
+    STAmount const saLimitAmount(
+        get<STAmount>(tx.getFieldAmount(sfLimitAmount)));
 
     if (!isLegalNet(saLimitAmount))
         return temBAD_AMOUNT;
@@ -100,7 +104,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         return tefNO_AUTH_REQUIRED;
     }
 
-    auto const saLimitAmount = ctx.tx[sfLimitAmount];
+    auto const saLimitAmount = get<STAmount>(ctx.tx[sfLimitAmount]);
 
     auto const currency = saLimitAmount.getCurrency();
     auto const uDstAccountID = saLimitAmount.getIssuer();
@@ -171,7 +175,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
                     ctx.view.read({ltAMM, sleDst->getFieldH256(sfAMMID)}))
             {
                 if (auto const lpTokens =
-                        ammSle->getFieldAmount(sfLPTokenBalance);
+                        get<STAmount>(ammSle->getFieldAmount(sfLPTokenBalance));
                     lpTokens == beast::zero)
                     return tecAMM_EMPTY;
                 else if (lpTokens.getCurrency() != saLimitAmount.getCurrency())
@@ -190,7 +194,8 @@ SetTrust::doApply()
 {
     TER terResult = tesSUCCESS;
 
-    STAmount const saLimitAmount(ctx_.tx.getFieldAmount(sfLimitAmount));
+    STAmount const saLimitAmount(
+        get<STAmount>(ctx_.tx.getFieldAmount(sfLimitAmount)));
     bool const bQualityIn(ctx_.tx.isFieldPresent(sfQualityIn));
     bool const bQualityOut(ctx_.tx.isFieldPresent(sfQualityOut));
 
@@ -294,7 +299,7 @@ SetTrust::doApply()
         // Balances
         //
 
-        saLowBalance = sleRippleState->getFieldAmount(sfBalance);
+        saLowBalance = get<STAmount>(sleRippleState->getFieldAmount(sfBalance));
         saHighBalance = -saLowBalance;
 
         //
@@ -304,10 +309,12 @@ SetTrust::doApply()
         sleRippleState->setFieldAmount(
             !bHigh ? sfLowLimit : sfHighLimit, saLimitAllow);
 
-        saLowLimit =
-            !bHigh ? saLimitAllow : sleRippleState->getFieldAmount(sfLowLimit);
-        saHighLimit =
-            bHigh ? saLimitAllow : sleRippleState->getFieldAmount(sfHighLimit);
+        saLowLimit = !bHigh
+            ? saLimitAllow
+            : get<STAmount>(sleRippleState->getFieldAmount(sfLowLimit));
+        saHighLimit = bHigh
+            ? saLimitAllow
+            : get<STAmount>(sleRippleState->getFieldAmount(sfHighLimit));
 
         //
         // Quality in

@@ -28,25 +28,27 @@
 
 namespace ripple {
 
+template <ValidAmountType T>
 NotTEC
-Clawback::preflight(PreflightContext const& ctx)
+preflightHelper(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureClawback))
         return temDISABLED;
 
     auto const mptHolder = ctx.tx[~sfMPTokenHolder];
-    STAmount const clawAmount = ctx.tx[sfAmount];
-    if ((mptHolder || clawAmount.isMPT()) &&
-        !ctx.rules.enabled(featureMPTokensV1))
+    auto const clawAmount = get<T>(ctx.tx.getFieldAmount(sfAmount));
+    bool constexpr isMPT = std::is_same_v<T, STMPTAmount>;
+
+    if (!ctx.rules.enabled(featureMPTokensV1) && (mptHolder || isMPT))
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (!mptHolder && clawAmount.isMPT())
+    if (!mptHolder && isMPT)
         return temMALFORMED;
 
-    if (mptHolder && !clawAmount.isMPT())
+    if (mptHolder && !isMPT)
         return temMALFORMED;
 
     if (ctx.tx.getFlags() & tfClawbackMask)
@@ -55,15 +57,14 @@ Clawback::preflight(PreflightContext const& ctx)
     AccountID const issuer = ctx.tx[sfAccount];
 
     // The issuer field is used for the token holder if asset is IOU
-    AccountID const& holder =
-        clawAmount.isMPT() ? *mptHolder : clawAmount.getIssuer();
+    AccountID const& holder = isMPT ? *mptHolder : clawAmount.getIssuer();
 
-    if (clawAmount.isMPT())
+    if constexpr (isMPT)
     {
         if (issuer == holder)
             return temMALFORMED;
 
-        if (clawAmount.mpt() > MPTAmount{maxMPTokenAmount} ||
+        if (clawAmount > MPTAmount{maxMPTokenAmount} ||
             clawAmount <= beast::zero)
             return temBAD_AMOUNT;
     }
@@ -76,13 +77,15 @@ Clawback::preflight(PreflightContext const& ctx)
     return preflight2(ctx);
 }
 
+template <ValidAmountType T>
 TER
-Clawback::preclaim(PreclaimContext const& ctx)
+preclaimHelper(PreclaimContext const& ctx)
 {
     AccountID const issuer = ctx.tx[sfAccount];
-    STAmount const clawAmount = ctx.tx[sfAmount];
+    auto const clawAmount = get<T>(ctx.tx.getFieldAmount(sfAmount));
+    bool constexpr isMPT = std::is_same_v<T, STMPTAmount>;
     AccountID const& holder =
-        clawAmount.isMPT() ? ctx.tx[sfMPTokenHolder] : clawAmount.getIssuer();
+        isMPT ? ctx.tx[sfMPTokenHolder] : clawAmount.getIssuer();
 
     auto const sleIssuer = ctx.view.read(keylet::account(issuer));
     auto const sleHolder = ctx.view.read(keylet::account(holder));
@@ -92,10 +95,10 @@ Clawback::preclaim(PreclaimContext const& ctx)
     if (sleHolder->isFieldPresent(sfAMMID))
         return tecAMM_ACCOUNT;
 
-    if (clawAmount.isMPT())
+    if constexpr (isMPT)
     {
-        auto const issuanceKey =
-            keylet::mptIssuance(clawAmount.mptIssue().mpt());
+        auto const& mptIssue = clawAmount.issue();
+        auto const issuanceKey = keylet::mptIssuance(mptIssue.mpt());
         auto const sleIssuance = ctx.view.read(issuanceKey);
         if (!sleIssuance)
             return tecOBJECT_NOT_FOUND;
@@ -112,7 +115,7 @@ Clawback::preclaim(PreclaimContext const& ctx)
         if (accountHolds(
                 ctx.view,
                 holder,
-                clawAmount.mptIssue(),
+                mptIssue,
                 fhIGNORE_FREEZE,
                 ahIGNORE_AUTH,
                 ctx.j) <= beast::zero)
@@ -128,12 +131,13 @@ Clawback::preclaim(PreclaimContext const& ctx)
             (issuerFlagsIn & lsfNoFreeze))
             return tecNO_PERMISSION;
 
-        auto const sleRippleState = ctx.view.read(
-            keylet::line(holder, issuer, clawAmount.getCurrency()));
+        auto const& currency = clawAmount.getCurrency();
+        auto const sleRippleState =
+            ctx.view.read(keylet::line(holder, issuer, currency));
         if (!sleRippleState)
             return tecNO_LINE;
 
-        STAmount const& balance = (*sleRippleState)[sfBalance];
+        STAmount const& balance = get<STAmount>((*sleRippleState)[sfBalance]);
 
         // If balance is positive, issuer must have higher address than holder
         if (balance > beast::zero && issuer < holder)
@@ -153,64 +157,92 @@ Clawback::preclaim(PreclaimContext const& ctx)
         // the available balance of a trustline is prone to new changes (eg.
         // XLS-34). So we must use `accountHolds`.
         if (accountHolds(
-                ctx.view,
-                holder,
-                clawAmount.getCurrency(),
-                issuer,
-                fhIGNORE_FREEZE,
-                ctx.j) <= beast::zero)
+                ctx.view, holder, currency, issuer, fhIGNORE_FREEZE, ctx.j) <=
+            beast::zero)
             return tecINSUFFICIENT_FUNDS;
     }
 
     return tesSUCCESS;
 }
 
+template <ValidAmountType T>
+TER
+applyHelper(ApplyContext& ctx)
+{
+    AccountID const& issuer = ctx.tx[sfAccount];
+    auto clawAmount = get<T>(ctx.tx.getFieldAmount(sfAmount));
+    bool constexpr isMPT = std::is_same_v<T, STMPTAmount>;
+    AccountID const holder = isMPT
+        ? ctx.tx[sfMPTokenHolder]
+        : clawAmount.getIssuer();  // cannot be reference because clawAmount is
+                                   // modified below
+
+    if constexpr (isMPT)
+    {
+        // Get the spendable balance. Must use `accountHolds`.
+        STMPTAmount const spendableAmount = accountHolds(
+            ctx.view(),
+            holder,
+            clawAmount.issue(),
+            fhIGNORE_FREEZE,
+            ahIGNORE_AUTH,
+            ctx.journal);
+
+        return rippleCredit(
+            ctx.view(),
+            holder,
+            issuer,
+            std::min(spendableAmount, clawAmount),
+            ctx.journal);
+    }
+    else
+    {
+        // Replace the `issuer` field with issuer's account if asset is IOU
+        clawAmount.setIssuer(issuer);
+        if (holder == issuer)
+            return tecINTERNAL;
+
+        // Get the spendable balance. Must use `accountHolds`.
+        STAmount const spendableAmount = accountHolds(
+            ctx.view(),
+            holder,
+            clawAmount.getCurrency(),
+            clawAmount.getIssuer(),
+            fhIGNORE_FREEZE,
+            ctx.journal);
+
+        return rippleCredit(
+            ctx.view(),
+            holder,
+            issuer,
+            std::min(spendableAmount, clawAmount),
+            true,
+            ctx.journal);
+    }
+}
+
+NotTEC
+Clawback::preflight(PreflightContext const& ctx)
+{
+    return std::visit(
+        [&]<typename T>(T const&) { return preflightHelper<T>(ctx); },
+        ctx.tx[sfAmount].getValue());
+}
+
+TER
+Clawback::preclaim(PreclaimContext const& ctx)
+{
+    return std::visit(
+        [&]<typename T>(T const&) { return preclaimHelper<T>(ctx); },
+        ctx.tx[sfAmount].getValue());
+}
+
 TER
 Clawback::doApply()
 {
-    AccountID const& issuer = account_;
-    STAmount clawAmount = ctx_.tx[sfAmount];
-    AccountID const holder = clawAmount.isMPT()
-        ? ctx_.tx[sfMPTokenHolder]
-        : clawAmount.getIssuer();  // cannot be reference because clawAmount is
-                                   // modified beblow
-
-    if (clawAmount.isMPT())
-    {
-        // Get the spendable balance. Must use `accountHolds`.
-        STAmount const spendableAmount = accountHolds(
-            view(),
-            holder,
-            clawAmount.mptIssue(),
-            fhIGNORE_FREEZE,
-            ahIGNORE_AUTH,
-            j_);
-
-        return rippleMPTCredit(
-            view(), holder, issuer, std::min(spendableAmount, clawAmount), j_);
-    }
-
-    // Replace the `issuer` field with issuer's account if asset is IOU
-    clawAmount.setIssuer(issuer);
-    if (holder == issuer)
-        return tecINTERNAL;
-
-    // Get the spendable balance. Must use `accountHolds`.
-    STAmount const spendableAmount = accountHolds(
-        view(),
-        holder,
-        clawAmount.getCurrency(),
-        clawAmount.getIssuer(),
-        fhIGNORE_FREEZE,
-        j_);
-
-    return rippleCredit(
-        view(),
-        holder,
-        issuer,
-        std::min(spendableAmount, clawAmount),
-        true,
-        j_);
+    return std::visit(
+        [&]<typename T>(T const&) { return applyHelper<T>(ctx_); },
+        ctx_.tx[sfAmount].getValue());
 }
 
 }  // namespace ripple

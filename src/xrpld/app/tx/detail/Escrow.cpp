@@ -93,7 +93,7 @@ after(NetClock::time_point now, std::uint32_t mark)
 TxConsequences
 EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
+    return TxConsequences{ctx.tx, get<STAmount>(ctx.tx[sfAmount]).xrp()};
 }
 
 NotTEC
@@ -108,7 +108,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     if (!isXRP(ctx.tx[sfAmount]))
         return temBAD_AMOUNT;
 
-    if (ctx.tx[sfAmount] <= beast::zero)
+    if (get<STAmount>(ctx.tx[sfAmount]) <= beast::zero)
         return temBAD_AMOUNT;
 
     // We must specify at least one timeout value
@@ -212,14 +212,14 @@ EscrowCreate::doApply()
 
     // Check reserve and funds availability
     {
-        auto const balance = STAmount((*sle)[sfBalance]).xrp();
+        auto const balance = get<STAmount>((*sle)[sfBalance]).xrp();
         auto const reserve =
             ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
 
-        if (balance < reserve + STAmount(ctx_.tx[sfAmount]).xrp())
+        if (balance < reserve + get<STAmount>(ctx_.tx[sfAmount]).xrp())
             return tecUNFUNDED;
     }
 
@@ -276,7 +276,8 @@ EscrowCreate::doApply()
     }
 
     // Deduct owner's balance, increment owner count
-    (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
+    (*sle)[sfBalance] = STEitherAmount{
+        get<STAmount>((*sle)[sfBalance]) - get<STAmount>(ctx_.tx[sfAmount])};
     adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
     ctx_.view().update(sle);
 
@@ -496,7 +497,8 @@ EscrowFinish::doApply()
     }
 
     // Transfer amount to destination
-    (*sled)[sfBalance] = (*sled)[sfBalance] + (*slep)[sfAmount];
+    (*sled)[sfBalance] = STEitherAmount{
+        get<STAmount>((*sled)[sfBalance]) + get<STAmount>((*slep)[sfAmount])};
     ctx_.view().update(sled);
 
     // Adjust source owner count
@@ -582,7 +584,8 @@ EscrowCancel::doApply()
 
     // Transfer amount back to owner, decrement owner count
     auto const sle = ctx_.view().peek(keylet::account(account));
-    (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount];
+    (*sle)[sfBalance] = STEitherAmount{
+        get<STAmount>((*sle)[sfBalance]) + get<STAmount>((*slep)[sfAmount])};
     adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
     ctx_.view().update(sle);
 

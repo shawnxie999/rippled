@@ -40,6 +40,10 @@ AMMBid::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
+    if (ctx.rules.enabled(featureMPTokensV1) &&
+        (isMPT(ctx.tx[~sfBidMin]) || isMPT(ctx.tx[~sfBidMax])))
+        return temMPT_INVALID_USAGE;
+
     if (ctx.tx.getFlags() & tfUniversalMask)
     {
         JLOG(ctx.j.debug()) << "AMM Bid: invalid flags.";
@@ -52,7 +56,7 @@ AMMBid::preflight(PreflightContext const& ctx)
         return res;
     }
 
-    if (auto const bidMin = ctx.tx[~sfBidMin])
+    if (auto const bidMin = get<STAmount>(ctx.tx[~sfBidMin]))
     {
         if (auto const res = invalidAMMAmount(*bidMin))
         {
@@ -61,7 +65,7 @@ AMMBid::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (auto const bidMax = ctx.tx[~sfBidMax])
+    if (auto const bidMax = get<STAmount>(ctx.tx[~sfBidMax]))
     {
         if (auto const res = invalidAMMAmount(*bidMax))
         {
@@ -94,7 +98,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
         return terNO_AMM;
     }
 
-    auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
+    auto const lpTokensBalance = get<STAmount>((*ammSle)[sfLPTokenBalance]);
     if (lpTokensBalance == beast::zero)
         return tecAMM_EMPTY;
 
@@ -119,7 +123,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
         return tecAMM_INVALID_TOKENS;
     }
 
-    auto const bidMin = ctx.tx[~sfBidMin];
+    auto const bidMin = get<STAmount>(ctx.tx[~sfBidMin]);
 
     if (bidMin)
     {
@@ -135,7 +139,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto const bidMax = ctx.tx[~sfBidMax];
+    auto const bidMax = get<STAmount>(ctx.tx[~sfBidMax]);
     if (bidMax)
     {
         if (bidMax->issue() != lpTokens.issue())
@@ -171,7 +175,7 @@ applyBid(
         sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
         return {tecINTERNAL, false};
-    STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
+    STAmount const lptAMMBalance = get<STAmount>((*ammSle)[sfLPTokenBalance]);
     auto const lpTokens = ammLPHolds(sb, *ammSle, account_, ctx_.journal);
     auto const& rules = ctx_.view().rules();
     if (!rules.enabled(fixInnerObjTemplate))
@@ -253,8 +257,8 @@ applyBid(
 
     TER res = tesSUCCESS;
 
-    auto const bidMin = ctx_.tx[~sfBidMin];
-    auto const bidMax = ctx_.tx[~sfBidMax];
+    auto const bidMin = get<STAmount>(ctx_.tx[~sfBidMin]);
+    auto const bidMax = get<STAmount>(ctx_.tx[~sfBidMax]);
 
     auto getPayPrice =
         [&](Number const& computedPrice) -> Expected<Number, TER> {
@@ -303,7 +307,7 @@ applyBid(
     else
     {
         // Price the slot was purchased at.
-        STAmount const pricePurchased = auctionSlot[sfPrice];
+        STAmount const pricePurchased = get<STAmount>(auctionSlot[sfPrice]);
         assert(timeSlot);
         auto const fractionUsed =
             (Number(*timeSlot) + 1) / AUCTION_SLOT_TIME_INTERVALS;

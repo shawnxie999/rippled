@@ -2198,15 +2198,17 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 
         // (The ~ operator converts the Proxy to a std::optional, which
         //  simplifies later operations)
-        if (auto const baseFeeXRP = ~val->at(~sfBaseFeeDrops);
+        if (auto const baseFeeXRP = get<STAmount>(~val->at(~sfBaseFeeDrops));
             baseFeeXRP && baseFeeXRP->native())
             jvObj[jss::base_fee] = baseFeeXRP->xrp().jsonClipped();
 
-        if (auto const reserveBaseXRP = ~val->at(~sfReserveBaseDrops);
+        if (auto const reserveBaseXRP =
+                get<STAmount>(~val->at(~sfReserveBaseDrops));
             reserveBaseXRP && reserveBaseXRP->native())
             jvObj[jss::reserve_base] = reserveBaseXRP->xrp().jsonClipped();
 
-        if (auto const reserveIncXRP = ~val->at(~sfReserveIncrementDrops);
+        if (auto const reserveIncXRP =
+                get<STAmount>(~val->at(~sfReserveIncrementDrops));
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
 
@@ -3153,7 +3155,8 @@ NetworkOPsImp::transJson(
     if (transaction->getTxnType() == ttOFFER_CREATE)
     {
         auto const account = transaction->getAccountID(sfAccount);
-        auto const amount = transaction->getFieldAmount(sfTakerGets);
+        auto const amount =
+            get<STAmount>(transaction->getFieldAmount(sfTakerGets));
 
         // If the offer create is not self funded then add the owner balance
         if (account != amount.issue().account)
@@ -4390,8 +4393,10 @@ NetworkOPsImp::getBookPage(
             if (sleOffer)
             {
                 auto const uOfferOwnerID = sleOffer->getAccountID(sfAccount);
-                auto const& saTakerGets = sleOffer->getFieldAmount(sfTakerGets);
-                auto const& saTakerPays = sleOffer->getFieldAmount(sfTakerPays);
+                auto const& saTakerGets =
+                    get<STAmount>(sleOffer->getFieldAmount(sfTakerGets));
+                auto const& saTakerPays =
+                    get<STAmount>(sleOffer->getFieldAmount(sfTakerPays));
                 STAmount saOwnerFunds;
                 bool firstOwnerOffer(true);
 
@@ -4543,8 +4548,10 @@ NetworkOPsImp::getBookPage(
         if (sleOffer)
         {
             auto const uOfferOwnerID = sleOffer->getAccountID(sfAccount);
-            auto const& saTakerGets = sleOffer->getFieldAmount(sfTakerGets);
-            auto const& saTakerPays = sleOffer->getFieldAmount(sfTakerPays);
+            auto const& saTakerGets =
+                get<STAmount>(sleOffer->getFieldAmount(sfTakerGets));
+            auto const& saTakerPays =
+                get<STAmount>(sleOffer->getFieldAmount(sfTakerPays));
             STAmount saDirRate = obIterator.getCurrentRate();
             STAmount saOwnerFunds;
 

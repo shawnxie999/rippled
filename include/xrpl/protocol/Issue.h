@@ -38,9 +38,13 @@ public:
     Currency currency{};
     AccountID account{};
 
-    Issue() = default;
+    Issue()
+    {
+    }
 
-    Issue(Currency const& c, AccountID const& a);
+    Issue(Currency const& c, AccountID const& a) : currency(c), account(a)
+    {
+    }
 
     AccountID const&
     getIssuer() const;

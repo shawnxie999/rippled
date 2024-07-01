@@ -208,7 +208,7 @@ fillJsonTx(
         txn->getTxnType() == ttOFFER_CREATE)
     {
         auto const account = txn->getAccountID(sfAccount);
-        auto const amount = txn->getFieldAmount(sfTakerGets);
+        auto const amount = get<STAmount>(txn->getFieldAmount(sfTakerGets));
 
         // If the offer create is not self funded then add the
         // owner balance

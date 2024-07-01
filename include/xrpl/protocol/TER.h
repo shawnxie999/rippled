@@ -140,7 +140,8 @@ enum TEMcodes : TERUnderlyingType {
 
     temARRAY_EMPTY,
     temARRAY_TOO_LARGE,
-    temMPT_NOT_SUPPORTED
+    temMPT_NOT_SUPPORTED,
+    temMPT_INVALID_USAGE
 };
 
 //------------------------------------------------------------------------------

@@ -169,18 +169,20 @@ doNoRippleCheck(RPC::JsonContext& context)
                 if (needFix)
                 {
                     AccountID peer =
-                        ownedItem
-                            ->getFieldAmount(bLow ? sfHighLimit : sfLowLimit)
+                        get<STAmount>(ownedItem->getFieldAmount(
+                                          bLow ? sfHighLimit : sfLowLimit))
                             .getIssuer();
-                    STAmount peerLimit = ownedItem->getFieldAmount(
-                        bLow ? sfHighLimit : sfLowLimit);
+                    STAmount peerLimit =
+                        get<STAmount>(ownedItem->getFieldAmount(
+                            bLow ? sfHighLimit : sfLowLimit));
                     problem += to_string(peerLimit.getCurrency());
                     problem += " line to ";
                     problem += to_string(peerLimit.getIssuer());
                     problems.append(problem);
 
-                    STAmount limitAmount(ownedItem->getFieldAmount(
-                        bLow ? sfLowLimit : sfHighLimit));
+                    STAmount limitAmount(
+                        get<STAmount>(ownedItem->getFieldAmount(
+                            bLow ? sfLowLimit : sfHighLimit)));
                     limitAmount.setIssuer(peer);
 
                     Json::Value& tx = jvTransactions.append(Json::objectValue);

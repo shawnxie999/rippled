@@ -29,9 +29,9 @@ TrustLineBase::TrustLineBase(
     std::shared_ptr<SLE const> const& sle,
     AccountID const& viewAccount)
     : key_(sle->key())
-    , mLowLimit(sle->getFieldAmount(sfLowLimit))
-    , mHighLimit(sle->getFieldAmount(sfHighLimit))
-    , mBalance(sle->getFieldAmount(sfBalance))
+    , mLowLimit(get<STAmount>(sle->getFieldAmount(sfLowLimit)))
+    , mHighLimit(get<STAmount>(sle->getFieldAmount(sfHighLimit)))
+    , mBalance(get<STAmount>(sle->getFieldAmount(sfBalance)))
     , mFlags(sle->getFieldU32(sfFlags))
     , mViewLowest(mLowLimit.getIssuer() == viewAccount)
 {

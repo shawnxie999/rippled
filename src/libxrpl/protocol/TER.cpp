@@ -190,6 +190,7 @@ transResults()
         MAKE_ERROR(temINVALID,                   "The transaction is ill-formed."),
         MAKE_ERROR(temINVALID_FLAG,              "The transaction has an invalid flag."),
         MAKE_ERROR(temMPT_NOT_SUPPORTED,         "MPT is not supported."),
+        MAKE_ERROR(temMPT_INVALID_USAGE,         "Invalid MPT usage."),
         MAKE_ERROR(temREDUNDANT,                 "The transaction is redundant."),
         MAKE_ERROR(temRIPPLE_EMPTY,              "PathSet with no paths."),
         MAKE_ERROR(temUNCERTAIN,                 "In process of determining result. Never returned."),

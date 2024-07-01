@@ -68,7 +68,7 @@ TransactionFeeCheck::finalize(
 
     // We should never charge more for a transaction than the transaction
     // authorizes. It's possible to charge less in some circumstances.
-    if (fee > tx.getFieldAmount(sfFee).xrp())
+    if (fee > get<STAmount>(tx.getFieldAmount(sfFee)).xrp())
     {
         JLOG(j.fatal()) << "Invariant failed: fee paid is " << fee.drops()
                         << " exceeds fee specified in transaction.";
@@ -98,14 +98,16 @@ XRPNotCreated::visitEntry(
         switch (before->getType())
         {
             case ltACCOUNT_ROOT:
-                drops_ -= (*before)[sfBalance].xrp().drops();
+                drops_ -= get<STAmount>((*before)[sfBalance]).xrp().drops();
                 break;
             case ltPAYCHAN:
-                drops_ -=
-                    ((*before)[sfAmount] - (*before)[sfBalance]).xrp().drops();
+                drops_ -= (get<STAmount>((*before)[sfAmount]) -
+                           get<STAmount>((*before)[sfBalance]))
+                              .xrp()
+                              .drops();
                 break;
             case ltESCROW:
-                drops_ -= (*before)[sfAmount].xrp().drops();
+                drops_ -= get<STAmount>((*before)[sfAmount]).xrp().drops();
                 break;
             default:
                 break;
@@ -117,17 +119,18 @@ XRPNotCreated::visitEntry(
         switch (after->getType())
         {
             case ltACCOUNT_ROOT:
-                drops_ += (*after)[sfBalance].xrp().drops();
+                drops_ += get<STAmount>((*after)[sfBalance]).xrp().drops();
                 break;
             case ltPAYCHAN:
                 if (!isDelete)
-                    drops_ += ((*after)[sfAmount] - (*after)[sfBalance])
+                    drops_ += (get<STAmount>((*after)[sfAmount]) -
+                               get<STAmount>((*after)[sfBalance]))
                                   .xrp()
                                   .drops();
                 break;
             case ltESCROW:
                 if (!isDelete)
-                    drops_ += (*after)[sfAmount].xrp().drops();
+                    drops_ += get<STAmount>((*after)[sfAmount]).xrp().drops();
                 break;
             default:
                 break;
@@ -190,10 +193,10 @@ XRPBalanceChecks::visitEntry(
     };
 
     if (before && before->getType() == ltACCOUNT_ROOT)
-        bad_ |= isBad((*before)[sfBalance]);
+        bad_ |= isBad(get<STAmount>((*before)[sfBalance]));
 
     if (after && after->getType() == ltACCOUNT_ROOT)
-        bad_ |= isBad((*after)[sfBalance]);
+        bad_ |= isBad(get<STAmount>((*after)[sfBalance]));
 }
 
 bool
@@ -234,10 +237,14 @@ NoBadOffers::visitEntry(
     };
 
     if (before && before->getType() == ltOFFER)
-        bad_ |= isBad((*before)[sfTakerPays], (*before)[sfTakerGets]);
+        bad_ |= isBad(
+            get<STAmount>((*before)[sfTakerPays]),
+            get<STAmount>((*before)[sfTakerGets]));
 
     if (after && after->getType() == ltOFFER)
-        bad_ |= isBad((*after)[sfTakerPays], (*after)[sfTakerGets]);
+        bad_ |= isBad(
+            get<STAmount>((*after)[sfTakerPays]),
+            get<STAmount>((*after)[sfTakerGets]));
 }
 
 bool
@@ -279,10 +286,10 @@ NoZeroEscrow::visitEntry(
     };
 
     if (before && before->getType() == ltESCROW)
-        bad_ |= isBad((*before)[sfAmount]);
+        bad_ |= isBad(get<STAmount>((*before)[sfAmount]));
 
     if (after && after->getType() == ltESCROW)
-        bad_ |= isBad((*after)[sfAmount]);
+        bad_ |= isBad(get<STAmount>((*after)[sfAmount]));
 }
 
 bool
@@ -441,8 +448,10 @@ NoXRPTrustLines::visitEntry(
         // relying on .native() just in case native somehow
         // were systematically incorrect
         xrpTrustLine_ =
-            after->getFieldAmount(sfLowLimit).issue() == xrpIssue() ||
-            after->getFieldAmount(sfHighLimit).issue() == xrpIssue();
+            get<STAmount>(after->getFieldAmount(sfLowLimit)).issue() ==
+                xrpIssue() ||
+            get<STAmount>(after->getFieldAmount(sfHighLimit)).issue() ==
+                xrpIssue();
     }
 }
 
@@ -789,7 +798,7 @@ ValidClawback::finalize(
         if (trustlinesChanged == 1)
         {
             AccountID const issuer = tx.getAccountID(sfAccount);
-            STAmount const& amount = tx.getFieldAmount(sfAmount);
+            STAmount const& amount = get<STAmount>(tx.getFieldAmount(sfAmount));
             AccountID const& holder = amount.getIssuer();
             STAmount const holderBalance = accountHolds(
                 view, holder, amount.getCurrency(), issuer, fhIGNORE_FREEZE, j);

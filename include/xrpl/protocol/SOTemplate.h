@@ -22,6 +22,7 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
+#include <cassert>
 #include <functional>
 #include <initializer_list>
 #include <memory>
@@ -39,6 +40,8 @@ enum SOEStyle {
                       // constructed with STObject::makeInnerObject()
 };
 
+enum SOESupportMPT : bool { soeMPTYes = true, soeMPTNo = false };
+
 //------------------------------------------------------------------------------
 
 /** An element in a SOTemplate. */
@@ -47,10 +50,11 @@ class SOElement
     // Use std::reference_wrapper so SOElement can be stored in a std::vector.
     std::reference_wrapper<SField const> sField_;
     SOEStyle style_;
+    SOESupportMPT supportMpt_;
 
-public:
-    SOElement(SField const& fieldName, SOEStyle style)
-        : sField_(fieldName), style_(style)
+private:
+    void
+    init(SField const& fieldName) const
     {
         if (!sField_.get().isUseful())
         {
@@ -60,6 +64,23 @@ public:
             Throw<std::runtime_error>(
                 "SField (" + nm + ") in SOElement must be useful.");
         }
+    }
+
+public:
+    SOElement(SField const& fieldName, SOEStyle style)
+        : sField_(fieldName)
+        , style_(style)
+        , supportMpt_(SOESupportMPT::soeMPTNo)
+    {
+        init(fieldName);
+    }
+    SOElement(
+        TypedField<STEitherAmount> const& fieldName,
+        SOEStyle style,
+        SOESupportMPT supportMpt = SOESupportMPT::soeMPTNo)
+        : sField_(fieldName), style_(style), supportMpt_(supportMpt)
+    {
+        init(fieldName);
     }
 
     SField const&
@@ -72,6 +93,12 @@ public:
     style() const
     {
         return style_;
+    }
+
+    SOESupportMPT
+    supportMPT() const
+    {
+        return supportMpt_;
     }
 };
 

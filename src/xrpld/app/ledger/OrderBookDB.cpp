@@ -274,8 +274,10 @@ OrderBookDB::processTxn(
                         data->isFieldPresent(sfTakerGets))
                     {
                         auto listeners = getBookListeners(
-                            {data->getFieldAmount(sfTakerGets).issue(),
-                             data->getFieldAmount(sfTakerPays).issue()});
+                            {get<STAmount>(data->getFieldAmount(sfTakerGets))
+                                 .issue(),
+                             get<STAmount>(data->getFieldAmount(sfTakerPays))
+                                 .issue()});
                         if (listeners)
                             listeners->publish(jvObj, havePublished);
                     }
