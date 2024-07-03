@@ -25,7 +25,7 @@
 #include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Quality.h>
-
+#include <ripple/protocol/AccountID.h>
 #include <boost/container/flat_set.hpp>
 
 #include <numeric>
@@ -508,7 +508,9 @@ DirectStepI<TDerived>::revImp(
     IOUAmount const& out)
 {
     cache_.reset();
-
+    std::cout<<"DirecStep revImp "<<std::endl;
+    std::cout<<"src " << toBase58(src_)<<std::endl;
+    std::cout<<"dst " << toBase58(dst_)<<std::endl;
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, out);
 

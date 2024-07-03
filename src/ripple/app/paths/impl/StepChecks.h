@@ -36,7 +36,8 @@ checkFreeze(
     Currency const& currency)
 {
     assert(src != dst);
-
+    std::cout<<"src " << toBase58(src)<<std::endl;
+    std::cout<<"dst " << toBase58(dst)<<std::endl;
     // check freeze
     if (auto sle = view.read(keylet::account(dst)))
     {
@@ -49,6 +50,11 @@ checkFreeze(
     if (auto sle = view.read(keylet::line(src, dst, currency)))
     {
         if (sle->isFlag((dst > src) ? lsfHighFreeze : lsfLowFreeze))
+        {
+            return terNO_LINE;
+        }
+
+        if (sle->isFlag((src > dst) ? lsfHighFreeze : lsfLowFreeze))
         {
             return terNO_LINE;
         }

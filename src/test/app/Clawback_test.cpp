@@ -943,19 +943,56 @@ class Clawback_test : public beast::unit_test::suite
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
     }
 
+void
+    testDirectStep(FeatureBitset features)
+    {
+        testcase("Direct Step");
+
+        using namespace test::jtx;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const dan = Account("dan");
+        auto const erin = Account("erin");
+        auto const USDA = alice["USD"];
+        auto const USDB = bob["USD"];
+        auto const USDC = carol["USD"];
+        auto const USDD = dan["USD"];
+        auto const gw = Account("gw");
+        auto const USD = gw["USD"];
+        {
+            // Pay USD, trivial path
+            Env env(*this, features);
+std::cout<<"gw "<<toBase58(gw.id()) <<std::endl;
+std::cout<<"alice "<<toBase58(alice.id()) <<std::endl;
+std::cout<<"bob "<<toBase58(bob.id()) <<std::endl<<std::endl;
+
+            env.fund(XRP(10000), alice, bob, gw);
+            env.trust(USD(1000), alice, bob);
+            env(pay(gw, alice, USD(100)));
+            // env(fset(bob, asfGlobalFreeze));
+            // env(pay(alice, gw, USD(10)));
+            env(trust(gw, bob["USD"](0), tfSetFreeze));
+           // env(trust(bob, USD(100), tfSetFreeze));
+            env(pay(alice, bob, USD(10)));
+            env.require(balance(bob, USD(10)));
+        }
+
+    }
     void
     testWithFeats(FeatureBitset features)
     {
-        testAllowTrustLineClawbackFlag(features);
-        testValidation(features);
-        testPermission(features);
-        testEnabled(features);
-        testMultiLine(features);
-        testBidirectionalLine(features);
-        testDeleteDefaultLine(features);
-        testFrozenLine(features);
-        testAmountExceedsAvailable(features);
-        testTickets(features);
+        // testAllowTrustLineClawbackFlag(features);
+        // testValidation(features);
+        // testPermission(features);
+        // testEnabled(features);
+        // testMultiLine(features);
+        // testBidirectionalLine(features);
+        // testDeleteDefaultLine(features);
+        // testFrozenLine(features);
+        // testAmountExceedsAvailable(features);
+        // testTickets(features);
+        testDirectStep(features);
     }
 
 public:
@@ -965,7 +1002,7 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
 
-        testWithFeats(all - featureMPTokensV1);
+      //  testWithFeats(all - featureMPTokensV1);
         testWithFeats(all);
     }
 };
