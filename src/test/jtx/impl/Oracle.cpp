@@ -226,14 +226,14 @@ Oracle::set(UpdateArg const& arg)
     if (arg.lastUpdateTime)
     {
         if (std::holds_alternative<std::uint32_t>(*arg.lastUpdateTime))
-            jv[jss::LastUpdateTime] = to_string(
+            jv[jss::LastUpdateTime] = std::to_string(
                 testStartTime.count() +
                 std::get<std::uint32_t>(*arg.lastUpdateTime));
         else
             toJson(jv[jss::LastUpdateTime], *arg.lastUpdateTime);
     }
     else
-        jv[jss::LastUpdateTime] = to_string(
+        jv[jss::LastUpdateTime] = std::to_string(
             duration_cast<seconds>(
                 env_.current()->info().closeTime.time_since_epoch())
                 .count() +
