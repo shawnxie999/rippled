@@ -695,7 +695,7 @@ STAmount::canonicalize()
         if (getSTAmountCanonicalizeSwitchover())
         {
             // log(cMaxNativeN, 10) == 17
-            if (mOffset > 17)
+            if (isXRP(*this) && mOffset > 17)
                 Throw<std::runtime_error>(
                     "Native currency amount out of range");
         }
@@ -732,7 +732,7 @@ STAmount::canonicalize()
                 {
                     // N.B. do not move the overflow check to after the
                     // multiplication
-                    if (mValue > cMaxNativeN)
+                    if (isXRP(*this) && mValue > cMaxNativeN)
                         Throw<std::runtime_error>(
                             "Native currency amount out of range");
                 }
@@ -741,7 +741,7 @@ STAmount::canonicalize()
             }
         }
 
-        if (mValue > cMaxNativeN)
+        if (isXRP(*this) && mValue > cMaxNativeN)
             Throw<std::runtime_error>("Native currency amount out of range");
 
         return;
