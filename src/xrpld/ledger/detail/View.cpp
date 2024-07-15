@@ -1696,8 +1696,11 @@ TER
 requireAuth(ReadView const& view, MPTIssue const& mpt, AccountID const& account)
 {
     auto const mptID = keylet::mptIssuance(mpt.mpt());
-    if (auto const sle = view.read(mptID);
-        sle && sle->getFieldU32(sfFlags) & lsfMPTRequireAuth)
+    auto const sle = view.read(mptID);
+    if (!sle) 
+        return tecOBJECT_NOT_FOUND;
+
+    if (sle->getFieldU32(sfFlags) & lsfMPTRequireAuth)
     {
         auto const mptokenID = keylet::mptoken(mptID.key, account);
         if (auto const tokSle = view.read(mptokenID); tokSle &&
@@ -1705,6 +1708,7 @@ requireAuth(ReadView const& view, MPTIssue const& mpt, AccountID const& account)
             !(tokSle->getFlags() & lsfMPTAuthorized))
             return TER{tecNO_AUTH};
     }
+
     return tesSUCCESS;
 }
 
@@ -1716,12 +1720,17 @@ canTransfer(
     AccountID const& to)
 {
     auto const mptID = keylet::mptIssuance(mpt.mpt());
-    if (auto const sle = view.read(mptID);
-        sle && !(sle->getFieldU32(sfFlags) & lsfMPTCanTransfer))
-    {
-        if (from != (*sle)[sfIssuer] && to != (*sle)[sfIssuer])
-            return TER{tecNO_AUTH};
-    }
+    auto const sle = view.read(mptID);
+    if (!sle)
+        return tecOBJECT_NOT_FOUND;
+
+    if (from != (*sle)[sfIssuer] && to != (*sle)[sfIssuer] && !(sle->getFieldU32(sfFlags) & lsfMPTCanTransfer))
+        return TER{tecNO_AUTH};
+
+    if (from != (*sle)[sfIssuer]){
+        auto const sle = view.read(keylet::mptoken());
+    }       
+    
     return tesSUCCESS;
 }
 
@@ -1924,6 +1933,8 @@ rippleMPTCredit(
                 sle->getFieldU64(sfMPTAmount) + saAmount.mpt().mpt());
             view.update(sle);
         }
+        else
+            return tecINTERNAL;
     }
     return tesSUCCESS;
 }

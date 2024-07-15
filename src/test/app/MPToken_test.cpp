@@ -625,6 +625,8 @@ class MPToken_test : public beast::unit_test::suite
             // env(mpt::authorize(alice, id.key, std::nullopt));
             // env.close();
 
+            mptAlice.pay(alice, bob, 100, tecOBJECT_NOT_FOUND);
+
             mptAlice.authorize({.account = &bob});
             mptAlice.authorize({.account = &carol});
 
