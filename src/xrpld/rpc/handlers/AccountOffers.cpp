@@ -37,10 +37,8 @@ appendOfferJson(std::shared_ptr<SLE const> const& offer, Json::Value& offers)
     STAmount dirRate =
         amountFromQuality(getQuality(offer->getFieldH256(sfBookDirectory)));
     Json::Value& obj(offers.append(Json::objectValue));
-    get<STAmount>(offer->getFieldAmount(sfTakerPays))
-        .setJson(obj[jss::taker_pays]);
-    get<STAmount>(offer->getFieldAmount(sfTakerGets))
-        .setJson(obj[jss::taker_gets]);
+    offer->getFieldAmount(sfTakerPays).setJson(obj[jss::taker_pays]);
+    offer->getFieldAmount(sfTakerGets).setJson(obj[jss::taker_gets]);
     obj[jss::seq] = offer->getFieldU32(sfSequence);
     obj[jss::flags] = offer->getFieldU32(sfFlags);
     obj[jss::quality] = dirRate.getText();

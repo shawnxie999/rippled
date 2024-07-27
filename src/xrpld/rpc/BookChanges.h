@@ -107,12 +107,10 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 
             // compute the difference in gets and pays actually
             // affected onto the offer
-            STAmount deltaGets =
-                get<STAmount>(finalFields.getFieldAmount(sfTakerGets)) -
-                get<STAmount>(previousFields.getFieldAmount(sfTakerGets));
-            STAmount deltaPays =
-                get<STAmount>(finalFields.getFieldAmount(sfTakerPays)) -
-                get<STAmount>(previousFields.getFieldAmount(sfTakerPays));
+            STAmount deltaGets = finalFields.getFieldAmount(sfTakerGets) -
+                previousFields.getFieldAmount(sfTakerGets);
+            STAmount deltaPays = finalFields.getFieldAmount(sfTakerPays) -
+                previousFields.getFieldAmount(sfTakerPays);
 
             std::string g{to_string(deltaGets.issue())};
             std::string p{to_string(deltaPays.issue())};

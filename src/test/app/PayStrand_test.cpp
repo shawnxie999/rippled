@@ -483,7 +483,7 @@ struct ExistingElementPool
             auto const sle = v.read(keylet::account(a));
             if (!sle)
                 return;
-            auto const b = get<STAmount>((*sle)[sfBalance]);
+            auto const b = (*sle)[sfBalance];
             totalXRP += b.mantissa();
         };
         for (auto const& a : accounts)
@@ -504,13 +504,13 @@ struct ExistingElementPool
             auto const sle = v.read(k);
             if (!sle)
                 return STAmount{};
-            return get<STAmount>((*sle)[sfBalance]);
+            return (*sle)[sfBalance];
         };
         auto lineBalance = [](ReadView const& v, ripple::Keylet const& k) {
             auto const sle = v.read(k);
             if (!sle)
                 return STAmount{};
-            return get<STAmount>((*sle)[sfBalance]);
+            return (*sle)[sfBalance];
         };
         std::uint64_t totalXRP[2]{};
         for (auto ai1 = accounts.begin(), aie = accounts.end(); ai1 != aie;

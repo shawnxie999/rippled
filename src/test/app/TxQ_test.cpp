@@ -1257,10 +1257,8 @@ public:
         // bankrupt Alice. Fails, because an account can't have
         // more than the minimum reserve in flight before the
         // last queued transaction
-        aliceFee = get<STAmount>(env.le(alice)->getFieldAmount(sfBalance))
-                       .xrp()
-                       .drops() -
-            (62);
+        aliceFee =
+            env.le(alice)->getFieldAmount(sfBalance).xrp().drops() - (62);
         env(noop(alice),
             seq(aliceSeq),
             fee(aliceFee),
@@ -1320,10 +1318,7 @@ public:
         // with enough fee to bankrupt bob and make the
         // later transactions unable to pay their fees
         std::int64_t bobFee =
-            get<STAmount>(env.le(bob)->getFieldAmount(sfBalance))
-                .xrp()
-                .drops() -
-            (9 * 10 - 1);
+            env.le(bob)->getFieldAmount(sfBalance).xrp().drops() - (9 * 10 - 1);
         env(noop(bob),
             seq(bobSeq + 5),
             fee(bobFee),
@@ -1336,10 +1331,8 @@ public:
         //
         // The attempt fails because the sum of bob's fees now exceeds the
         // (artificially lowered to 200 drops) account reserve.
-        bobFee = get<STAmount>(env.le(bob)->getFieldAmount(sfBalance))
-                     .xrp()
-                     .drops() -
-            (9 * 10);
+        bobFee =
+            env.le(bob)->getFieldAmount(sfBalance).xrp().drops() - (9 * 10);
         env(noop(bob),
             seq(bobSeq + 5),
             fee(bobFee),

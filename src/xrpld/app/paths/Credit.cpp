@@ -37,8 +37,8 @@ creditLimit(
 
     if (sleRippleState)
     {
-        result = get<STAmount>(sleRippleState->getFieldAmount(
-            account < issuer ? sfLowLimit : sfHighLimit));
+        result = sleRippleState->getFieldAmount(
+            account < issuer ? sfLowLimit : sfHighLimit);
         result.setIssuer(account);
     }
 
@@ -70,7 +70,7 @@ creditBalance(
 
     if (sleRippleState)
     {
-        result = get<STAmount>(sleRippleState->getFieldAmount(sfBalance));
+        result = sleRippleState->getFieldAmount(sfBalance);
         if (account < issuer)
             result.negate();
         result.setIssuer(account);

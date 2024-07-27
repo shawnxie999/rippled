@@ -51,8 +51,7 @@ struct RippleCalcTestParams
         , dstAmt{get<STAmount>(amountFromJson(sfAmount, jv[jss::Amount]))}
     {
         if (jv.isMember(jss::SendMax))
-            sendMax =
-                get<STAmount>(amountFromJson(sfSendMax, jv[jss::SendMax]));
+            sendMax = amountFromJson(sfSendMax, jv[jss::SendMax]);
 
         if (jv.isMember(jss::Paths))
         {

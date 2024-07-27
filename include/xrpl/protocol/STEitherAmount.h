@@ -49,7 +49,8 @@ public:
     STEitherAmount(SerialIter& sit, SField const& name);
     STEitherAmount(XRPAmount const& amount);
     STEitherAmount(STAmount const& amount);
-    STEitherAmount(SField const& name, STAmount const& amount);
+    STEitherAmount(SField const& name, STAmount const& amount = STAmount{});
+    STEitherAmount(SField const& name, STMPTAmount const& amount);
     STEitherAmount(STMPTAmount const& amount);
 
     STEitherAmount&
@@ -101,15 +102,6 @@ public:
 
     AccountID const&
     getIssuer() const;
-
-    bool
-    badAsset() const;
-
-    bool
-    sameAsset(STEitherAmount const& amount) const;
-
-    bool
-    sameIssue(STEitherAmount const& amount) const;
 
     bool
     negative() const;
@@ -191,6 +183,9 @@ get(auto&& amount)
 
 STEitherAmount
 amountFromJson(SField const& name, Json::Value const& v);
+
+STAmount
+amountFromJson(SF_AMOUNT const& name, Json::Value const& v);
 
 bool
 amountFromJsonNoThrow(STEitherAmount& result, Json::Value const& jvSource);

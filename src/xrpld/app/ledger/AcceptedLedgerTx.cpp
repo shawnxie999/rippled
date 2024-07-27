@@ -57,7 +57,7 @@ AcceptedLedgerTx::AcceptedLedgerTx(
     if (mTxn->getTxnType() == ttOFFER_CREATE)
     {
         auto const& account = mTxn->getAccountID(sfAccount);
-        auto const amount = get<STAmount>(mTxn->getFieldAmount(sfTakerGets));
+        auto const amount = mTxn->getFieldAmount(sfTakerGets);
 
         // If the offer create is not self funded then add the owner balance
         if (account != amount.issue().account)

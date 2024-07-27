@@ -2315,13 +2315,10 @@ public:
             low.setIssuer(accountLow ? account.id() : issue.account);
             high.setIssuer(accountLow ? issue.account : account.id());
 
-            BEAST_EXPECT(
-                get<STAmount>(sleTrust->getFieldAmount(sfLowLimit)) == low);
-            BEAST_EXPECT(
-                get<STAmount>(sleTrust->getFieldAmount(sfHighLimit)) == high);
+            BEAST_EXPECT(sleTrust->getFieldAmount(sfLowLimit) == low);
+            BEAST_EXPECT(sleTrust->getFieldAmount(sfHighLimit) == high);
 
-            STAmount actualBalance{
-                get<STAmount>(sleTrust->getFieldAmount(sfBalance))};
+            STAmount actualBalance{sleTrust->getFieldAmount(sfBalance)};
             if (!accountLow)
                 actualBalance.negate();
 
@@ -2955,10 +2952,8 @@ public:
                     auto const& acctOffer = *(acctOffers.front());
 
                     BEAST_EXPECT(acctOffer[sfLedgerEntryType] == ltOFFER);
-                    BEAST_EXPECT(
-                        get<STAmount>(acctOffer[sfTakerGets]) == t.takerGets);
-                    BEAST_EXPECT(
-                        get<STAmount>(acctOffer[sfTakerPays]) == t.takerPays);
+                    BEAST_EXPECT(acctOffer[sfTakerGets] == t.takerGets);
+                    BEAST_EXPECT(acctOffer[sfTakerPays] == t.takerPays);
                 }
             }
 
@@ -3853,7 +3848,7 @@ public:
             auto const& offer = *offerPtr;
             BEAST_EXPECT(offer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(
-                get<STAmount>(offer[sfTakerGets]) ==
+                offer[sfTakerGets] ==
                 STAmount(JPY.issue(), std::uint64_t(2230682446713524ul), -12));
             BEAST_EXPECT(offer[sfTakerPays] == BTC(0.035378));
         }
@@ -3918,10 +3913,10 @@ public:
             auto const& offer = *offerPtr;
             BEAST_EXPECT(offer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(
-                get<STAmount>(offer[sfTakerGets]) ==
+                offer[sfTakerGets] ==
                 STAmount(USD.issue(), std::uint64_t(2185847305256635), -14));
             BEAST_EXPECT(
-                get<STAmount>(offer[sfTakerPays]) ==
+                offer[sfTakerPays] ==
                 STAmount(JPY.issue(), std::uint64_t(2286608293434156), -12));
         }
     }
@@ -4109,8 +4104,7 @@ public:
                         actorOffers.begin(),
                         actorOffers.end(),
                         [](std::shared_ptr<SLE const>& offer) {
-                            return get<STAmount>((*offer)[sfTakerGets])
-                                       .signum() == 0;
+                            return (*offer)[sfTakerGets].signum() == 0;
                         }));
                 BEAST_EXPECT(offerCount == actor.offers);
 
@@ -4267,8 +4261,7 @@ public:
                         actorOffers.begin(),
                         actorOffers.end(),
                         [](std::shared_ptr<SLE const>& offer) {
-                            return get<STAmount>((*offer)[sfTakerGets])
-                                       .signum() == 0;
+                            return (*offer)[sfTakerGets].signum() == 0;
                         }));
                 BEAST_EXPECT(offerCount == actor.offers);
 
@@ -4817,8 +4810,7 @@ public:
                     offers.emplace(
                         (*sle)[sfSequence],
                         std::make_pair(
-                            get<STAmount>((*sle)[sfTakerPays]),
-                            get<STAmount>((*sle)[sfTakerGets])));
+                            (*sle)[sfTakerPays], (*sle)[sfTakerGets]));
             });
 
         // first offer

@@ -36,10 +36,6 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.rules.enabled(featureMPTokensV1) &&
-        isMPT(ctx.tx[~sfNFTokenBrokerFee]))
-        return temMPT_INVALID_USAGE;
-
     if (ctx.tx.getFlags() & tfNFTokenAcceptOfferMask)
         return temINVALID_FLAG;
 
@@ -52,7 +48,7 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 
     // The `BrokerFee` field must not be present in direct mode but may be
     // present and greater than zero in brokered mode.
-    if (auto const bf = get<STAmount>(ctx.tx[~sfNFTokenBrokerFee]))
+    if (auto const bf = ctx.tx[~sfNFTokenBrokerFee])
     {
         if (!bo || !so)
             return temMALFORMED;
@@ -155,7 +151,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // have, ensure that the seller will get at least as much as they want
         // to get *after* this fee is accounted for (but before the issuer's
         // cut, if any).
-        if (auto const brokerFee = get<STAmount>(ctx.tx[~sfNFTokenBrokerFee]))
+        if (auto const brokerFee = ctx.tx[~sfNFTokenBrokerFee])
         {
             if (brokerFee->issue() != get<STAmount>((*bo)[sfAmount]).issue())
                 return tecNFTOKEN_BUY_SELL_MISMATCH;
@@ -368,8 +364,7 @@ NFTokenAcceptOffer::transferNFToken(
         // the deduction of the potential offer price. A small caveat here is
         // that the balance has already deducted the transaction fee, meaning
         // that the reserve requirement is a few drops higher.
-        auto const buyerBalance =
-            get<STAmount>(sleBuyer->getFieldAmount(sfBalance));
+        auto const buyerBalance = sleBuyer->getFieldAmount(sfBalance);
 
         auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
         if (buyerOwnerCountAfter > buyerOwnerCountBefore)
@@ -472,7 +467,7 @@ NFTokenAcceptOffer::doApply()
         // being paid out than the seller authorized.  That would be bad!
 
         // Send the broker the amount they requested.
-        if (auto const cut = get<STAmount>(ctx_.tx[~sfNFTokenBrokerFee]);
+        if (auto const cut = ctx_.tx[~sfNFTokenBrokerFee];
             cut && cut.value() != beast::zero)
         {
             if (auto const r = pay(buyer, account_, cut.value());

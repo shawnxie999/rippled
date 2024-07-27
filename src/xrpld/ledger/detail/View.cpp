@@ -278,7 +278,7 @@ accountHolds(
     }
     else
     {
-        amount = get<STAmount>(sle->getFieldAmount(sfBalance));
+        amount = sle->getFieldAmount(sfBalance);
         if (account > issuer)
         {
             // Put balance in account terms.
@@ -430,7 +430,7 @@ xrpLiquid(
         ? XRPAmount{0}
         : view.fees().accountReserve(ownerCount);
 
-    auto const fullBalance = get<STAmount>(sle->getFieldAmount(sfBalance));
+    auto const fullBalance = sle->getFieldAmount(sfBalance);
 
     auto const balance = view.balanceHook(id, xrpAccount(), fullBalance);
 
@@ -1054,8 +1054,7 @@ rippleCredit(
     // If the line exists, modify it accordingly.
     if (auto const sleRippleState = view.peek(index))
     {
-        STAmount saBalance =
-            get<STAmount>(sleRippleState->getFieldAmount(sfBalance));
+        STAmount saBalance = sleRippleState->getFieldAmount(sfBalance);
 
         if (bSenderHigh)
             saBalance.negate();  // Put balance in sender terms.
@@ -1090,8 +1089,8 @@ rippleCredit(
                     view.read(keylet::account(uSenderID))->getFlags() &
                     lsfDefaultRipple) &&
             !(uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
-            !get<STAmount>(sleRippleState->getFieldAmount(
-                !bSenderHigh ? sfLowLimit : sfHighLimit))
+            !sleRippleState->getFieldAmount(
+                !bSenderHigh ? sfLowLimit : sfHighLimit)
             // Sender trust limit is 0.
             && !sleRippleState->getFieldU32(
                    !bSenderHigh ? sfLowQualityIn : sfHighQualityIn)
@@ -1290,7 +1289,7 @@ accountSend(
 
     if (sender)
     {
-        if (get<STAmount>(sender->getFieldAmount(sfBalance)) < saAmount)
+        if (sender->getFieldAmount(sfBalance) < saAmount)
         {
             // VFALCO Its laborious to have to mutate the
             //        TER based on params everywhere
@@ -1299,8 +1298,7 @@ accountSend(
         }
         else
         {
-            auto const sndBal =
-                get<STAmount>(sender->getFieldAmount(sfBalance));
+            auto const sndBal = sender->getFieldAmount(sfBalance);
             view.creditHook(uSenderID, xrpAccount(), saAmount, sndBal);
 
             // Decrement XRP balance.
@@ -1312,7 +1310,7 @@ accountSend(
     if (tesSUCCESS == terResult && receiver)
     {
         // Increment XRP balance.
-        auto const rcvBal = get<STAmount>(receiver->getFieldAmount(sfBalance));
+        auto const rcvBal = receiver->getFieldAmount(sfBalance);
         receiver->setFieldAmount(sfBalance, rcvBal + saAmount);
         view.creditHook(xrpAccount(), uReceiverID, saAmount, -rcvBal);
 
@@ -1440,8 +1438,7 @@ updateTrustLine(
                flags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
             static_cast<bool>(sle->getFlags() & lsfDefaultRipple) &&
         !(flags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
-        !get<STAmount>(
-            state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit))
+        !state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
         // Sender trust limit is 0.
         && !state->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)
         // Sender quality in is 0.
@@ -1490,8 +1487,7 @@ issueIOU(
 
     if (auto state = view.peek(index))
     {
-        STAmount final_balance =
-            get<STAmount>(state->getFieldAmount(sfBalance));
+        STAmount final_balance = state->getFieldAmount(sfBalance);
 
         if (bSenderHigh)
             final_balance.negate();  // Put balance in sender terms.
@@ -1586,8 +1582,7 @@ redeemIOU(
     if (auto state =
             view.peek(keylet::line(account, issue.account, issue.currency)))
     {
-        STAmount final_balance =
-            get<STAmount>(state->getFieldAmount(sfBalance));
+        STAmount final_balance = state->getFieldAmount(sfBalance);
 
         if (bSenderHigh)
             final_balance.negate();  // Put balance in sender terms.
@@ -1654,7 +1649,7 @@ transferXRP(
     JLOG(j.trace()) << "transferXRP: " << to_string(from) << " -> "
                     << to_string(to) << ") : " << amount.getFullText();
 
-    if (get<STAmount>(sender->getFieldAmount(sfBalance)) < amount)
+    if (sender->getFieldAmount(sfBalance) < amount)
     {
         // VFALCO Its unfortunate we have to keep
         //        mutating these TER everywhere
@@ -1665,11 +1660,11 @@ transferXRP(
 
     // Decrement XRP balance.
     sender->setFieldAmount(
-        sfBalance, get<STAmount>(sender->getFieldAmount(sfBalance)) - amount);
+        sfBalance, sender->getFieldAmount(sfBalance) - amount);
     view.update(sender);
 
     receiver->setFieldAmount(
-        sfBalance, get<STAmount>(receiver->getFieldAmount(sfBalance)) + amount);
+        sfBalance, receiver->getFieldAmount(sfBalance) + amount);
     view.update(receiver);
 
     return tesSUCCESS;

@@ -645,6 +645,13 @@ STObject::getFieldAmount(SField const& field) const
     return getFieldByConstRef<STEitherAmount>(field, empty);
 }
 
+STAmount const&
+STObject::getFieldAmount(TypedFieldAmount<SFieldMPT::No> const& field) const
+{
+    static STEitherAmount const empty{};
+    return get<STAmount>(getFieldByConstRef<STEitherAmount>(field, empty));
+}
+
 STPathSet const&
 STObject::getFieldPathSet(SField const& field) const
 {

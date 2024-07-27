@@ -68,6 +68,7 @@ class STCurrency;
     STYPE(STI_UINT128, 4)                         \
     STYPE(STI_UINT256, 5)                         \
     STYPE(STI_AMOUNT, 6)                          \
+    STYPE(STI_EITHER_AMOUNT, 6)                   \
     STYPE(STI_VL, 7)                              \
     STYPE(STI_ACCOUNT, 8)                         \
                                                   \
@@ -301,6 +302,8 @@ private:
     static std::map<int, SField const*> knownCodeToField;
 };
 
+enum class SFieldMPT { None, Yes, No };
+
 /** A field with a type known at compile time. */
 template <class T>
 struct TypedField : SField
@@ -329,6 +332,33 @@ operator~(TypedField<T> const& f)
     return OptionaledField<T>(f);
 }
 
+// Amount fields
+
+/** A field with a type known at compile time. */
+template <SFieldMPT>
+struct TypedFieldAmount : public TypedField<STEitherAmount>
+{
+    template <class... Args>
+    explicit TypedFieldAmount(private_access_tag_t pat, Args&&... args);
+};
+
+/** Indicate std::optional field semantics. */
+template <SFieldMPT M>
+struct OptionaledFieldAmount : public OptionaledField<STEitherAmount>
+{
+    explicit OptionaledFieldAmount(TypedFieldAmount<M> const& f_)
+        : OptionaledField<STEitherAmount>(f_)
+    {
+    }
+};
+
+template <SFieldMPT M>
+inline OptionaledFieldAmount<M>
+operator~(TypedFieldAmount<M> const& f)
+{
+    return OptionaledFieldAmount<M>(f);
+}
+
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -346,7 +376,8 @@ using SF_UINT384 = TypedField<STBitString<384>>;
 using SF_UINT512 = TypedField<STBitString<512>>;
 
 using SF_ACCOUNT = TypedField<STAccount>;
-using SF_AMOUNT = TypedField<STEitherAmount>;
+using SF_AMOUNT = TypedFieldAmount<SFieldMPT::No>;
+using SF_EITHER_AMOUNT = TypedFieldAmount<SFieldMPT::Yes>;
 using SF_ISSUE = TypedField<STIssue>;
 using SF_CURRENCY = TypedField<STCurrency>;
 using SF_VL = TypedField<STBlob>;
@@ -520,7 +551,7 @@ extern SF_UINT256 const sfHookNamespace;
 extern SF_UINT256 const sfHookSetTxnID;
 
 // currency amount (common)
-extern SF_AMOUNT const sfAmount;
+extern SF_EITHER_AMOUNT const sfAmount;
 extern SF_AMOUNT const sfBalance;
 extern SF_AMOUNT const sfLimitAmount;
 extern SF_AMOUNT const sfTakerPays;

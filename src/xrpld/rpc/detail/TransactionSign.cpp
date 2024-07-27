@@ -1202,7 +1202,7 @@ transactionSubmitMultiSigned(
             return rpcError(rpcSIGNING_MALFORMED);
 
         // The Fee field must be in XRP and greater than zero.
-        auto const fee = get<STAmount>(stpTrans->getFieldAmount(sfFee));
+        auto const fee = stpTrans->getFieldAmount(sfFee);
 
         if (!isLegalNet(fee))
         {

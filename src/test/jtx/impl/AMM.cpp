@@ -221,7 +221,7 @@ AMM::balances(
             env_.journal);
         auto const lptAMMBalance = account
             ? ammLPHolds(*env_.current(), *amm, *account, env_.journal)
-            : get<STAmount>(amm->getFieldAmount(sfLPTokenBalance));
+            : amm->getFieldAmount(sfLPTokenBalance);
         return {asset1Balance, asset2Balance, lptAMMBalance};
     }
     return {STAmount{}, STAmount{}, STAmount{}};
@@ -253,7 +253,7 @@ AMM::getLPTokensBalance(std::optional<AccountID> const& account) const
             .iou();
     if (auto const amm =
             env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
-        return get<STAmount>(amm->getFieldAmount(sfLPTokenBalance)).iou();
+        return amm->getFieldAmount(sfLPTokenBalance).iou();
     return IOUAmount{0};
 }
 
@@ -672,7 +672,7 @@ AMM::bid(BidArg const& arg)
         {
             auto const& auctionSlot =
                 static_cast<STObject const&>(amm->peekAtField(sfAuctionSlot));
-            lastPurchasePrice_ = get<STAmount>(auctionSlot[sfPrice]).iou();
+            lastPurchasePrice_ = auctionSlot[sfPrice].iou();
         }
     }
     bidMin_ = std::nullopt;
@@ -777,8 +777,7 @@ AMM::expectAuctionSlot(auto&& cb) const
                 auto const slotInterval = ammAuctionTimeSlot(
                     env_.app().timeKeeper().now().time_since_epoch().count(),
                     auctionSlot);
-                auto const slotPrice =
-                    get<STAmount>(auctionSlot[sfPrice]).iou();
+                auto const slotPrice = auctionSlot[sfPrice].iou();
                 auto const authAccounts =
                     auctionSlot.getFieldArray(sfAuthAccounts);
                 return cb(slotFee, slotInterval, slotPrice, authAccounts);

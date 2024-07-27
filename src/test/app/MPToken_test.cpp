@@ -847,6 +847,56 @@ class MPToken_test : public beast::unit_test::suite
             // bob can send back to alice(issuer) just fine
             mptAlice.pay(bob, alice, 10);
         }
+
+        // MPT is disabled
+        {
+            Env env{*this, features - featureMPTokensV1};
+            Account const alice("alice");
+            Account const bob("bob");
+
+            env.fund(XRP(1'000), alice);
+            env.fund(XRP(1'000), bob);
+            STMPTAmount mpt{
+                MPTIssue{std::make_pair(1, alice.id())}, UINT64_C(100)};
+
+            env(pay(alice, bob, mpt), ter(temDISABLED));
+        }
+
+        // Invalid combination of send, sendMax, deliverMin
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const carol("carol");
+            Account const bob("bob");
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
+
+            mptAlice.authorize({.account = &bob});
+
+            mptAlice.authorize({.account = &carol});
+
+            env(pay(alice, bob, mptAlice.mpt(100)),
+                sendmax(XRP(100)),
+                delivermin(XRP(100)),
+                ter(temMALFORMED));
+
+            env(pay(alice, bob, mptAlice.mpt(100)),
+                sendmax(mptAlice.mpt(100)),
+                delivermin(XRP(100)),
+                ter(temMALFORMED));
+
+            env(pay(alice, bob, XRP(100)),
+                sendmax(mptAlice.mpt(100)),
+                delivermin(XRP(100)),
+                ter(temMALFORMED));
+
+            env(pay(alice, bob, XRP(100)),
+                sendmax(XRP(100)),
+                delivermin(mptAlice.mpt(100)),
+                ter(temMALFORMED));
+        }
     }
 
     void
@@ -874,7 +924,8 @@ class MPToken_test : public beast::unit_test::suite
             Account const alice("alice");
 
             env.fund(XRP(1'000), alice);
-            STMPTAmount mpt{MPTIssue{std::make_pair(1, alice.id())}, 100llu};
+            STMPTAmount mpt{
+                MPTIssue{std::make_pair(1, alice.id())}, UINT64_C(100)};
 
             env(offer(alice, mpt, XRP(100)), ter(temMALFORMED));
             env.close();

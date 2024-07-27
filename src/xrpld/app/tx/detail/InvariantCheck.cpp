@@ -68,7 +68,7 @@ TransactionFeeCheck::finalize(
 
     // We should never charge more for a transaction than the transaction
     // authorizes. It's possible to charge less in some circumstances.
-    if (fee > get<STAmount>(tx.getFieldAmount(sfFee)).xrp())
+    if (fee > tx.getFieldAmount(sfFee).xrp())
     {
         JLOG(j.fatal()) << "Invariant failed: fee paid is " << fee.drops()
                         << " exceeds fee specified in transaction.";
@@ -98,13 +98,13 @@ XRPNotCreated::visitEntry(
         switch (before->getType())
         {
             case ltACCOUNT_ROOT:
-                drops_ -= get<STAmount>((*before)[sfBalance]).xrp().drops();
+                drops_ -= (*before)[sfBalance].xrp().drops();
                 break;
             case ltPAYCHAN:
-                drops_ -= (get<STAmount>((*before)[sfAmount]) -
-                           get<STAmount>((*before)[sfBalance]))
-                              .xrp()
-                              .drops();
+                drops_ -=
+                    (get<STAmount>((*before)[sfAmount]) - (*before)[sfBalance])
+                        .xrp()
+                        .drops();
                 break;
             case ltESCROW:
                 drops_ -= get<STAmount>((*before)[sfAmount]).xrp().drops();
@@ -119,12 +119,12 @@ XRPNotCreated::visitEntry(
         switch (after->getType())
         {
             case ltACCOUNT_ROOT:
-                drops_ += get<STAmount>((*after)[sfBalance]).xrp().drops();
+                drops_ += (*after)[sfBalance].xrp().drops();
                 break;
             case ltPAYCHAN:
                 if (!isDelete)
                     drops_ += (get<STAmount>((*after)[sfAmount]) -
-                               get<STAmount>((*after)[sfBalance]))
+                               (*after)[sfBalance])
                                   .xrp()
                                   .drops();
                 break;
@@ -193,10 +193,10 @@ XRPBalanceChecks::visitEntry(
     };
 
     if (before && before->getType() == ltACCOUNT_ROOT)
-        bad_ |= isBad(get<STAmount>((*before)[sfBalance]));
+        bad_ |= isBad((*before)[sfBalance]);
 
     if (after && after->getType() == ltACCOUNT_ROOT)
-        bad_ |= isBad(get<STAmount>((*after)[sfBalance]));
+        bad_ |= isBad((*after)[sfBalance]);
 }
 
 bool
@@ -237,14 +237,10 @@ NoBadOffers::visitEntry(
     };
 
     if (before && before->getType() == ltOFFER)
-        bad_ |= isBad(
-            get<STAmount>((*before)[sfTakerPays]),
-            get<STAmount>((*before)[sfTakerGets]));
+        bad_ |= isBad((*before)[sfTakerPays], (*before)[sfTakerGets]);
 
     if (after && after->getType() == ltOFFER)
-        bad_ |= isBad(
-            get<STAmount>((*after)[sfTakerPays]),
-            get<STAmount>((*after)[sfTakerGets]));
+        bad_ |= isBad((*after)[sfTakerPays], (*after)[sfTakerGets]);
 }
 
 bool
@@ -448,10 +444,8 @@ NoXRPTrustLines::visitEntry(
         // relying on .native() just in case native somehow
         // were systematically incorrect
         xrpTrustLine_ =
-            get<STAmount>(after->getFieldAmount(sfLowLimit)).issue() ==
-                xrpIssue() ||
-            get<STAmount>(after->getFieldAmount(sfHighLimit)).issue() ==
-                xrpIssue();
+            after->getFieldAmount(sfLowLimit).issue() == xrpIssue() ||
+            after->getFieldAmount(sfHighLimit).issue() == xrpIssue();
     }
 }
 

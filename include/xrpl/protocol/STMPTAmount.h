@@ -93,23 +93,95 @@ public:
     int
     signum() const noexcept;
 
-    bool
-    operator==(STMPTAmount const& rhs) const;
+    STMPTAmount&
+    operator+=(STMPTAmount const& other);
 
-    bool
-    operator!=(STMPTAmount const& rhs) const;
+    STMPTAmount&
+    operator-=(STMPTAmount const& other);
+
+    STMPTAmount
+    operator-() const;
+
+    STMPTAmount& operator=(beast::Zero);
 };
 
-inline bool
-STMPTAmount::operator==(STMPTAmount const& rhs) const
+inline STMPTAmount
+operator+(STMPTAmount const& lhs, STMPTAmount const& rhs)
 {
-    return value_ == rhs.value_ && issue_ == rhs.issue_;
+    if (lhs.issue() != rhs.issue())
+        Throw<std::runtime_error>("Can't add amounts that aren't comparable!");
+    return {lhs.issue(), lhs.value() + rhs.value()};
+}
+
+inline STMPTAmount
+operator-(STMPTAmount const& lhs, STMPTAmount const& rhs)
+{
+    return lhs + (-rhs);
+}
+
+inline STMPTAmount&
+STMPTAmount::operator+=(const ripple::STMPTAmount& other)
+{
+    *this = *this + other;
+    return *this;
+}
+
+inline STMPTAmount&
+STMPTAmount::operator-=(const ripple::STMPTAmount& other)
+{
+    *this = *this - other;
+    return *this;
+}
+
+inline STMPTAmount
+STMPTAmount::operator-() const
+{
+    return {issue_, -value_};
+}
+
+inline STMPTAmount& STMPTAmount::operator=(beast::Zero)
+{
+    clear();
+    return *this;
 }
 
 inline bool
-STMPTAmount::operator!=(STMPTAmount const& rhs) const
+operator==(STMPTAmount const& lhs, STMPTAmount const& rhs)
 {
-    return !operator==(rhs);
+    return lhs.issue() == rhs.issue() && lhs.value() == rhs.value();
+}
+
+inline bool
+operator<(STMPTAmount const& lhs, STMPTAmount const& rhs)
+{
+    if (lhs.issue() != rhs.issue())
+        Throw<std::runtime_error>(
+            "Can't compare amounts that are't comparable!");
+    return lhs.value() < rhs.value();
+}
+
+inline bool
+operator!=(STMPTAmount const& lhs, STMPTAmount const& rhs)
+{
+    return !(lhs == rhs);
+}
+
+inline bool
+operator>(STMPTAmount const& lhs, STMPTAmount const& rhs)
+{
+    return rhs < lhs;
+}
+
+inline bool
+operator<=(STMPTAmount const& lhs, STMPTAmount const& rhs)
+{
+    return !(rhs < lhs);
+}
+
+inline bool
+operator>=(STMPTAmount const& lhs, STMPTAmount const& rhs)
+{
+    return !(lhs < rhs);
 }
 
 STMPTAmount

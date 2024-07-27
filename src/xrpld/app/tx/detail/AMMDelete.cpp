@@ -58,7 +58,7 @@ AMMDelete::preclaim(PreclaimContext const& ctx)
         return terNO_AMM;
     }
 
-    auto const lpTokensBalance = get<STAmount>((*ammSle)[sfLPTokenBalance]);
+    auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
     if (lpTokensBalance != beast::zero)
         return tecAMM_NOT_EMPTY;
 

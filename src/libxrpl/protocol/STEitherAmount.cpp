@@ -51,6 +51,11 @@ STEitherAmount::STEitherAmount(SField const& name, STAmount const& amount)
 {
 }
 
+STEitherAmount::STEitherAmount(SField const& name, STMPTAmount const& amount)
+    : STBase(name), amount_{amount}
+{
+}
+
 STEitherAmount::STEitherAmount(STMPTAmount const& amount)
     : STBase(amount.getFName()), amount_{amount}
 {
@@ -59,7 +64,6 @@ STEitherAmount::STEitherAmount(STMPTAmount const& amount)
 STEitherAmount&
 STEitherAmount::operator=(STAmount const& amount)
 {
-    setFName(amount.getFName());
     amount_ = amount;
     return *this;
 }
@@ -67,7 +71,6 @@ STEitherAmount::operator=(STAmount const& amount)
 STEitherAmount&
 STEitherAmount::operator=(STMPTAmount const& amount)
 {
-    setFName(amount.getFName());
     amount_ = amount;
     return *this;
 }
@@ -145,14 +148,6 @@ STEitherAmount::isIssue() const
 }
 
 bool
-STEitherAmount::badAsset() const
-{
-    if (isIssue())
-        return badCurrency() == std::get<STAmount>(amount_).getCurrency();
-    return badMPT() == std::get<STMPTAmount>(amount_).getCurrency();
-}
-
-bool
 STEitherAmount::negative() const
 {
     if (isIssue())
@@ -173,34 +168,6 @@ STEitherAmount::zeroed() const
 {
     return std::visit(
         [&](auto&& a) { return STEitherAmount{a.zeroed()}; }, amount_);
-}
-
-bool
-STEitherAmount::sameAsset(STEitherAmount const& amount) const
-{
-    return std::visit(
-        [&]<typename T1, typename T2>(T1&& a1, T2&& a2) {
-            if constexpr (std::is_same_v<T1, T2>)
-                return a1.getCurrency() == a2.getCurrency();
-            else
-                return false;
-        },
-        amount_,
-        amount.amount_);
-}
-
-bool
-STEitherAmount::sameIssue(STEitherAmount const& amount) const
-{
-    return std::visit(
-        [&]<typename T1, typename T2>(T1&& a1, T2&& a2) {
-            if constexpr (std::is_same_v<T1, T2>)
-                return a1.issue() == a2.issue();
-            else
-                return false;
-        },
-        amount_,
-        amount.amount_);
 }
 
 STEitherAmount const&
@@ -255,7 +222,9 @@ validJSONIssue(Json::Value const& jv)
          jv.isMember(jss::mpt_issuance_id));
 }
 
-STEitherAmount
+namespace detail {
+
+static STEitherAmount
 amountFromJson(SField const& name, Json::Value const& v)
 {
     STAmount::mantissa_type mantissa = 0;
@@ -394,14 +363,42 @@ amountFromJson(SField const& name, Json::Value const& v)
     }
 
     if (std::holds_alternative<Issue>(issue))
-        return STAmount{
-            name, std::get<Issue>(issue), mantissa, exponent, native, negative};
+        return STEitherAmount{
+            name,
+            STAmount{
+                name,
+                std::get<Issue>(issue),
+                mantissa,
+                exponent,
+                native,
+                negative}};
     while (exponent-- > 0)
         mantissa *= 10;
-    if (mantissa > 0x8000000000000000)
+    if (mantissa > STMPTAmount::cMaxMPTValue)
         Throw<std::runtime_error>("MPT amount out of range");
-    return STMPTAmount{
-        name, std::get<MPTIssue>(issue), static_cast<std::int64_t>(mantissa)};
+    return STEitherAmount{
+        name,
+        STMPTAmount{
+            name,
+            std::get<MPTIssue>(issue),
+            static_cast<std::int64_t>(mantissa)}};
+}
+
+}  // namespace detail
+
+STEitherAmount
+amountFromJson(SField const& name, Json::Value const& v)
+{
+    return detail::amountFromJson(name, v);
+}
+
+STAmount
+amountFromJson(SF_AMOUNT const& name, Json::Value const& v)
+{
+    auto res = detail::amountFromJson(name, v);
+    if (!res.isIssue())
+        Throw<std::runtime_error>("Amount is not STAmount");
+    return get<STAmount>(res);
 }
 
 bool

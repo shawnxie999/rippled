@@ -28,17 +28,17 @@
 
 namespace ripple {
 
-template <ValidAmountType TDel, ValidAmountType TMax>
-TxConsequences
+template <ValidAmountType TDel>
+static TxConsequences
 makeTxConsequencesHelper(PreflightContext const& ctx);
 
 template <>
 TxConsequences
-makeTxConsequencesHelper<STAmount, STAmount>(PreflightContext const& ctx)
+makeTxConsequencesHelper<STAmount>(PreflightContext const& ctx)
 {
     auto calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
         auto const maxAmount = tx.isFieldPresent(sfSendMax)
-            ? get<STAmount>(tx[sfSendMax])
+            ? tx[sfSendMax]
             : get<STAmount>(tx[sfAmount]);
 
         // If there's no sfSendMax in XRP, and the sfAmount isn't
@@ -49,61 +49,56 @@ makeTxConsequencesHelper<STAmount, STAmount>(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
 }
 
-template <ValidAmountType TDel, ValidAmountType TMax>
+template <>
 TxConsequences
-makeTxConsequencesHelper(PreflightContext const& ctx)
+makeTxConsequencesHelper<STMPTAmount>(PreflightContext const& ctx)
 {
     return TxConsequences{ctx.tx, beast::zero};
 }
 
-inline STMPTAmount const&
-getMaxAmount(STMPTAmount const& dstAmount, AccountID const&)
-{
-    return dstAmount;
-}
-
-inline STAmount
-getMaxAmount(STAmount const& dstAmount, AccountID const& account)
-{
-    return STAmount(
-        {dstAmount.getCurrency(), account},
-        dstAmount.mantissa(),
-        dstAmount.exponent(),
-        dstAmount < beast::zero);
-}
-
-template <ValidAmountType TDel, ValidAmountType TMax>
-TMax
+template <ValidAmountType TDel>
+static TDel
 getMaxSourceAmount(
     TDel const& dstAmount,
-    std::optional<TMax> const& max,
+    std::optional<STAmount> const& max,
     AccountID const& account)
 {
-    if (max)
-        return *max;
-
-    if constexpr (std::is_same_v<TDel, TMax>)
+    if constexpr (std::is_same_v<TDel, STMPTAmount>)
     {
+        return dstAmount;
+    }
+    else
+    {
+        if (max)
+            return *max;
+
         if (isNative(dstAmount))
             return dstAmount;
         else
-            return getMaxAmount(dstAmount, account);
+            return STAmount(
+                {dstAmount.getCurrency(), account},
+                dstAmount.mantissa(),
+                dstAmount.exponent(),
+                dstAmount < beast::zero);
     }
-    else
-        Throw<std::logic_error>("Invalid sfAmount and sfSendMax combination");
 }
 
-template <ValidAmountType TDel, ValidAmountType TMax>
-NotTEC
+template <ValidAmountType TDel>
+static NotTEC
 preflightHelper(PreflightContext const& ctx)
 {
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (!ctx.rules.enabled(featureMPTokensV1) &&
-        (isMPT(ctx.tx[sfAmount]) || isMPT(ctx.tx[~sfSendMax]) ||
-         isMPT(ctx.tx[~sfDeliverMin])))
+    if (!ctx.rules.enabled(featureMPTokensV1) && isMPT(ctx.tx[sfAmount]))
         return temDISABLED;
+
+    if constexpr (std::is_same_v<TDel, STMPTAmount>)
+    {
+        if (ctx.tx.isFieldPresent(sfDeliverMin) ||
+            ctx.tx.isFieldPresent(sfSendMax))
+            return temMALFORMED;
+    }
 
     auto& tx = ctx.tx;
     auto& j = ctx.j;
@@ -127,8 +122,8 @@ preflightHelper(PreflightContext const& ctx)
 
     auto const account = tx.getAccountID(sfAccount);
 
-    auto const maxSourceAmount = getMaxSourceAmount<TDel, TMax>(
-        saDstAmount, get<TMax>(tx[~sfSendMax]), account);
+    auto const maxSourceAmount =
+        getMaxSourceAmount(saDstAmount, tx[~sfSendMax], account);
 
     auto const& uSrcCurrency = maxSourceAmount.getCurrency();
     auto const& uDstCurrency = saDstAmount.getCurrency();
@@ -221,7 +216,7 @@ preflightHelper(PreflightContext const& ctx)
         return temBAD_SEND_XRP_NO_DIRECT;
     }
 
-    auto const deliverMin = get<TDel>(ctx.tx[~sfDeliverMin]);
+    auto const deliverMin = ctx.tx[~sfDeliverMin];
     if (deliverMin)
     {
         if (!partialPaymentAllowed)
@@ -240,28 +235,32 @@ preflightHelper(PreflightContext const& ctx)
                 << " amount. " << dMin.getFullText();
             return temBAD_AMOUNT;
         }
-        if (dMin.issue() != saDstAmount.issue())
+        // DeliverMin is invalid if MPT and is always the same type as dstAmount
+        if constexpr (std::is_same_v<TDel, STAmount>)
         {
-            JLOG(j.trace())
-                << "Malformed transaction: Dst issue differs "
-                   "from "
-                << jss::DeliverMin.c_str() << ". " << dMin.getFullText();
-            return temBAD_AMOUNT;
-        }
-        if (dMin > saDstAmount)
-        {
-            JLOG(j.trace())
-                << "Malformed transaction: Dst amount less than "
-                << jss::DeliverMin.c_str() << ". " << dMin.getFullText();
-            return temBAD_AMOUNT;
+            if (dMin.issue() != saDstAmount.issue())
+            {
+                JLOG(j.trace())
+                    << "Malformed transaction: Dst issue differs "
+                       "from "
+                    << jss::DeliverMin.c_str() << ". " << dMin.getFullText();
+                return temBAD_AMOUNT;
+            }
+            if (dMin > saDstAmount)
+            {
+                JLOG(j.trace())
+                    << "Malformed transaction: Dst amount less than "
+                    << jss::DeliverMin.c_str() << ". " << dMin.getFullText();
+                return temBAD_AMOUNT;
+            }
         }
     }
 
     return preflight2(ctx);
 }
 
-template <ValidAmountType TDel, ValidAmountType TMax>
-TER
+template <ValidAmountType TDel>
+static TER
 preclaimHelper(
     PreclaimContext const& ctx,
     std::size_t maxPathSize,
@@ -271,7 +270,7 @@ preclaimHelper(
     std::uint32_t const uTxFlags = ctx.tx.getFlags();
     bool const partialPaymentAllowed = uTxFlags & tfPartialPayment;
     auto const paths = ctx.tx.isFieldPresent(sfPaths);
-    auto const sendMax = get<TMax>(ctx.tx[~sfSendMax]);
+    auto const sendMax = ctx.tx[~sfSendMax];
 
     AccountID const uDstAccountID(ctx.tx[sfDestination]);
     TDel const saDstAmount(get<TDel>(ctx.tx.getFieldAmount(sfAmount)));
@@ -360,14 +359,14 @@ preclaimHelper(
     return tesSUCCESS;
 }
 
-template <ValidAmountType TDel, ValidAmountType TMax>
-TER
+template <ValidAmountType TDel>
+static TER
 applyHelper(
     ApplyContext& ctx,
     XRPAmount const& priorBalance,
     XRPAmount const& sourceBalance)
 {
-    auto const deliverMin = get<TDel>(ctx.tx[~sfDeliverMin]);
+    auto const deliverMin = ctx.tx[~sfDeliverMin];
 
     // Ripple if source or destination is non-native or if there are paths.
     std::uint32_t const uTxFlags = ctx.tx.getFlags();
@@ -375,13 +374,13 @@ applyHelper(
     bool const limitQuality = uTxFlags & tfLimitQuality;
     bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
     auto const paths = ctx.tx.isFieldPresent(sfPaths);
-    auto const sendMax = get<TMax>(ctx.tx[~sfSendMax]);
+    auto const sendMax = ctx.tx[~sfSendMax];
     auto const account = ctx.tx[sfAccount];
 
     AccountID const uDstAccountID(ctx.tx.getAccountID(sfDestination));
     auto const saDstAmount(get<TDel>(ctx.tx.getFieldAmount(sfAmount)));
     auto const maxSourceAmount =
-        getMaxSourceAmount<TDel, TMax>(saDstAmount, sendMax, account);
+        getMaxSourceAmount(saDstAmount, sendMax, account);
 
     JLOG(ctx.journal.trace())
         << "maxSourceAmount=" << maxSourceAmount.getFullText()
@@ -421,15 +420,14 @@ applyHelper(
         ctx.view().rules().enabled(featureDepositPreauth);
 
     bool const bRipple =
-        paths || sendMax || !(isNative(saDstAmount) || isMPT(saDstAmount));
+        (paths || sendMax || !isNative(saDstAmount)) && !isMPT(saDstAmount);
 
     // If the destination has lsfDepositAuth set, then only direct XRP
     // payments (no intermediate steps) are allowed to the destination.
     if (!depositPreauth && bRipple && reqDepositAuth)
         return tecNO_PERMISSION;
 
-    if constexpr (
-        std::is_same_v<TDel, STAmount> && std::is_same_v<TMax, STAmount>)
+    if constexpr (std::is_same_v<TDel, STAmount>)
     {
         if (bRipple)
         {
@@ -497,8 +495,7 @@ applyHelper(
             return terResult;
         }
     }
-    else if constexpr (
-        std::is_same_v<TDel, STMPTAmount> && std::is_same_v<TMax, STMPTAmount>)
+    else
     {
         if (auto const ter =
                 requireAuth(ctx.view(), saDstAmount.issue(), account);
@@ -518,9 +515,9 @@ applyHelper(
         auto const& mpt = saDstAmount.issue();
         auto const& issuer = mpt.getIssuer();
         // If globally/individually locked then
-        //   can't send between holders
-        //   holder can send back to issuer
-        //   issuer can send to holder
+        //   - can't send between holders
+        //   - holder can send back to issuer
+        //   - issuer can send to holder
         if (account != issuer && uDstAccountID != issuer &&
             (isFrozen(ctx.view(), account, mpt) ||
              isFrozen(ctx.view(), uDstAccountID, mpt)))
@@ -553,8 +550,7 @@ applyHelper(
         // mPriorBalance is the balance on the sending account BEFORE the
         // fees were charged. We want to make sure we have enough reserve
         // to send. Allow final spend to use reserve for fee.
-        auto const mmm = std::max(
-            reserve, get<STAmount>(ctx.tx.getFieldAmount(sfFee)).xrp());
+        auto const mmm = std::max(reserve, ctx.tx.getFieldAmount(sfFee).xrp());
 
         if (priorBalance < saDstAmount.xrp() + mmm)
         {
@@ -607,8 +603,7 @@ applyHelper(
                         ctx.view().fees().accountReserve(0)};
 
                     if (saDstAmount > dstReserve ||
-                        get<STAmount>(sleDst->getFieldAmount(sfBalance)) >
-                            dstReserve)
+                        sleDst->getFieldAmount(sfBalance) > dstReserve)
                         return tecNO_PERMISSION;
                 }
             }
@@ -617,14 +612,13 @@ applyHelper(
         // Do the arithmetic for the transfer and make the ledger change.
         sleSrc->setFieldAmount(sfBalance, sourceBalance - saDstAmount);
         sleDst->setFieldAmount(
-            sfBalance,
-            get<STAmount>(sleDst->getFieldAmount(sfBalance)) + saDstAmount);
+            sfBalance, sleDst->getFieldAmount(sfBalance) + saDstAmount);
 
         // Re-arm the password change fee if we can and need to.
         if ((sleDst->getFlags() & lsfPasswordSpent))
             sleDst->clearFlag(lsfPasswordSpent);
     }
-    else if constexpr (std::is_same_v<TDel, STMPTAmount>)
+    else
     {
         Throw<std::logic_error>("Payment: expected native amount");
     }
@@ -636,44 +630,38 @@ TxConsequences
 Payment::makeTxConsequences(PreflightContext const& ctx)
 {
     return std::visit(
-        [&]<typename TDel, typename TMax>(TDel const&, TMax const&) {
-            return makeTxConsequencesHelper<TDel, TMax>(ctx);
+        [&]<typename TDel>(TDel const&) {
+            return makeTxConsequencesHelper<TDel>(ctx);
         },
-        ctx.tx[sfAmount].getValue(),
-        ctx.tx[~sfSendMax].value_or(ctx.tx[sfAmount]).getValue());
+        ctx.tx[sfAmount].getValue());
 }
 
 NotTEC
 Payment::preflight(PreflightContext const& ctx)
 {
     return std::visit(
-        [&]<typename TDel, typename TMax>(TDel const&, TMax const&) {
-            return preflightHelper<TDel, TMax>(ctx);
-        },
-        ctx.tx[sfAmount].getValue(),
-        ctx.tx[~sfSendMax].value_or(ctx.tx[sfAmount]).getValue());
+        [&]<typename TDel>(TDel const&) { return preflightHelper<TDel>(ctx); },
+        ctx.tx[sfAmount].getValue());
 }
 
 TER
 Payment::preclaim(PreclaimContext const& ctx)
 {
     return std::visit(
-        [&]<typename TDel, typename TMax>(TDel const&, TMax const&) {
-            return preclaimHelper<TDel, TMax>(ctx, MaxPathSize, MaxPathLength);
+        [&]<typename TDel>(TDel const&) {
+            return preclaimHelper<TDel>(ctx, MaxPathSize, MaxPathLength);
         },
-        ctx.tx[sfAmount].getValue(),
-        ctx.tx[~sfSendMax].value_or(ctx.tx[sfAmount]).getValue());
+        ctx.tx[sfAmount].getValue());
 }
 
 TER
 Payment::doApply()
 {
     return std::visit(
-        [&]<typename TDel, typename TMax>(TDel const&, TMax const&) {
-            return applyHelper<TDel, TMax>(ctx_, mPriorBalance, mSourceBalance);
+        [&]<typename TDel>(TDel const&) {
+            return applyHelper<TDel>(ctx_, mPriorBalance, mSourceBalance);
         },
-        ctx_.tx[sfAmount].getValue(),
-        ctx_.tx[~sfSendMax].value_or(ctx_.tx[sfAmount]).getValue());
+        ctx_.tx[sfAmount].getValue());
 }
 
 }  // namespace ripple

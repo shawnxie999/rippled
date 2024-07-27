@@ -212,7 +212,7 @@ EscrowCreate::doApply()
 
     // Check reserve and funds availability
     {
-        auto const balance = get<STAmount>((*sle)[sfBalance]).xrp();
+        auto const balance = STAmount((*sle)[sfBalance]).xrp();
         auto const reserve =
             ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
 
@@ -276,8 +276,7 @@ EscrowCreate::doApply()
     }
 
     // Deduct owner's balance, increment owner count
-    (*sle)[sfBalance] = STEitherAmount{
-        get<STAmount>((*sle)[sfBalance]) - get<STAmount>(ctx_.tx[sfAmount])};
+    (*sle)[sfBalance] = (*sle)[sfBalance] - get<STAmount>(ctx_.tx[sfAmount]);
     adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
     ctx_.view().update(sle);
 
@@ -497,8 +496,7 @@ EscrowFinish::doApply()
     }
 
     // Transfer amount to destination
-    (*sled)[sfBalance] = STEitherAmount{
-        get<STAmount>((*sled)[sfBalance]) + get<STAmount>((*slep)[sfAmount])};
+    (*sled)[sfBalance] = (*sled)[sfBalance] + get<STAmount>((*slep)[sfAmount]);
     ctx_.view().update(sled);
 
     // Adjust source owner count
@@ -584,8 +582,7 @@ EscrowCancel::doApply()
 
     // Transfer amount back to owner, decrement owner count
     auto const sle = ctx_.view().peek(keylet::account(account));
-    (*sle)[sfBalance] = STEitherAmount{
-        get<STAmount>((*sle)[sfBalance]) + get<STAmount>((*slep)[sfAmount])};
+    (*sle)[sfBalance] = (*sle)[sfBalance] + get<STAmount>((*slep)[sfAmount]);
     adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
     ctx_.view().update(sle);
 

@@ -40,7 +40,8 @@ enum SOEStyle {
                       // constructed with STObject::makeInnerObject()
 };
 
-enum SOESupportMPT : bool { soeMPTYes = true, soeMPTNo = false };
+/** Amount fields that can support MPT */
+enum SOETxMPTAmount { soeMPTNone, soeMPTSupported, soeMPTNotSupported };
 
 //------------------------------------------------------------------------------
 
@@ -50,7 +51,7 @@ class SOElement
     // Use std::reference_wrapper so SOElement can be stored in a std::vector.
     std::reference_wrapper<SField const> sField_;
     SOEStyle style_;
-    SOESupportMPT supportMpt_;
+    SOETxMPTAmount supportMpt_;
 
 private:
     void
@@ -70,14 +71,19 @@ public:
     SOElement(SField const& fieldName, SOEStyle style)
         : sField_(fieldName)
         , style_(style)
-        , supportMpt_(SOESupportMPT::soeMPTNo)
+        , supportMpt_(SOETxMPTAmount::soeMPTNone)
+    {
+        init(fieldName);
+    }
+    SOElement(TypedFieldAmount<SFieldMPT::No> const& fieldName, SOEStyle style)
+        : sField_(fieldName), style_(style), supportMpt_(soeMPTNotSupported)
     {
         init(fieldName);
     }
     SOElement(
-        TypedField<STEitherAmount> const& fieldName,
+        TypedFieldAmount<SFieldMPT::Yes> const& fieldName,
         SOEStyle style,
-        SOESupportMPT supportMpt = SOESupportMPT::soeMPTNo)
+        SOETxMPTAmount supportMpt = soeMPTNotSupported)
         : sField_(fieldName), style_(style), supportMpt_(supportMpt)
     {
         init(fieldName);
@@ -95,10 +101,10 @@ public:
         return style_;
     }
 
-    SOESupportMPT
+    bool
     supportMPT() const
     {
-        return supportMpt_;
+        return supportMpt_ == soeMPTSupported;
     }
 };
 

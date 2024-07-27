@@ -183,8 +183,8 @@ TOffer<TIn, TOut>::TOffer(SLE::pointer const& entry, Quality quality)
     , m_quality(quality)
     , m_account(m_entry->getAccountID(sfAccount))
 {
-    auto const tp = get<STAmount>(m_entry->getFieldAmount(sfTakerPays));
-    auto const tg = get<STAmount>(m_entry->getFieldAmount(sfTakerGets));
+    auto const tp = m_entry->getFieldAmount(sfTakerPays);
+    auto const tg = m_entry->getFieldAmount(sfTakerGets);
     m_amounts.in = toAmount<TIn>(tp);
     m_amounts.out = toAmount<TOut>(tg);
     this->issIn_ = tp.issue();
@@ -199,8 +199,8 @@ inline TOffer<STAmount, STAmount>::TOffer(
     , m_quality(quality)
     , m_account(m_entry->getAccountID(sfAccount))
     , m_amounts(
-          get<STAmount>(m_entry->getFieldAmount(sfTakerPays)),
-          get<STAmount>(m_entry->getFieldAmount(sfTakerGets)))
+          m_entry->getFieldAmount(sfTakerPays),
+          m_entry->getFieldAmount(sfTakerGets))
 {
 }
 

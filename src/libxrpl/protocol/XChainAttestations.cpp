@@ -276,7 +276,7 @@ AttestationCreateAccount::AttestationCreateAccount(STObject const& o)
     : AttestationBase(o)
     , createCount{o[sfXChainAccountCreateCount]}
     , toCreate{o[sfDestination]}
-    , rewardAmount{get<STAmount>(o[sfSignatureReward])}
+    , rewardAmount{o[sfSignatureReward]}
 {
 }
 
@@ -352,7 +352,7 @@ AttestationCreateAccount::toSTObject() const
 
     o[sfXChainAccountCreateCount] = createCount;
     o[sfDestination] = toCreate;
-    o[sfSignatureReward] = STEitherAmount{rewardAmount};
+    o[sfSignatureReward] = rewardAmount;
 
     return o;
 }
@@ -372,7 +372,7 @@ AttestationCreateAccount::message(
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainAccountCreateCount] = createCount;
     o[sfAmount] = STEitherAmount{sendingAmount};
-    o[sfSignatureReward] = STEitherAmount{rewardAmount};
+    o[sfSignatureReward] = rewardAmount;
     o[sfDestination] = dst;
     o[sfOtherChainSource] = sendingAccount;
     o[sfAttestationRewardAccount] = rewardAccount;
@@ -577,7 +577,7 @@ XChainCreateAccountAttestation::XChainCreateAccountAttestation(
           o[sfAttestationSignerAccount],
           PublicKey{o[sfPublicKey]},
           get<STAmount>(o[sfAmount]),
-          get<STAmount>(o[sfSignatureReward]),
+          o[sfSignatureReward],
           o[sfAttestationRewardAccount],
           o[sfWasLockingChainSend] != 0,
           o[sfDestination]} {};
@@ -617,7 +617,7 @@ XChainCreateAccountAttestation::toSTObject() const
         STAccount{sfAttestationSignerAccount, keyAccount};
     o[sfPublicKey] = publicKey;
     o[sfAmount] = STEitherAmount{sfAmount, amount};
-    o[sfSignatureReward] = STEitherAmount{sfSignatureReward, rewardAmount};
+    o[sfSignatureReward] = STAmount{sfSignatureReward, rewardAmount};
     o[sfAttestationRewardAccount] =
         STAccount{sfAttestationRewardAccount, rewardAccount};
     o[sfWasLockingChainSend] = wasLockingChainSend;

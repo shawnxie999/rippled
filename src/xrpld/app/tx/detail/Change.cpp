@@ -38,11 +38,6 @@ Change::preflight(PreflightContext const& ctx)
     if (!isTesSuccess(ret))
         return ret;
 
-    if (ctx.rules.enabled(featureMPTokensV1) &&
-        (isMPT(ctx.tx[~sfBaseFeeDrops]) || isMPT(ctx.tx[~sfReserveBaseDrops]) ||
-         isMPT(ctx.tx[~sfReserveIncrementDrops])))
-        return temMPT_INVALID_USAGE;
-
     auto account = ctx.tx.getAccountID(sfAccount);
     if (account != beast::zero)
     {
@@ -51,7 +46,7 @@ Change::preflight(PreflightContext const& ctx)
     }
 
     // No point in going any further if the transaction fee is malformed.
-    auto const fee = get<STAmount>(ctx.tx.getFieldAmount(sfFee));
+    auto const fee = ctx.tx.getFieldAmount(sfFee);
     if (!fee.native() || fee != beast::zero)
     {
         JLOG(ctx.j.warn()) << "Change: invalid fee";
@@ -186,8 +181,8 @@ Change::activateTrustLinesToSelfFix()
             return true;
         }
 
-        auto const& lo = get<STAmount>(tl->getFieldAmount(sfLowLimit));
-        auto const& hi = get<STAmount>(tl->getFieldAmount(sfHighLimit));
+        auto const& lo = tl->getFieldAmount(sfLowLimit);
+        auto const& hi = tl->getFieldAmount(sfHighLimit);
 
         if (lo != hi)
         {

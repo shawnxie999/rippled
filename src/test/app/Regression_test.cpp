@@ -86,7 +86,7 @@ struct Regression_test : public beast::unit_test::suite
         {
             auto const sle = next->read(keylet::account(Account("alice").id()));
             BEAST_EXPECT(sle);
-            auto balance = get<STAmount>(sle->getFieldAmount(sfBalance));
+            auto balance = sle->getFieldAmount(sfBalance);
 
             BEAST_EXPECT(balance == aliceAmount);
         }
@@ -108,7 +108,7 @@ struct Regression_test : public beast::unit_test::suite
         {
             auto const sle = next->read(keylet::account(Account("alice").id()));
             BEAST_EXPECT(sle);
-            auto balance = get<STAmount>(sle->getFieldAmount(sfBalance));
+            auto balance = sle->getFieldAmount(sfBalance);
 
             BEAST_EXPECT(balance == XRP(0));
         }
@@ -194,7 +194,7 @@ struct Regression_test : public beast::unit_test::suite
             {
                 BEAST_EXPECT(tx->getAccountID(sfAccount) == alice.id());
                 BEAST_EXPECT(tx->getTxnType() == ttACCOUNT_SET);
-                auto const fee = get<STAmount>(tx->getFieldAmount(sfFee));
+                auto const fee = tx->getFieldAmount(sfFee);
                 BEAST_EXPECT(fee == drops(expectedFees[i]));
             }
         }

@@ -149,11 +149,9 @@ closeChannel(
     if (!sle)
         return tefINTERNAL;
 
-    assert(
-        get<STAmount>((*slep)[sfAmount]) >= get<STAmount>((*slep)[sfBalance]));
-    (*sle)[sfBalance] = STEitherAmount{
-        get<STAmount>((*sle)[sfBalance]) + get<STAmount>((*slep)[sfAmount]) -
-        get<STAmount>((*slep)[sfBalance])};
+    assert(get<STAmount>((*slep)[sfAmount]) >= (*slep)[sfBalance]);
+    (*sle)[sfBalance] = (*sle)[sfBalance] + get<STAmount>((*slep)[sfAmount]) -
+        (*slep)[sfBalance];
     adjustOwnerCount(view, sle, -1, j);
     view.update(sle);
 
@@ -202,7 +200,7 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
 
     // Check reserve and funds availability
     {
-        auto const balance = get<STAmount>((*sle)[sfBalance]);
+        auto const balance = (*sle)[sfBalance];
         auto const reserve =
             ctx.view.fees().accountReserve((*sle)[sfOwnerCount] + 1);
 
@@ -265,7 +263,7 @@ PayChanCreate::doApply()
     // Funds held in this channel
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
     // Amount channel has already paid
-    (*slep)[sfBalance] = ctx_.tx[sfAmount].zeroed();
+    (*slep)[sfBalance] = get<STAmount>(ctx_.tx[sfAmount]).zeroed();
     (*slep)[sfAccount] = account;
     (*slep)[sfDestination] = dst;
     (*slep)[sfSettleDelay] = ctx_.tx[sfSettleDelay];
@@ -298,8 +296,7 @@ PayChanCreate::doApply()
     }
 
     // Deduct owner's balance, increment owner count
-    (*sle)[sfBalance] = STEitherAmount{
-        get<STAmount>((*sle)[sfBalance]) - get<STAmount>(ctx_.tx[sfAmount])};
+    (*sle)[sfBalance] = (*sle)[sfBalance] - get<STAmount>(ctx_.tx[sfAmount]);
     adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
     ctx_.view().update(sle);
 
@@ -376,7 +373,7 @@ PayChanFund::doApply()
 
     {
         // Check reserve and funds availability
-        auto const balance = get<STAmount>((*sle)[sfBalance]);
+        auto const balance = (*sle)[sfBalance];
         auto const reserve =
             ctx_.view().fees().accountReserve((*sle)[sfOwnerCount]);
 
@@ -398,8 +395,7 @@ PayChanFund::doApply()
         get<STAmount>((*slep)[sfAmount]) + get<STAmount>(ctx_.tx[sfAmount])};
     ctx_.view().update(slep);
 
-    (*sle)[sfBalance] = STEitherAmount{
-        get<STAmount>((*sle)[sfBalance]) - get<STAmount>(ctx_.tx[sfAmount])};
+    (*sle)[sfBalance] = (*sle)[sfBalance] - get<STAmount>(ctx_.tx[sfAmount]);
     ctx_.view().update(sle);
 
     return tesSUCCESS;
@@ -413,7 +409,7 @@ PayChanClaim::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    auto const bal = get<STAmount>(ctx.tx[~sfBalance]);
+    auto const bal = ctx.tx[~sfBalance];
     if (bal && (!isXRP(*bal) || *bal <= beast::zero))
         return temBAD_AMOUNT;
 
@@ -491,11 +487,10 @@ PayChanClaim::doApply()
 
     if (ctx_.tx[~sfBalance])
     {
-        auto const chanBalance =
-            get<STAmount>(slep->getFieldAmount(sfBalance)).xrp();
+        auto const chanBalance = slep->getFieldAmount(sfBalance).xrp();
         auto const chanFunds =
             get<STAmount>(slep->getFieldAmount(sfAmount)).xrp();
-        auto const reqBalance = get<STAmount>(ctx_.tx[sfBalance]).xrp();
+        auto const reqBalance = ctx_.tx[sfBalance].xrp();
 
         if (txAccount == dst && !ctx_.tx[~sfSignature])
             return temBAD_SIGNATURE;
@@ -542,8 +537,7 @@ PayChanClaim::doApply()
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
         XRPAmount const reqDelta = reqBalance - chanBalance;
         assert(reqDelta >= beast::zero);
-        (*sled)[sfBalance] =
-            STEitherAmount{get<STAmount>((*sled)[sfBalance]) + reqDelta};
+        (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
         ctx_.view().update(sled);
         ctx_.view().update(slep);
     }
@@ -560,8 +554,7 @@ PayChanClaim::doApply()
     {
         // Channel will close immediately if dry or the receiver closes
         if (dst == txAccount ||
-            get<STAmount>((*slep)[sfBalance]) ==
-                get<STAmount>((*slep)[sfAmount]))
+            (*slep)[sfBalance] == get<STAmount>((*slep)[sfAmount]))
             return closeChannel(
                 slep, ctx_.view(), k.key, ctx_.app.journal("View"));
 

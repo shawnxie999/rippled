@@ -551,8 +551,7 @@ struct Flow_test : public beast::unit_test::suite
                         return std::stoull(bookDirStr, nullptr, 16);
                     }();
                     std::uint64_t const actualRate = getRate(
-                        get<STAmount>(usdOffer->at(sfTakerGets)),
-                        get<STAmount>(usdOffer->at(sfTakerPays)));
+                        usdOffer->at(sfTakerGets), usdOffer->at(sfTakerPays));
 
                     // We expect the actual rate of the offer to be worse
                     // (larger) than the rate of the book page holding the

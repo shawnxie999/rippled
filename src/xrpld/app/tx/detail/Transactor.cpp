@@ -100,7 +100,7 @@ preflight1(PreflightContext const& ctx)
     }
 
     // No point in going any further if the transaction fee is malformed.
-    auto const fee = get<STAmount>(ctx.tx.getFieldAmount(sfFee));
+    auto const fee = ctx.tx.getFieldAmount(sfFee);
     if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
     {
         JLOG(ctx.j.debug()) << "preflight1: invalid fee";
@@ -195,7 +195,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     if (!ctx.tx[sfFee].native())
         return temBAD_FEE;
 
-    auto const feePaid = get<STAmount>(ctx.tx[sfFee]).xrp();
+    auto const feePaid = ctx.tx[sfFee].xrp();
     if (!isLegalAmount(feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
 
@@ -222,7 +222,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     if (!sle)
         return terNO_ACCOUNT;
 
-    auto const balance = get<STAmount>((*sle)[sfBalance]).xrp();
+    auto const balance = (*sle)[sfBalance].xrp();
 
     if (balance < feePaid)
     {
@@ -245,7 +245,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 TER
 Transactor::payFee()
 {
-    auto const feePaid = get<STAmount>(ctx_.tx[sfFee]).xrp();
+    auto const feePaid = ctx_.tx[sfFee].xrp();
 
     auto const sle = view().peek(keylet::account(account_));
     if (!sle)
@@ -457,7 +457,7 @@ Transactor::apply()
 
     if (sle)
     {
-        mPriorBalance = STAmount{get<STAmount>((*sle)[sfBalance])}.xrp();
+        mPriorBalance = STAmount{(*sle)[sfBalance]}.xrp();
         mSourceBalance = mPriorBalance;
 
         TER result = consumeSeqProxy(sle);
@@ -799,8 +799,7 @@ Transactor::reset(XRPAmount fee)
         // is missing then we can't very well charge it a fee, can we?
         return {tefINTERNAL, beast::zero};
 
-    auto const balance =
-        get<STAmount>(txnAcct->getFieldAmount(sfBalance)).xrp();
+    auto const balance = txnAcct->getFieldAmount(sfBalance).xrp();
 
     // balance should have already been checked in checkFee / preFlight.
     assert(balance != beast::zero && (!view().open() || balance >= fee));
@@ -873,7 +872,7 @@ Transactor::operator()()
         stream << "preclaim result: " << transToken(result);
 
     bool applied = isTesSuccess(result);
-    auto fee = get<STAmount>(ctx_.tx.getFieldAmount(sfFee)).xrp();
+    auto fee = ctx_.tx.getFieldAmount(sfFee).xrp();
 
     if (ctx_.size() > oversizeMetaDataCap)
         result = tecOVERSIZE;
@@ -922,8 +921,8 @@ Transactor::operator()()
                     assert(before && after);
                     if (doOffers && before && after &&
                         (before->getType() == ltOFFER) &&
-                        (get<STAmount>(before->getFieldAmount(sfTakerPays)) ==
-                         get<STAmount>(after->getFieldAmount(sfTakerPays))))
+                        (before->getFieldAmount(sfTakerPays) ==
+                         after->getFieldAmount(sfTakerPays)))
                     {
                         // Removal of offer found or made unfunded
                         removedOffers.push_back(index);

@@ -2147,10 +2147,8 @@ class Check_test : public beast::unit_test::suite
                 // without comparing the currency.
                 auto cmpReqAmount =
                     [this, offerLine, checkLine](SF_AMOUNT const& sfield) {
-                        STAmount const offerAmount =
-                            get<STAmount>(offerLine->at(sfield));
-                        STAmount const checkAmount =
-                            get<STAmount>(checkLine->at(sfield));
+                        STAmount const offerAmount = offerLine->at(sfield);
+                        STAmount const checkAmount = checkLine->at(sfield);
 
                         // Neither STAmount should be native.
                         if (!BEAST_EXPECT(

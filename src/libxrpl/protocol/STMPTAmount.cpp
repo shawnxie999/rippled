@@ -112,7 +112,7 @@ bool
 STMPTAmount::isEquivalent(const STBase& t) const
 {
     const STMPTAmount* v = dynamic_cast<const STMPTAmount*>(&t);
-    return v && operator==(*v);
+    return v && *this == (*v);
 }
 
 bool
@@ -161,7 +161,7 @@ STMPTAmount::zeroed() const
 int
 STMPTAmount::signum() const noexcept
 {
-    return value_ ? 1 : 0;
+    return MPTAmount::signum();
 }
 
 STMPTAmount

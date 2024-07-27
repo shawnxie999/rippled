@@ -32,7 +32,7 @@ TxConsequences
 CreateOffer::makeTxConsequences(PreflightContext const& ctx)
 {
     auto calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
-        auto const& amount{get<STAmount>(tx[sfTakerGets])};
+        auto const& amount{tx[sfTakerGets]};
         return amount.native() ? amount.xrp() : beast::zero;
     };
 
@@ -84,8 +84,8 @@ CreateOffer::preflight(PreflightContext const& ctx)
         return temBAD_SEQUENCE;
     }
 
-    STAmount saTakerPays = get<STAmount>(tx[sfTakerPays]);
-    STAmount saTakerGets = get<STAmount>(tx[sfTakerGets]);
+    STAmount saTakerPays = tx[sfTakerPays];
+    STAmount saTakerGets = tx[sfTakerGets];
 
     if (!isLegalNet(saTakerPays) || !isLegalNet(saTakerGets))
         return temBAD_AMOUNT;
@@ -134,8 +134,8 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
 
-    auto saTakerPays = get<STAmount>(ctx.tx[sfTakerPays]);
-    auto saTakerGets = get<STAmount>(ctx.tx[sfTakerGets]);
+    auto saTakerPays = ctx.tx[sfTakerPays];
+    auto saTakerGets = ctx.tx[sfTakerGets];
 
     auto const& uPaysIssuerID = saTakerPays.getIssuer();
     auto const& uPaysCurrency = saTakerPays.getCurrency();
@@ -928,8 +928,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     bool const bFillOrKill(uTxFlags & tfFillOrKill);
     bool const bSell(uTxFlags & tfSell);
 
-    auto saTakerPays = get<STAmount>(ctx_.tx[sfTakerPays]);
-    auto saTakerGets = get<STAmount>(ctx_.tx[sfTakerGets]);
+    auto saTakerPays = ctx_.tx[sfTakerPays];
+    auto saTakerGets = ctx_.tx[sfTakerGets];
 
     auto const cancelSequence = ctx_.tx[~sfOfferSequence];
 

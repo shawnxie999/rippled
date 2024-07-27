@@ -45,6 +45,13 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 {
 }
 
+template <SFieldMPT M>
+template <class... Args>
+TypedFieldAmount<M>::TypedFieldAmount(private_access_tag_t pat, Args&&... args)
+    : TypedField<STEitherAmount>(pat, std::forward<Args>(args)...)
+{
+}
+
 // Construct all compile-time SFields, and register them in the knownCodeToField
 // database:
 
@@ -247,7 +254,7 @@ CONSTRUCT_TYPED_SFIELD(sfHookNamespace,         "HookNamespace",        UINT256,
 CONSTRUCT_TYPED_SFIELD(sfHookSetTxnID,          "HookSetTxnID",         UINT256,   33);
 
 // currency amount (common)
-CONSTRUCT_TYPED_SFIELD(sfAmount,                "Amount",               AMOUNT,     1);
+CONSTRUCT_TYPED_SFIELD(sfAmount,                "Amount",               EITHER_AMOUNT,     1);
 CONSTRUCT_TYPED_SFIELD(sfBalance,               "Balance",              AMOUNT,     2);
 CONSTRUCT_TYPED_SFIELD(sfLimitAmount,           "LimitAmount",          AMOUNT,     3);
 CONSTRUCT_TYPED_SFIELD(sfTakerPays,             "TakerPays",            AMOUNT,     4);

@@ -347,10 +347,8 @@ DeleteAccount::doApply()
         return ter;
 
     // Transfer any XRP remaining after the fee is paid to the destination:
-    (*dst)[sfBalance] =
-        STEitherAmount{get<STAmount>((*dst)[sfBalance]) + mSourceBalance};
-    (*src)[sfBalance] =
-        STEitherAmount{get<STAmount>((*src)[sfBalance]) - mSourceBalance};
+    (*dst)[sfBalance] = (*dst)[sfBalance] + mSourceBalance;
+    (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
     ctx_.deliver(mSourceBalance);
 
     assert((*src)[sfBalance] == XRPAmount(0));

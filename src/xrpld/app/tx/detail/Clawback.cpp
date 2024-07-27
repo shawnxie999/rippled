@@ -29,7 +29,7 @@
 namespace ripple {
 
 template <ValidAmountType T>
-NotTEC
+static NotTEC
 preflightHelper(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureClawback))
@@ -78,7 +78,7 @@ preflightHelper(PreflightContext const& ctx)
 }
 
 template <ValidAmountType T>
-TER
+static TER
 preclaimHelper(PreclaimContext const& ctx)
 {
     AccountID const issuer = ctx.tx[sfAccount];
@@ -137,7 +137,7 @@ preclaimHelper(PreclaimContext const& ctx)
         if (!sleRippleState)
             return tecNO_LINE;
 
-        STAmount const& balance = get<STAmount>((*sleRippleState)[sfBalance]);
+        STAmount const& balance = (*sleRippleState)[sfBalance];
 
         // If balance is positive, issuer must have higher address than holder
         if (balance > beast::zero && issuer < holder)
@@ -166,7 +166,7 @@ preclaimHelper(PreclaimContext const& ctx)
 }
 
 template <ValidAmountType T>
-TER
+static TER
 applyHelper(ApplyContext& ctx)
 {
     AccountID const& issuer = ctx.tx[sfAccount];

@@ -41,13 +41,8 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.rules.enabled(featureMPTokensV1))
-    {
-        if (isMPT(ctx.tx[~sfAmount]) || isMPT(ctx.tx[~sfAmount2]))
-            return temMPT_NOT_SUPPORTED;
-        if (isMPT(ctx.tx[~sfEPrice]) || isMPT(ctx.tx[~sfLPTokenIn]))
-            return temMPT_INVALID_USAGE;
-    }
+    if (ctx.rules.enabled(featureMPTokensV1) && isMPT(ctx.tx[~sfAmount]))
+        return temMPT_NOT_SUPPORTED;
 
     auto const flags = ctx.tx.getFlags();
     if (flags & tfWithdrawMask)
@@ -57,9 +52,9 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     }
 
     auto const amount = get<STAmount>(ctx.tx[~sfAmount]);
-    auto const amount2 = get<STAmount>(ctx.tx[~sfAmount2]);
-    auto const ePrice = get<STAmount>(ctx.tx[~sfEPrice]);
-    auto const lpTokens = get<STAmount>(ctx.tx[~sfLPTokenIn]);
+    auto const amount2 = ctx.tx[~sfAmount2];
+    auto const ePrice = ctx.tx[~sfEPrice];
+    auto const lpTokens = ctx.tx[~sfLPTokenIn];
     // Valid combinations are:
     //   LPTokens
     //   tfWithdrawAll
@@ -190,7 +185,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     }
 
     auto const amount = get<STAmount>(ctx.tx[~sfAmount]);
-    auto const amount2 = get<STAmount>(ctx.tx[~sfAmount2]);
+    auto const amount2 = ctx.tx[~sfAmount2];
 
     auto const expected = ammHolds(
         ctx.view,
@@ -261,8 +256,8 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 
     auto const lpTokens =
         ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
-    auto const lpTokensWithdraw = tokensWithdraw(
-        lpTokens, get<STAmount>(ctx.tx[~sfLPTokenIn]), ctx.tx.getFlags());
+    auto const lpTokensWithdraw =
+        tokensWithdraw(lpTokens, ctx.tx[~sfLPTokenIn], ctx.tx.getFlags());
 
     if (lpTokens <= beast::zero)
     {
@@ -282,7 +277,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         return tecAMM_INVALID_TOKENS;
     }
 
-    if (auto const ePrice = get<STAmount>(ctx.tx[~sfEPrice]);
+    if (auto const ePrice = ctx.tx[~sfEPrice];
         ePrice && ePrice->issue() != lpTokens.issue())
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid EPrice.";
@@ -304,8 +299,8 @@ std::pair<TER, bool>
 AMMWithdraw::applyGuts(Sandbox& sb)
 {
     auto const amount = get<STAmount>(ctx_.tx[~sfAmount]);
-    auto const amount2 = get<STAmount>(ctx_.tx[~sfAmount2]);
-    auto const ePrice = get<STAmount>(ctx_.tx[~sfEPrice]);
+    auto const amount2 = ctx_.tx[~sfAmount2];
+    auto const ePrice = ctx_.tx[~sfEPrice];
     auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
@@ -315,8 +310,8 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const lpTokens =
         ammLPHolds(ctx_.view(), *ammSle, ctx_.tx[sfAccount], ctx_.journal);
-    auto const lpTokensWithdraw = tokensWithdraw(
-        lpTokens, get<STAmount>(ctx_.tx[~sfLPTokenIn]), ctx_.tx.getFlags());
+    auto const lpTokensWithdraw =
+        tokensWithdraw(lpTokens, ctx_.tx[~sfLPTokenIn], ctx_.tx.getFlags());
 
     // Due to rounding, the LPTokenBalance of the last LP
     // might not match the LP's trustline balance
@@ -330,7 +325,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         {
             if (withinRelativeDistance(
                     lpTokens,
-                    get<STAmount>(ammSle->getFieldAmount(sfLPTokenBalance)),
+                    ammSle->getFieldAmount(sfLPTokenBalance),
                     Number{1, -3}))
             {
                 ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
