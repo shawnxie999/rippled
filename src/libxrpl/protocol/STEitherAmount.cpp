@@ -32,17 +32,16 @@ STEitherAmount::STEitherAmount(SerialIter& sit, SField const& name)
     auto const value = sit.get64();
     if ((value & STAmount::cNotNative) == 0 &&
         (value & STMPTAmount::cMPToken) != 0)
-        amount_.emplace<STMPTAmount>(value, sit, name);
+        amount_.emplace<STMPTAmount>(value, sit);
     else
-        amount_.emplace<STAmount>(value, sit, name);
+        amount_.emplace<STAmount>(value, sit);
 }
 
 STEitherAmount::STEitherAmount(XRPAmount const& amount) : amount_{amount}
 {
 }
 
-STEitherAmount::STEitherAmount(STAmount const& amount)
-    : STBase(amount.getFName()), amount_{amount}
+STEitherAmount::STEitherAmount(STAmount const& amount) : amount_{amount}
 {
 }
 
@@ -56,8 +55,7 @@ STEitherAmount::STEitherAmount(SField const& name, STMPTAmount const& amount)
 {
 }
 
-STEitherAmount::STEitherAmount(STMPTAmount const& amount)
-    : STBase(amount.getFName()), amount_{amount}
+STEitherAmount::STEitherAmount(STMPTAmount const& amount) : amount_{amount}
 {
 }
 
@@ -122,11 +120,7 @@ bool
 STEitherAmount::isEquivalent(const STBase& t) const
 {
     const STEitherAmount* v = dynamic_cast<const STEitherAmount*>(&t);
-    return v &&
-        std::visit(
-               [&](auto&& a, auto&& a1) { return a.isEquivalent(a1); },
-               amount_,
-               v->amount_);
+    return v && *this == *v;
 }
 
 bool
@@ -366,12 +360,7 @@ amountFromJson(SField const& name, Json::Value const& v)
         return STEitherAmount{
             name,
             STAmount{
-                name,
-                std::get<Issue>(issue),
-                mantissa,
-                exponent,
-                native,
-                negative}};
+                std::get<Issue>(issue), mantissa, exponent, native, negative}};
     while (exponent-- > 0)
         mantissa *= 10;
     if (mantissa > STMPTAmount::cMaxMPTValue)
@@ -379,9 +368,7 @@ amountFromJson(SField const& name, Json::Value const& v)
     return STEitherAmount{
         name,
         STMPTAmount{
-            name,
-            std::get<MPTIssue>(issue),
-            static_cast<std::int64_t>(mantissa)}};
+            std::get<MPTIssue>(issue), static_cast<std::int64_t>(mantissa)}};
 }
 
 }  // namespace detail

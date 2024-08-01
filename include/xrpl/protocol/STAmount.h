@@ -26,12 +26,15 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/XRPAmount.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/json_get_or_throw.h>
 
 namespace ripple {
+
+struct int64_tag_t
+{
+};
 
 // Internal form:
 // 1: If amount is zero, then value is zero and offset is -100
@@ -43,7 +46,7 @@ namespace ripple {
 // Wire form:
 // High 8 bits are (offset+142), legal range is, 80 to 22 inclusive
 // Low 56 bits are value, legal range is 10^15 to (10^16 - 1) inclusive
-class STAmount final : public STBase, public CountedObject<STAmount>
+class STAmount final
 {
 public:
     using mantissa_type = std::uint64_t;
@@ -76,23 +79,13 @@ public:
     static std::uint64_t const uRateOne;
 
     //--------------------------------------------------------------------------
-    STAmount(std::uint64_t value, SerialIter& sit, SField const& name);
-    STAmount(SerialIter& sit, SField const& name);
+    STAmount(std::uint64_t value, SerialIter& sit);
+    STAmount(SerialIter& sit);
 
     struct unchecked
     {
         explicit unchecked() = default;
     };
-
-    // Do not call canonicalize
-    STAmount(
-        SField const& name,
-        Issue const& issue,
-        mantissa_type mantissa,
-        exponent_type exponent,
-        bool native,
-        bool negative,
-        unchecked);
 
     STAmount(
         Issue const& issue,
@@ -104,30 +97,15 @@ public:
 
     // Call canonicalize
     STAmount(
-        SField const& name,
         Issue const& issue,
         mantissa_type mantissa,
         exponent_type exponent,
         bool native,
         bool negative);
 
-    STAmount(SField const& name, std::int64_t mantissa);
-
-    STAmount(
-        SField const& name,
-        std::uint64_t mantissa = 0,
-        bool negative = false);
-
-    STAmount(
-        SField const& name,
-        Issue const& issue,
-        std::uint64_t mantissa = 0,
-        int exponent = 0,
-        bool negative = false);
+    STAmount(std::int64_t mantissa, int64_tag_t);
 
     explicit STAmount(std::uint64_t mantissa = 0, bool negative = false);
-
-    explicit STAmount(SField const& name, STAmount const& amt);
 
     STAmount(
         Issue const& issue,
@@ -243,24 +221,21 @@ public:
     //--------------------------------------------------------------------------
 
     SerializedTypeID
-    getSType() const override;
+    getSType() const;
 
     std::string
-    getFullText() const override;
+    getFullText() const;
 
     std::string
-    getText() const override;
+    getText() const;
 
-    Json::Value getJson(JsonOptions) const override;
+    Json::Value getJson(JsonOptions) const;
 
     void
-    add(Serializer& s) const override;
+    add(Serializer& s) const;
 
     bool
-    isEquivalent(const STBase& t) const override;
-
-    bool
-    isDefault() const override;
+    isDefault() const;
 
     XRPAmount
     xrp() const;
@@ -269,17 +244,12 @@ public:
 
 private:
     static std::unique_ptr<STAmount>
-    construct(SerialIter&, SField const& name);
+    construct(SerialIter&);
 
     void
     set(std::int64_t v);
     void
     canonicalize();
-
-    STBase*
-    copy(std::size_t n, void* buf) const override;
-    STBase*
-    move(std::size_t n, void* buf) override;
 
     STAmount&
     operator=(IOUAmount const& iou);
@@ -477,6 +447,9 @@ operator>=(STAmount const& lhs, STAmount const& rhs)
 
 STAmount
 operator-(STAmount const& value);
+
+std::ostream&
+operator<<(std::ostream& out, const STAmount& t);
 
 //------------------------------------------------------------------------------
 //

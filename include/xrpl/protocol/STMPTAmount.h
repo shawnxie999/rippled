@@ -23,16 +23,13 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 
 namespace ripple {
 
 struct Rate;
 
-class STMPTAmount final : public MPTAmount,
-                          public STBase,
-                          public CountedObject<STMPTAmount>
+class STMPTAmount final : public MPTAmount
 {
 private:
     MPTIssue issue_;
@@ -40,37 +37,30 @@ private:
 public:
     static constexpr std::uint64_t cMPToken = 0x2000000000000000ull;
 
-    STMPTAmount(std::uint64_t value, SerialIter& sit, SField const& name);
-    STMPTAmount(
-        SField const& name,
-        MPTIssue const& issue,
-        std::int64_t value = 0);
+    STMPTAmount(std::uint64_t value, SerialIter& sit);
     STMPTAmount(MPTIssue const& issue, std::uint64_t value);
     STMPTAmount(MPTIssue const& issue, std::int64_t value = 0);
     explicit STMPTAmount(value_type value = 0);
 
     SerializedTypeID
-    getSType() const override;
+    getSType() const;
 
     std::string
-    getFullText() const override;
+    getFullText() const;
 
     std::string
-    getText() const override;
+    getText() const;
 
-    Json::Value getJson(JsonOptions) const override;
+    Json::Value getJson(JsonOptions) const;
 
     void
-    add(Serializer& s) const override;
+    add(Serializer& s) const;
 
     void
     setJson(Json::Value& elem) const;
 
     bool
-    isEquivalent(const STBase& t) const override;
-
-    bool
-    isDefault() const override;
+    isDefault() const;
 
     AccountID const&
     getIssuer() const;

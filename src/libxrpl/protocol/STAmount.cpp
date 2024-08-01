@@ -85,8 +85,7 @@ areComparable(STAmount const& v1, STAmount const& v2)
         v1.issue().currency == v2.issue().currency;
 }
 
-STAmount::STAmount(std::uint64_t value, SerialIter& sit, SField const& name)
-    : STBase(name)
+STAmount::STAmount(std::uint64_t value, SerialIter& sit)
 {
     // native
     if ((value & cNotNative) == 0)
@@ -157,25 +156,7 @@ STAmount::STAmount(std::uint64_t value, SerialIter& sit, SField const& name)
     canonicalize();
 }
 
-STAmount::STAmount(ripple::SerialIter& sit, const ripple::SField& name)
-    : STAmount(sit.get64(), sit, name)
-{
-}
-
-STAmount::STAmount(
-    SField const& name,
-    Issue const& issue,
-    mantissa_type mantissa,
-    exponent_type exponent,
-    bool native,
-    bool negative,
-    unchecked)
-    : STBase(name)
-    , mIssue(issue)
-    , mValue(mantissa)
-    , mOffset(exponent)
-    , mIsNative(native)
-    , mIsNegative(negative)
+STAmount::STAmount(ripple::SerialIter& sit) : STAmount(sit.get64(), sit)
 {
 }
 
@@ -195,14 +176,12 @@ STAmount::STAmount(
 }
 
 STAmount::STAmount(
-    SField const& name,
     Issue const& issue,
     mantissa_type mantissa,
     exponent_type exponent,
     bool native,
     bool negative)
-    : STBase(name)
-    , mIssue(issue)
+    : mIssue(issue)
     , mValue(mantissa)
     , mOffset(exponent)
     , mIsNative(native)
@@ -211,47 +190,10 @@ STAmount::STAmount(
     canonicalize();
 }
 
-STAmount::STAmount(SField const& name, std::int64_t mantissa)
-    : STBase(name), mOffset(0), mIsNative(true)
+STAmount::STAmount(std::int64_t mantissa, int64_tag_t)
+    : mOffset(0), mIsNative(true)
 {
     set(mantissa);
-}
-
-STAmount::STAmount(SField const& name, std::uint64_t mantissa, bool negative)
-    : STBase(name)
-    , mValue(mantissa)
-    , mOffset(0)
-    , mIsNative(true)
-    , mIsNegative(negative)
-{
-    assert(mValue <= std::numeric_limits<std::int64_t>::max());
-}
-
-STAmount::STAmount(
-    SField const& name,
-    Issue const& issue,
-    std::uint64_t mantissa,
-    int exponent,
-    bool negative)
-    : STBase(name)
-    , mIssue(issue)
-    , mValue(mantissa)
-    , mOffset(exponent)
-    , mIsNegative(negative)
-{
-    assert(mValue <= std::numeric_limits<std::int64_t>::max());
-    canonicalize();
-}
-
-STAmount::STAmount(SField const& name, STAmount const& from)
-    : STBase(name)
-    , mIssue(from.mIssue)
-    , mValue(from.mValue)
-    , mOffset(from.mOffset)
-    , mIsNegative(from.mIsNegative)
-{
-    assert(mValue <= std::numeric_limits<std::int64_t>::max());
-    canonicalize();
 }
 
 //------------------------------------------------------------------------------
@@ -323,21 +265,9 @@ STAmount::STAmount(XRPAmount const& amount)
 }
 
 std::unique_ptr<STAmount>
-STAmount::construct(SerialIter& sit, SField const& name)
+STAmount::construct(SerialIter& sit)
 {
-    return std::make_unique<STAmount>(sit, name);
-}
-
-STBase*
-STAmount::copy(std::size_t n, void* buf) const
-{
-    return emplace(n, buf, *this);
-}
-
-STBase*
-STAmount::move(std::size_t n, void* buf)
-{
-    return emplace(n, buf, std::move(*this));
+    return std::make_unique<STAmount>(sit);
 }
 
 //------------------------------------------------------------------------------
@@ -420,16 +350,11 @@ operator+(STAmount const& v1, STAmount const& v2)
     if (v1 == beast::zero)
     {
         // Result must be in terms of v1 currency and issuer.
-        return {
-            v1.getFName(),
-            v1.issue(),
-            v2.mantissa(),
-            v2.exponent(),
-            v2.negative()};
+        return {v1.issue(), v2.mantissa(), v2.exponent(), v2.negative()};
     }
 
     if (v1.native())
-        return {v1.getFName(), getSNValue(v1) + getSNValue(v2)};
+        return {getSNValue(v1) + getSNValue(v2), int64_tag_t{}};
 
     if (getSTNumberSwitchover())
     {
@@ -466,18 +391,12 @@ operator+(STAmount const& v1, STAmount const& v2)
     std::int64_t fv = vv1 + vv2;
 
     if ((fv >= -10) && (fv <= 10))
-        return {v1.getFName(), v1.issue()};
+        return {v1.issue()};
 
     if (fv >= 0)
-        return STAmount{
-            v1.getFName(),
-            v1.issue(),
-            static_cast<std::uint64_t>(fv),
-            ov1,
-            false};
+        return STAmount{v1.issue(), static_cast<std::uint64_t>(fv), ov1, false};
 
-    return STAmount{
-        v1.getFName(), v1.issue(), static_cast<std::uint64_t>(-fv), ov1, true};
+    return STAmount{v1.issue(), static_cast<std::uint64_t>(-fv), ov1, true};
 }
 
 STAmount
@@ -546,12 +465,6 @@ STAmount::setJson(Json::Value& elem) const
         elem = getText();
     }
 }
-
-//------------------------------------------------------------------------------
-//
-// STBase
-//
-//------------------------------------------------------------------------------
 
 SerializedTypeID
 STAmount::getSType() const
@@ -690,13 +603,6 @@ STAmount::add(Serializer& s) const
         s.addBitString(mIssue.currency);
         s.addBitString(mIssue.account);
     }
-}
-
-bool
-STAmount::isEquivalent(const STBase& t) const
-{
-    const STAmount* v = dynamic_cast<const STAmount*>(&t);
-    return v && (*v == *this);
 }
 
 bool
@@ -981,7 +887,6 @@ operator-(STAmount const& value)
     if (value.mantissa() == 0)
         return value;
     return STAmount(
-        value.getFName(),
         value.issue(),
         value.mantissa(),
         value.exponent(),
@@ -1107,7 +1012,7 @@ multiply(STAmount const& v1, STAmount const& v2, Issue const& issue)
         if (((maxV >> 32) * minV) > 2095475792ull)  // cMaxNative / 2^32
             Throw<std::runtime_error>("Native value overflow");
 
-        return STAmount(v1.getFName(), minV * maxV);
+        return STAmount(minV * maxV);
     }
 
     if (getSTNumberSwitchover())
@@ -1299,7 +1204,7 @@ mulRoundImpl(
         if (((maxV >> 32) * minV) > 2095475792ull)  // cMaxNative / 2^32
             Throw<std::runtime_error>("Native value overflow");
 
-        return STAmount(v1.getFName(), minV * maxV);
+        return STAmount(minV * maxV);
     }
 
     std::uint64_t value1 = v1.mantissa(), value2 = v2.mantissa();
@@ -1491,6 +1396,13 @@ divRoundStrict(
     bool roundUp)
 {
     return divRoundImpl<NumberRoundModeGuard>(num, den, issue, roundUp);
+}
+
+std::ostream&
+operator<<(std::ostream& out, const STAmount& t)
+{
+    out << t.getFullText();
+    return out;
 }
 
 }  // namespace ripple

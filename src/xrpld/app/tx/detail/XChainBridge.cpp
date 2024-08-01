@@ -489,7 +489,7 @@ transferHelper(
         }
 
         (*sleSrc)[sfBalance] = (*sleSrc)[sfBalance] - amt;
-        (*sleDst)[sfBalance] = STAmount{sfBalance, (*sleDst)[sfBalance] + amt};
+        (*sleDst)[sfBalance] = (*sleDst)[sfBalance] + amt;
         psb.update(sleSrc);
         psb.update(sleDst);
 

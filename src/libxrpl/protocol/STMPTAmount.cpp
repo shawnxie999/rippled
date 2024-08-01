@@ -25,25 +25,13 @@
 
 namespace ripple {
 
-STMPTAmount::STMPTAmount(
-    std::uint64_t value,
-    SerialIter& sit,
-    SField const& name)
-    : STBase(name)
+STMPTAmount::STMPTAmount(std::uint64_t value, SerialIter& sit)
 {
     assert(value & cMPToken);
     value_ = (value << 8) | sit.get8();
     value_ &= ~cMPToken;
 
     issue_ = sit.get192();
-}
-
-STMPTAmount::STMPTAmount(
-    SField const& name,
-    MPTIssue const& issue,
-    value_type value)
-    : MPTAmount(value), STBase(name), issue_(issue)
-{
 }
 
 STMPTAmount::STMPTAmount(MPTIssue const& issue, value_type value)
@@ -106,13 +94,6 @@ STMPTAmount::add(Serializer& s) const
     s.add8(u8);
     s.add64(value_);
     s.addBitString(issue_.getMptID());
-}
-
-bool
-STMPTAmount::isEquivalent(const STBase& t) const
-{
-    const STMPTAmount* v = dynamic_cast<const STMPTAmount*>(&t);
-    return v && *this == (*v);
 }
 
 bool

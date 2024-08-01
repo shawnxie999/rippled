@@ -438,7 +438,7 @@ XChainClaimAttestation::XChainClaimAttestation(
     std::optional<AccountID> const& dst_)
     : keyAccount(keyAccount_)
     , publicKey(publicKey_)
-    , amount(sfAmount, amount_)
+    , amount(amount_)
     , rewardAccount(rewardAccount_)
     , wasLockingChainSend(wasLockingChainSend_)
     , dst(dst_)
@@ -563,8 +563,8 @@ XChainCreateAccountAttestation::XChainCreateAccountAttestation(
     AccountID const& dst_)
     : keyAccount(keyAccount_)
     , publicKey(publicKey_)
-    , amount(sfAmount, amount_)
-    , rewardAmount(sfSignatureReward, rewardAmount_)
+    , amount(amount_)
+    , rewardAmount(rewardAmount_)
     , rewardAccount(rewardAccount_)
     , wasLockingChainSend(wasLockingChainSend_)
     , dst(dst_)
@@ -617,7 +617,7 @@ XChainCreateAccountAttestation::toSTObject() const
         STAccount{sfAttestationSignerAccount, keyAccount};
     o[sfPublicKey] = publicKey;
     o[sfAmount] = STEitherAmount{sfAmount, amount};
-    o[sfSignatureReward] = STAmount{sfSignatureReward, rewardAmount};
+    o[sfSignatureReward] = STAmount{rewardAmount};
     o[sfAttestationRewardAccount] =
         STAccount{sfAttestationRewardAccount, rewardAccount};
     o[sfWasLockingChainSend] = wasLockingChainSend;
