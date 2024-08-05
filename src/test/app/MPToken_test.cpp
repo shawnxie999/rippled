@@ -19,6 +19,7 @@
 
 #include <test/jtx.h>
 #include <test/jtx/trust.h>
+#include <test/jtx/xchain_bridge.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
@@ -640,6 +641,25 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(bob, carol, 50);
         }
 
+        // Holder is not authorized
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
+
+            // issuer to holder
+            mptAlice.pay(alice, bob, 100, tecNO_AUTH);
+
+            // holder to issuer
+            mptAlice.pay(bob, alice, 100, tecNO_AUTH);
+
+            // holder to holder
+            mptAlice.pay(bob, carol, 50, tecNO_AUTH);
+        }
+
         // If allowlisting is enabled, Payment fails if the receiver is not
         // authorized
         {
@@ -862,40 +882,70 @@ class MPToken_test : public beast::unit_test::suite
             env(pay(alice, bob, mpt), ter(temDISABLED));
         }
 
+        // MPT is disabled, unsigned request
+        {
+            Env env{*this, features - featureMPTokensV1};
+            Account const alice("alice");  // issuer
+            Account const carol("carol");
+            auto const USD = alice["USD"];
+
+            env.fund(XRP(1'000), alice);
+            env.fund(XRP(1'000), carol);
+            STMPTAmount mpt{
+                MPTIssue{std::make_pair(1, alice.id())}, UINT64_C(100)};
+
+            Json::Value jv;
+            jv[jss::secret] = alice.name();
+            jv[jss::tx_json][jss::Fee] = to_string(env.current()->fees().base);
+            jv[jss::tx_json] = pay(alice, carol, mpt);
+            auto const jrr = env.rpc("json", "submit", to_string(jv));
+            BEAST_EXPECT(jrr[jss::result][jss::engine_result] == "temDISABLED");
+        }
+
         // Invalid combination of send, sendMax, deliverMin
         {
             Env env{*this, features};
             Account const alice("alice");
             Account const carol("carol");
-            Account const bob("bob");
+
+            MPTTester mptAlice(env, alice, {.holders = {&carol}});
+
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
+
+            mptAlice.authorize({.account = &carol});
+
+            // sendMax and DeliverMin are valid XRP amount,
+            // but is invalid combination with MPT amount
+            env(pay(alice, carol, mptAlice.mpt(100)),
+                sendmax(XRP(100)),
+                ter(temMALFORMED));
+            env(pay(alice, carol, mptAlice.mpt(100)),
+                delivermin(XRP(100)),
+                ter(temMALFORMED));
+        }
+
+        // build_path is invalid if MPT
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const carol("carol");
 
             MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
 
             mptAlice.create({.ownerCount = 1, .holderCount = 0});
 
-            mptAlice.authorize({.account = &bob});
-
             mptAlice.authorize({.account = &carol});
 
-            env(pay(alice, bob, mptAlice.mpt(100)),
-                sendmax(XRP(100)),
-                delivermin(XRP(100)),
-                ter(temMALFORMED));
+            Json::Value payment;
+            payment[jss::secret] = alice.name();
+            payment[jss::tx_json] = pay(alice, carol, mptAlice.mpt(100));
 
-            env(pay(alice, bob, mptAlice.mpt(100)),
-                sendmax(mptAlice.mpt(100)),
-                delivermin(XRP(100)),
-                ter(temMALFORMED));
-
-            env(pay(alice, bob, XRP(100)),
-                sendmax(mptAlice.mpt(100)),
-                delivermin(XRP(100)),
-                ter(temMALFORMED));
-
-            env(pay(alice, bob, XRP(100)),
-                sendmax(XRP(100)),
-                delivermin(mptAlice.mpt(100)),
-                ter(temMALFORMED));
+            payment[jss::build_path] = true;
+            auto jrr = env.rpc("json", "submit", to_string(payment));
+            BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                jrr[jss::result][jss::error_message] ==
+                "Field 'build_path' not allowed in this context.");
         }
     }
 
@@ -905,33 +955,312 @@ class MPToken_test : public beast::unit_test::suite
         testcase("MPT Amount Invalid in Transaction");
         using namespace test::jtx;
 
+        std::set<std::string> txWithAmounts;
+        for (auto const& format : TxFormats::getInstance())
         {
-            Env env{*this, features};
-            Account const alice("alice");  // issuer
-
-            MPTTester mptAlice(env, alice);
-
-            mptAlice.create();
-
-            env(offer(alice, mptAlice.mpt(100), XRP(100)), ter(temMALFORMED));
-            env.close();
-
-            BEAST_EXPECT(expectOffers(env, alice, 0));
+            for (auto const& e : format.getSOTemplate())
+            {
+                // Transaction has amount fields.
+                // Exclude Clawback, which only supports sfAmount and is checked
+                // in the transactor for amendment enable/disable. Exclude
+                // pseudo-transaction SetFee. Don't consider the Fee field since
+                // it's included in every transaction.
+                if (e.supportMPT() != soeMPTNone &&
+                    e.sField().getName() != jss::Fee &&
+                    format.getName() != jss::Clawback &&
+                    format.getName() != jss::SetFee)
+                {
+                    txWithAmounts.insert(format.getName());
+                    break;
+                }
+            }
         }
 
+        Account const alice("alice");
+        auto const USD = alice["USD"];
+        Account const carol("carol");
+        MPTIssue issue(std::make_pair(1, alice.id()));
+        STMPTAmount mpt{issue, UINT64_C(100)};
+        auto const jvb = bridge(alice, USD, alice, USD);
+        for (auto const& feature : {features, features - featureMPTokensV1})
         {
-            Env env{*this, features - featureMPTokensV1};
-            Account const alice("alice");
-
+            Env env{*this, feature};
             env.fund(XRP(1'000), alice);
-            STMPTAmount mpt{
-                MPTIssue{std::make_pair(1, alice.id())}, UINT64_C(100)};
+            env.fund(XRP(1'000), carol);
+            auto test = [&](Json::Value const& jv) {
+                txWithAmounts.erase(jv[jss::TransactionType].asString());
 
-            env(offer(alice, mpt, XRP(100)), ter(temMALFORMED));
-            env.close();
+                // tx is signed
+                auto jtx = env.jt(jv);
+                Serializer s;
+                jtx.stx->add(s);
+                auto jrr = env.rpc("submit", strHex(s.slice()));
+                BEAST_EXPECT(
+                    jrr[jss::result][jss::error] == "invalidTransaction");
 
-            BEAST_EXPECT(expectOffers(env, alice, 0));
+                // tx is unsigned
+                Json::Value jv1;
+                jv1[jss::secret] = alice.name();
+                jv1[jss::tx_json] = jv;
+                jrr = env.rpc("json", "submit", to_string(jv1));
+                BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
+            };
+            // All transactions with sfAmount, which don't support MPT
+            // and transactions with amount fields, which can't be MPT
+
+            // AMMCreate
+            auto ammCreate = [&](SField const& field) {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::AMMCreate;
+                jv[jss::Account] = alice.human();
+                jv[jss::Amount] = (field.fieldName == sfAmount.fieldName)
+                    ? mpt.getJson(JsonOptions::none)
+                    : "100000000";
+                jv[jss::Amount2] = (field.fieldName == sfAmount2.fieldName)
+                    ? mpt.getJson(JsonOptions::none)
+                    : "100000000";
+                jv[jss::TradingFee] = 0;
+                test(jv);
+            };
+            ammCreate(sfAmount);
+            ammCreate(sfAmount2);
+            // AMMDeposit
+            auto ammDeposit = [&](SField const& field) {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::AMMDeposit;
+                jv[jss::Account] = alice.human();
+                jv[jss::Asset] = to_json(xrpIssue());
+                jv[jss::Asset2] = to_json(USD.issue());
+                jv[field.fieldName] = mpt.getJson(JsonOptions::none);
+                jv[jss::Flags] = tfSingleAsset;
+                test(jv);
+            };
+            ammDeposit(sfAmount);
+            for (SField const& field :
+                 {std::ref(sfAmount2),
+                  std::ref(sfEPrice),
+                  std::ref(sfLPTokenOut)})
+                ammDeposit(field);
+            // AMMWithdraw
+            auto ammWithdraw = [&](SField const& field) {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::AMMWithdraw;
+                jv[jss::Account] = alice.human();
+                jv[jss::Asset] = to_json(xrpIssue());
+                jv[jss::Asset2] = to_json(USD.issue());
+                jv[jss::Flags] = tfSingleAsset;
+                jv[field.fieldName] = mpt.getJson(JsonOptions::none);
+                test(jv);
+            };
+            ammWithdraw(sfAmount);
+            for (SField const& field :
+                 {std::ref(sfAmount2),
+                  std::ref(sfEPrice),
+                  std::ref(sfLPTokenIn)})
+                ammWithdraw(field);
+            // AMMBid
+            auto ammBid = [&](SField const& field) {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::AMMBid;
+                jv[jss::Account] = alice.human();
+                jv[jss::Asset] = to_json(xrpIssue());
+                jv[jss::Asset2] = to_json(USD.issue());
+                jv[field.fieldName] = mpt.getJson(JsonOptions::none);
+                test(jv);
+            };
+            ammBid(sfBidMin);
+            ammBid(sfBidMax);
+            // CheckCash
+            auto checkCash = [&](SField const& field) {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::CheckCash;
+                jv[jss::Account] = alice.human();
+                jv[sfCheckID.fieldName] = to_string(uint256{1});
+                jv[field.fieldName] = mpt.getJson(JsonOptions::none);
+                test(jv);
+            };
+            checkCash(sfAmount);
+            checkCash(sfDeliverMin);
+            // CheckCreate
+            {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::CheckCreate;
+                jv[jss::Account] = alice.human();
+                jv[jss::Destination] = carol.human();
+                jv[jss::SendMax] = mpt.getJson(JsonOptions::none);
+                test(jv);
+            }
+            // Clawback
+            if (!feature[featureMPTokensV1])
+            {
+            }
+            // EscrowCreate
+            {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::EscrowCreate;
+                jv[jss::Account] = alice.human();
+                jv[jss::Destination] = carol.human();
+                jv[jss::Amount] = mpt.getJson(JsonOptions::none);
+                test(jv);
+            }
+            // OfferCreate
+            {
+                Json::Value const jv = offer(alice, USD(100), mpt);
+                test(jv);
+            }
+            // PaymentChannelCreate
+            {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::PaymentChannelCreate;
+                jv[jss::Account] = alice.human();
+                jv[jss::Destination] = carol.human();
+                jv[jss::SettleDelay] = 1;
+                jv[sfPublicKey.fieldName] = strHex(alice.pk().slice());
+                jv[jss::Amount] = mpt.getJson(JsonOptions::none);
+                test(jv);
+            }
+            // PaymentChannelFund
+            {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::PaymentChannelFund;
+                jv[jss::Account] = alice.human();
+                jv[sfChannel.fieldName] = to_string(uint256{1});
+                jv[jss::Amount] = mpt.getJson(JsonOptions::none);
+                test(jv);
+            }
+            // PaymentChannelClaim
+            {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::PaymentChannelClaim;
+                jv[jss::Account] = alice.human();
+                jv[sfChannel.fieldName] = to_string(uint256{1});
+                jv[jss::Amount] = mpt.getJson(JsonOptions::none);
+                test(jv);
+            }
+            // Payment
+            auto payment = [&](SField const& field) {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::Payment;
+                jv[jss::Account] = alice.human();
+                jv[jss::Destination] = carol.human();
+                jv[jss::Amount] = mpt.getJson(JsonOptions::none);
+                if (field == sfSendMax)
+                    jv[jss::SendMax] = mpt.getJson(JsonOptions::none);
+                else
+                    jv[jss::DeliverMin] = mpt.getJson(JsonOptions::none);
+                test(jv);
+            };
+            payment(sfSendMax);
+            payment(sfDeliverMin);
+            // NFTokenCreateOffer
+            {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::NFTokenCreateOffer;
+                jv[jss::Account] = alice.human();
+                jv[sfNFTokenID.fieldName] = to_string(uint256{1});
+                jv[jss::Amount] = mpt.getJson(JsonOptions::none);
+                test(jv);
+            }
+            // NFTokenAcceptOffer
+            {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::NFTokenAcceptOffer;
+                jv[jss::Account] = alice.human();
+                jv[sfNFTokenBrokerFee.fieldName] =
+                    mpt.getJson(JsonOptions::none);
+                test(jv);
+            }
+            // NFTokenMint
+            {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::NFTokenMint;
+                jv[jss::Account] = alice.human();
+                jv[sfNFTokenTaxon.fieldName] = 1;
+                jv[jss::Amount] = mpt.getJson(JsonOptions::none);
+                test(jv);
+            }
+            // TrustSet
+            auto trustSet = [&](SField const& field) {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::TrustSet;
+                jv[jss::Account] = alice.human();
+                jv[jss::Flags] = 0;
+                jv[field.fieldName] = mpt.getJson(JsonOptions::none);
+                test(jv);
+            };
+            trustSet(sfLimitAmount);
+            trustSet(sfFee);
+            // XChainCommit
+            {
+                Json::Value const jv = xchain_commit(alice, jvb, 1, mpt);
+                test(jv);
+            }
+            // XChainClaim
+            {
+                Json::Value const jv = xchain_claim(alice, jvb, 1, mpt, alice);
+                test(jv);
+            }
+            // XChainCreateClaimID
+            {
+                Json::Value const jv =
+                    xchain_create_claim_id(alice, jvb, mpt, alice);
+                test(jv);
+            }
+            // XChainAddClaimAttestation
+            {
+                Json::Value const jv = claim_attestation(
+                    alice,
+                    jvb,
+                    alice,
+                    mpt,
+                    alice,
+                    true,
+                    1,
+                    alice,
+                    signer(alice));
+                test(jv);
+            }
+            // XChainAddAccountCreateAttestation
+            {
+                Json::Value const jv = create_account_attestation(
+                    alice,
+                    jvb,
+                    alice,
+                    mpt,
+                    XRP(10),
+                    alice,
+                    false,
+                    1,
+                    alice,
+                    signer(alice));
+                test(jv);
+            }
+            // XChainAccountCreateCommit
+            {
+                Json::Value const jv = sidechain_xchain_account_create(
+                    alice, jvb, alice, mpt, XRP(10));
+                test(jv);
+            }
+            // XChain[Create|Modify]Bridge
+            auto bridgeTx = [&](Json::StaticString const& tt,
+                                bool minAmount = false) {
+                Json::Value jv;
+                jv[jss::TransactionType] = tt;
+                jv[jss::Account] = alice.human();
+                jv[sfXChainBridge.fieldName] = jvb;
+                jv[sfSignatureReward.fieldName] =
+                    mpt.getJson(JsonOptions::none);
+                if (minAmount)
+                    jv[sfMinAccountCreateAmount.fieldName] =
+                        mpt.getJson(JsonOptions::none);
+                test(jv);
+            };
+            bridgeTx(jss::XChainCreateBridge);
+            bridgeTx(jss::XChainCreateBridge, true);
+            bridgeTx(jss::XChainModifyBridge);
+            bridgeTx(jss::XChainModifyBridge, true);
         }
+        BEAST_EXPECT(txWithAmounts.empty());
     }
 
     void
@@ -1231,7 +1560,7 @@ public:
         // Test Direct Payment
         testPayment(all);
 
-        // Test MPT Amount is invalid in non-Payment Tx
+        // Test MPT Amount is invalid in Tx, which don't support MPT
         testMPTInvalidInTx(all);
 
         // Test parsed MPTokenIssuanceID in API response metadata

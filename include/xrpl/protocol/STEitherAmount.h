@@ -205,9 +205,6 @@ operator==(STEitherAmount const& lhs, STEitherAmount const& rhs)
         },
         lhs.getValue(),
         rhs.getValue());
-    if (lhs.isIssue() == rhs.isIssue())
-        return lhs.getValue() == rhs.getValue();
-    return false;
 }
 
 inline bool

@@ -240,6 +240,8 @@ public:
     Blob
     getFieldVL(SField const& field) const;
     STEitherAmount const&
+    getFieldEitherAmount(SField const& field) const;
+    STEitherAmount const&
     getFieldAmount(SField const& field) const;
     STAmount const&
     getFieldAmount(TypedFieldAmount<SFieldMPT::No> const& field) const;

@@ -216,7 +216,7 @@ std::vector<std::uint8_t>
 AttestationClaim::message(
     STXChainBridge const& bridge,
     AccountID const& sendingAccount,
-    STAmount const& sendingAmount,
+    STEitherAmount const& sendingAmount,
     AccountID const& rewardAccount,
     bool wasLockingChainSend,
     std::uint64_t claimID,
@@ -225,7 +225,7 @@ AttestationClaim::message(
     STObject o{sfGeneric};
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainClaimID] = claimID;
-    o[sfAmount] = STEitherAmount{sendingAmount};
+    o[sfAmount] = sendingAmount;
     if (dst)
         o[sfDestination] = *dst;
     o[sfOtherChainSource] = sendingAccount;
@@ -361,8 +361,8 @@ std::vector<std::uint8_t>
 AttestationCreateAccount::message(
     STXChainBridge const& bridge,
     AccountID const& sendingAccount,
-    STAmount const& sendingAmount,
-    STAmount const& rewardAmount,
+    STEitherAmount const& sendingAmount,
+    STEitherAmount const& rewardAmount,
     AccountID const& rewardAccount,
     bool wasLockingChainSend,
     std::uint64_t createCount,

@@ -41,9 +41,6 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.rules.enabled(featureMPTokensV1) && isMPT(ctx.tx[~sfAmount]))
-        return temMALFORMED;
-
     auto const flags = ctx.tx.getFlags();
     if (flags & tfWithdrawMask)
     {

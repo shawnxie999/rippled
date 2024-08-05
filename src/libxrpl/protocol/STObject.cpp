@@ -165,14 +165,6 @@ STObject::applyTemplate(const SOTemplate& type)
                     e.sField().fieldName,
                     "may not be explicitly set to default.");
             }
-            if (iter->get().getSType() == STI_AMOUNT && !e.supportMPT())
-            {
-                if (auto const v = dynamic_cast<STEitherAmount*>(&iter->get());
-                    v && v->isMPT())
-                {
-                    throwFieldErr(e.sField().fieldName, "doesn't support MPT");
-                }
-            }
             v.emplace_back(std::move(*iter));
             v_.erase(iter);
         }
@@ -636,6 +628,13 @@ STObject::getFieldVL(SField const& field) const
     STBlob empty;
     STBlob const& b = getFieldByConstRef<STBlob>(field, empty);
     return Blob(b.data(), b.data() + b.size());
+}
+
+STEitherAmount const&
+STObject::getFieldEitherAmount(SField const& field) const
+{
+    static STEitherAmount const empty{};
+    return getFieldByConstRef<STEitherAmount>(field, empty);
 }
 
 STEitherAmount const&

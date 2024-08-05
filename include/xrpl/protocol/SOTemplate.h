@@ -69,9 +69,7 @@ private:
 
 public:
     SOElement(SField const& fieldName, SOEStyle style)
-        : sField_(fieldName)
-        , style_(style)
-        , supportMpt_(SOETxMPTAmount::soeMPTNone)
+        : sField_(fieldName), style_(style), supportMpt_(soeMPTNone)
     {
         init(fieldName);
     }
@@ -101,10 +99,10 @@ public:
         return style_;
     }
 
-    bool
+    SOETxMPTAmount
     supportMPT() const
     {
-        return supportMpt_ == soeMPTSupported;
+        return supportMpt_;
     }
 };
 

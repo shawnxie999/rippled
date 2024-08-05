@@ -19,6 +19,7 @@
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 
@@ -65,6 +66,14 @@ getMPT(uint192 const& id)
     sequence = boost::endian::big_to_native(sequence);
     memcpy(account.data(), id.data() + sizeof(sequence), sizeof(AccountID));
     return std::make_pair(sequence, account);
+}
+
+Json::Value
+to_json(MPTIssue const& issue)
+{
+    Json::Value jv;
+    jv[jss::mpt_issuance_id] = to_string(issue.getMptID());
+    return jv;
 }
 
 }  // namespace ripple

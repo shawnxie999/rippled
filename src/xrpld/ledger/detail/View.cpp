@@ -1893,6 +1893,8 @@ rippleCredit(
             else
                 return tecINSUFFICIENT_FUNDS;
         }
+        else
+            return tecNO_AUTH;
     }
 
     if (uReceiverID == issuer)
@@ -1921,6 +1923,8 @@ rippleCredit(
                 sfMPTAmount, sle->getFieldU64(sfMPTAmount) + saAmount.value());
             view.update(sle);
         }
+        else
+            return tecNO_AUTH;
     }
     return tesSUCCESS;
 }

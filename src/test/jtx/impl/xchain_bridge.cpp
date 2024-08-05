@@ -115,7 +115,7 @@ Json::Value
 xchain_create_claim_id(
     Account const& acc,
     Json::Value const& bridge,
-    STAmount const& reward,
+    STEitherAmount const& reward,
     Account const& otherChainSource)
 {
     Json::Value jv;
@@ -216,7 +216,7 @@ claim_attestation(
         sk,
         stBridge,
         sendingAccount,
-        get<STAmount>(sendingAmount.value),
+        sendingAmount.value,
         rewardAccount,
         wasLockingChainSend,
         claimID,
@@ -269,8 +269,8 @@ create_account_attestation(
         sk,
         stBridge,
         sendingAccount,
-        get<STAmount>(sendingAmount.value),
-        get<STAmount>(rewardAmount.value),
+        sendingAmount.value,
+        rewardAmount.value,
         rewardAccount,
         wasLockingChainSend,
         createCount,

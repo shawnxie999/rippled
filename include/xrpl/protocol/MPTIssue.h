@@ -84,6 +84,9 @@ isXRP(uint192 const&)
     return false;
 }
 
+Json::Value
+to_json(MPTIssue const& issue);
+
 }  // namespace ripple
 
 #endif  // RIPPLE_PROTOCOL_MPTISSUE_H_INCLUDED
