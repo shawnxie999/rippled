@@ -37,7 +37,7 @@ NFTokenCreateOffer::preflight(PreflightContext const& ctx)
         return ret;
 
     if (ctx.rules.enabled(featureMPTokensV1) && isMPT(ctx.tx[sfAmount]))
-        return temMPT_NOT_SUPPORTED;
+        return temMALFORMED;
 
     auto const txFlags = ctx.tx.getFlags();
 

@@ -1215,7 +1215,7 @@ attestationPreflight(PreflightContext const& ctx)
         return ret;
 
     if (ctx.rules.enabled(featureMPTokensV1) && isMPT(ctx.tx[sfAmount]))
-        return temMPT_NOT_SUPPORTED;
+        return temMALFORMED;
 
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
@@ -1676,7 +1676,7 @@ XChainClaim::preflight(PreflightContext const& ctx)
         return ret;
 
     if (ctx.rules.enabled(featureMPTokensV1) && isMPT(ctx.tx[sfAmount]))
-        return temMPT_NOT_SUPPORTED;
+        return temMALFORMED;
 
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
@@ -1917,7 +1917,7 @@ XChainCommit::preflight(PreflightContext const& ctx)
         return ret;
 
     if (ctx.rules.enabled(featureMPTokensV1) && isMPT(ctx.tx[sfAmount]))
-        return temMPT_NOT_SUPPORTED;
+        return temMALFORMED;
 
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
@@ -2034,10 +2034,6 @@ XChainCreateClaimID::preflight(PreflightContext const& ctx)
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
-
-    if (ctx.rules.enabled(featureMPTokensV1) &&
-        isMPT(ctx.tx[sfSignatureReward]))
-        return temMPT_NOT_SUPPORTED;
 
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
@@ -2194,9 +2190,8 @@ XChainCreateAccountCommit::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.rules.enabled(featureMPTokensV1) &&
-        (isMPT(ctx.tx[sfAmount]) || isMPT(ctx.tx[sfSignatureReward])))
-        return temMPT_NOT_SUPPORTED;
+    if (ctx.rules.enabled(featureMPTokensV1) && isMPT(ctx.tx[sfAmount]))
+        return temMALFORMED;
 
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;

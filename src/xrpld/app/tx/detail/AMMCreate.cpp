@@ -42,7 +42,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
         return ret;
 
     if (ctx.rules.enabled(featureMPTokensV1) && isMPT(ctx.tx[sfAmount]))
-        return temMPT_NOT_SUPPORTED;
+        return temMALFORMED;
 
     if (ctx.tx.getFlags() & tfUniversalMask)
     {

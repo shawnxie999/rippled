@@ -185,14 +185,17 @@ preflightHelper(PreflightContext const& ctx)
         JLOG(j.trace()) << "Malformed transaction: "
                         << "Paths specified for XRP to XRP or MPT to MPT.";
         if (bMPTDirect)
-            return temMPT_NOT_SUPPORTED;
+            return temMALFORMED;
         return temBAD_SEND_XRP_PATHS;
     }
-    if (bXRPDirect && partialPaymentAllowed)
+    if (bDirect && partialPaymentAllowed)
     {
         // Consistent but redundant transaction.
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "Partial payment specified for XRP to XRP.";
+        JLOG(j.trace())
+            << "Malformed transaction: "
+            << "Partial payment specified for XRP to XRP or MPT to MPT.";
+        if (bMPTDirect)
+            return temMALFORMED;
         return temBAD_SEND_XRP_PARTIAL;
     }
     if (bDirect && limitQuality)
@@ -202,7 +205,7 @@ preflightHelper(PreflightContext const& ctx)
             << "Malformed transaction: "
             << "Limit quality specified for XRP to XRP or MPT to MPT.";
         if (bMPTDirect)
-            return temMPT_NOT_SUPPORTED;
+            return temMALFORMED;
         return temBAD_SEND_XRP_LIMIT;
     }
     if (bDirect && !defaultPathsAllowed)
@@ -212,7 +215,7 @@ preflightHelper(PreflightContext const& ctx)
             << "Malformed transaction: "
             << "No ripple direct specified for XRP to XRP or MPT to MPT.";
         if (bMPTDirect)
-            return temMPT_NOT_SUPPORTED;
+            return temMALFORMED;
         return temBAD_SEND_XRP_NO_DIRECT;
     }
 

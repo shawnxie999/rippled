@@ -45,10 +45,6 @@ CreateOffer::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.rules.enabled(featureMPTokensV1) &&
-        (isMPT(ctx.tx[sfTakerPays]) || isMPT(ctx.tx[sfTakerGets])))
-        return temMPT_NOT_SUPPORTED;
-
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 

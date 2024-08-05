@@ -38,9 +38,6 @@ CreateCheck::preflight(PreflightContext const& ctx)
     if (!isTesSuccess(ret))
         return ret;
 
-    if (ctx.rules.enabled(featureMPTokensV1) && isMPT(ctx.tx[sfSendMax]))
-        return temMPT_NOT_SUPPORTED;
-
     if (ctx.tx.getFlags() & tfUniversalMask)
     {
         // There are no flags (other than universal) for CreateCheck yet.

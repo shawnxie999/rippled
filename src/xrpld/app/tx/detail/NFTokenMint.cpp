@@ -54,7 +54,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
         return ret;
 
     if (ctx.rules.enabled(featureMPTokensV1) && isMPT(ctx.tx[~sfAmount]))
-        return temMPT_NOT_SUPPORTED;
+        return temMALFORMED;
 
     // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
     // accounts allowed a TrustLine to be added to the issuer of that token
