@@ -344,6 +344,10 @@ public:
         return static_cast<int>(remain_);
     }
 
+    // peek function, throw on error
+    unsigned char
+    peek8();
+
     // get functions throw on error
     unsigned char
     get8();

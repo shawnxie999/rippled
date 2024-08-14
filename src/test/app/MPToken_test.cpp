@@ -787,25 +787,53 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(alice, bob, 1, tecMPT_MAX_AMOUNT_EXCEEDED);
         }
 
-        // TODO: This test is currently failing! Modify the STAmount to change
-        // the range
         // Issuer fails trying to send more than the default maximum
         // amount allowed
-        // {
-        //     Env env{*this, features};
+        {
+            Env env{*this, features};
 
-        //     MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
-        //     mptAlice.create({.ownerCount = 1, .holderCount = 0});
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
 
-        //     mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = &bob});
 
-        //     // issuer sends holder the default max amount allowed
-        //     mptAlice.pay(alice, bob, maxMPTokenAmount);
+            // issuer sends holder the default max amount allowed
+            mptAlice.pay(alice, bob, maxMPTokenAmount);
 
-        //     // issuer tries to exceed max amount
-        //     mptAlice.pay(alice, bob, 1, tecMPT_MAX_AMOUNT_EXCEEDED);
-        // }
+            // issuer tries to exceed max amount
+            mptAlice.pay(alice, bob, 1, tecMPT_MAX_AMOUNT_EXCEEDED);
+        }
+
+        // Can't pay negative amount
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
+
+            mptAlice.authorize({.account = &bob});
+
+            mptAlice.pay(alice, bob, -1, temBAD_AMOUNT);
+        }
+
+        // pay more than max amount
+        // fails in the json parser before
+        // transactor is called
+        {
+            Env env{*this, features};
+            env.fund(XRP(1'000), alice, bob);
+            STMPTAmount mpt{
+                MPTIssue{std::make_pair(1, alice.id())}, UINT64_C(100)};
+            Json::Value jv;
+            jv[jss::secret] = alice.name();
+            jv[jss::tx_json] = pay(alice, bob, mpt);
+            jv[jss::tx_json][jss::Amount][jss::value] =
+                to_string(maxMPTokenAmount + 1);
+            auto const jrr = env.rpc("json", "submit", to_string(jv));
+            BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
+        }
 
         // Transfer fee
         {
@@ -1090,10 +1118,6 @@ class MPToken_test : public beast::unit_test::suite
                 jv[jss::SendMax] = mpt.getJson(JsonOptions::none);
                 test(jv);
             }
-            // Clawback
-            if (!feature[featureMPTokensV1])
-            {
-            }
             // EscrowCreate
             {
                 Json::Value jv;
@@ -1348,9 +1372,9 @@ class MPToken_test : public beast::unit_test::suite
             env(claw(alice, mpt(5), alice), ter(temMALFORMED));
             env.close();
 
-            // TODO: uncomment after stamount changes
-            // env(claw(alice, mpt(maxMPTokenAmount), bob), ter(temBAD_AMOUNT));
-            // env.close();
+            // can't clawback negative amount
+            env(claw(alice, mpt(-1), bob), ter(temBAD_AMOUNT));
+            env.close();
         }
 
         // Preclaim - clawback fails when MPTCanClawback is disabled on issuance
@@ -1414,6 +1438,29 @@ class MPToken_test : public beast::unit_test::suite
             // carol fails tries to clawback from bob because he is not the
             // issuer
             mptAlice.claw(carol, bob, 1, tecNO_PERMISSION);
+        }
+
+        // clawback more than max amount
+        // fails in the json parser before
+        // transactor is called
+        {
+            Env env(*this, features);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const mpt = ripple::test::jtx::MPT(
+                alice.name(), std::make_pair(env.seq(alice), alice.id()));
+
+            Json::Value jv = claw(alice, mpt(1), bob);
+            jv[jss::Amount][jss::value] = to_string(maxMPTokenAmount + 1);
+            Json::Value jv1;
+            jv1[jss::secret] = alice.name();
+            jv1[jss::tx_json] = jv;
+            auto const jrr = env.rpc("json", "submit", to_string(jv1));
+            BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
         }
     }
 
@@ -1564,11 +1611,6 @@ public:
         testMPTInvalidInTx(all);
 
         // Test parsed MPTokenIssuanceID in API response metadata
-        // TODO: This test exercises the parsing logic of mptID in `tx`,
-        // but,
-        //       mptID is also parsed in different places like `account_tx`,
-        //       `subscribe`, `ledger`. We should create test for these
-        //       occurances (lower prioirity).
         testTxJsonMetaFields(all);
     }
 };

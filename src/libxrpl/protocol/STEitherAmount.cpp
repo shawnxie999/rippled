@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STEitherAmount.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/jss.h>
@@ -29,12 +30,12 @@ namespace ripple {
 STEitherAmount::STEitherAmount(SerialIter& sit, SField const& name)
     : STBase(name)
 {
-    auto const value = sit.get64();
-    if ((value & STAmount::cNotNative) == 0 &&
-        (value & STMPTAmount::cMPToken) != 0)
-        amount_.emplace<STMPTAmount>(value, sit);
+    auto const u8 = sit.peek8();
+    if (((static_cast<std::uint64_t>(u8) << 56) & STAmount::cNotNative) == 0 &&
+        (u8 & STMPTAmount::cMPToken) != 0)
+        amount_.emplace<STMPTAmount>(sit);
     else
-        amount_.emplace<STAmount>(value, sit);
+        amount_.emplace<STAmount>(sit);
 }
 
 STEitherAmount::STEitherAmount(XRPAmount const& amount) : amount_{amount}
@@ -346,9 +347,9 @@ amountFromJson(SField const& name, Json::Value const& v)
         {
             STMPTAmount const ret =
                 amountFromString(std::get<MPTIssue>(issue), value.asString());
-            mantissa = ret.value();
+            negative = ret.value() < 0;
+            mantissa = !negative ? ret.value() : -ret.value();
             exponent = 0;
-            negative = false;
         }
     }
     else
@@ -363,12 +364,10 @@ amountFromJson(SField const& name, Json::Value const& v)
                 std::get<Issue>(issue), mantissa, exponent, native, negative}};
     while (exponent-- > 0)
         mantissa *= 10;
-    if (mantissa > STMPTAmount::cMaxMPTValue)
+    if (mantissa > maxMPTokenAmount)
         Throw<std::runtime_error>("MPT amount out of range");
     return STEitherAmount{
-        name,
-        STMPTAmount{
-            std::get<MPTIssue>(issue), static_cast<std::int64_t>(mantissa)}};
+        name, STMPTAmount{std::get<MPTIssue>(issue), mantissa, negative}};
 }
 
 }  // namespace detail

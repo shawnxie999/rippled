@@ -79,7 +79,6 @@ public:
     static std::uint64_t const uRateOne;
 
     //--------------------------------------------------------------------------
-    STAmount(std::uint64_t value, SerialIter& sit);
     STAmount(SerialIter& sit);
 
     struct unchecked

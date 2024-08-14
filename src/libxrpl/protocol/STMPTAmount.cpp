@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STMPTAmount.h>
 #include <xrpl/protocol/jss.h>
 
@@ -25,12 +26,16 @@
 
 namespace ripple {
 
-STMPTAmount::STMPTAmount(std::uint64_t value, SerialIter& sit)
+STMPTAmount::STMPTAmount(SerialIter& sit)
 {
-    assert(value & cMPToken);
-    value_ = (value << 8) | sit.get8();
-    value_ &= ~cMPToken;
+    auto const mask = sit.get8();
+    assert((mask & cMPToken));
+    if (((mask & cMPToken) == 0))
+        Throw<std::logic_error>("Not MPT Amount.");
 
+    value_ = sit.get64();
+    if ((mask & cPositive) == 0)
+        value_ = -value_;
     issue_ = sit.get192();
 }
 
@@ -39,12 +44,17 @@ STMPTAmount::STMPTAmount(MPTIssue const& issue, value_type value)
 {
 }
 
-STMPTAmount::STMPTAmount(MPTIssue const& issue, std::uint64_t value)
+STMPTAmount::STMPTAmount(
+    MPTIssue const& issue,
+    std::uint64_t value,
+    bool negative)
     : issue_(issue)
 {
-    if (value > cMaxMPTValue)
+    if (value > maxMPTokenAmount)
         Throw<std::logic_error>("MPTAmount is out of range");
     value_ = static_cast<std::int64_t>(value);
+    if (negative)
+        value_ = -value_;
 }
 
 STMPTAmount::STMPTAmount(value_type value) : MPTAmount(value)
@@ -90,9 +100,11 @@ STMPTAmount::setJson(Json::Value& elem) const
 void
 STMPTAmount::add(Serializer& s) const
 {
-    auto u8 = static_cast<unsigned char>(cMPToken >> 56);
+    auto u8 = cMPToken;
+    if (value_ >= 0)
+        u8 |= cPositive;
     s.add8(u8);
-    s.add64(value_);
+    s.add64(value_ >= 0 ? value_ : -value_);
     s.addBitString(issue_.getMptID());
 }
 
@@ -150,7 +162,7 @@ amountFromString(MPTIssue const& issue, std::string const& amount)
 {
     static boost::regex const reNumber(
         "^"                       // the beginning of the string
-        "([+]?)"                  // (optional) + character (MPT is positive)
+        "([+-]?)"                 // (optional) + character
         "(0|[1-9][0-9]*)"         // a number (no leading zeroes, unless 0)
         "(\\.([0-9]+))?"          // (optional) period followed by any number
         "([eE]([+-]?)([0-9]+))?"  // (optional) E, optional + or -, any number
@@ -180,8 +192,10 @@ amountFromString(MPTIssue const& issue, std::string const& amount)
     if (match[3].matched)
         Throw<std::runtime_error>("MPT must be specified as integral.");
 
-    std::int64_t mantissa;
+    std::uint64_t mantissa;
     int exponent;
+
+    bool negative = (match[1].matched && (match[1] == "-"));
 
     if (!match[4].matched)  // integer only
     {
@@ -208,7 +222,7 @@ amountFromString(MPTIssue const& issue, std::string const& amount)
     while (exponent-- > 0)
         mantissa *= 10;
 
-    return {issue, mantissa};
+    return {issue, mantissa, negative};
 }
 
 }  // namespace ripple

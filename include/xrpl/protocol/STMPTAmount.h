@@ -35,10 +35,14 @@ private:
     MPTIssue issue_;
 
 public:
-    static constexpr std::uint64_t cMPToken = 0x2000000000000000ull;
+    static constexpr std::uint8_t cMPToken = 0x20;
+    static constexpr std::uint8_t cPositive = 0x40;
 
-    STMPTAmount(std::uint64_t value, SerialIter& sit);
-    STMPTAmount(MPTIssue const& issue, std::uint64_t value);
+    STMPTAmount(SerialIter& sit);
+    STMPTAmount(
+        MPTIssue const& issue,
+        std::uint64_t value,
+        bool negative = false);
     STMPTAmount(MPTIssue const& issue, std::int64_t value = 0);
     explicit STMPTAmount(value_type value = 0);
 

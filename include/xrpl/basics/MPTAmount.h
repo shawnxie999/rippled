@@ -42,7 +42,6 @@ class MPTAmount : private boost::totally_ordered<MPTAmount>,
 {
 public:
     using value_type = std::int64_t;
-    static constexpr std::uint64_t cMaxMPTValue = 0x8000000000000000;
 
 protected:
     value_type value_;

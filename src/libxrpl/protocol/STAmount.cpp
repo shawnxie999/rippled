@@ -85,8 +85,9 @@ areComparable(STAmount const& v1, STAmount const& v2)
         v1.issue().currency == v2.issue().currency;
 }
 
-STAmount::STAmount(std::uint64_t value, SerialIter& sit)
+STAmount::STAmount(SerialIter& sit)
 {
+    std::uint64_t value = sit.get64();
     // native
     if ((value & cNotNative) == 0)
     {
@@ -154,10 +155,6 @@ STAmount::STAmount(std::uint64_t value, SerialIter& sit)
     mOffset = 0;
     mIsNegative = false;
     canonicalize();
-}
-
-STAmount::STAmount(ripple::SerialIter& sit) : STAmount(sit.get64(), sit)
-{
 }
 
 STAmount::STAmount(
