@@ -1333,7 +1333,7 @@ class MPToken_test : public beast::unit_test::suite
             auto const mpt = ripple::test::jtx::MPT(
                 alice.name(), std::make_pair(env.seq(alice), alice.id()));
 
-            env(claw(alice, bob["USD"](5), bob), ter(temDISABLED));
+            env(claw(alice, bob["USD"](5), bob), ter(temMALFORMED));
             env.close();
 
             env(claw(alice, mpt(5)), ter(temDISABLED));

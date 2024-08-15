@@ -691,7 +691,6 @@ extern SField const sfXChainClaimProofSig;
 extern SField const sfXChainCreateAccountProofSig;
 extern SField const sfXChainClaimAttestationCollectionElement;
 extern SField const sfXChainCreateAccountAttestationCollectionElement;
-extern SField const MPToken;
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array

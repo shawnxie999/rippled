@@ -178,6 +178,12 @@ operator>=(STMPTAmount const& lhs, STMPTAmount const& rhs)
     return !(lhs < rhs);
 }
 
+inline bool
+isLegalNet(STMPTAmount const& value)
+{
+    return true;
+}
+
 STMPTAmount
 amountFromString(MPTIssue const& issue, std::string const& amount);
 

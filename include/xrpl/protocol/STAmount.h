@@ -409,6 +409,12 @@ STAmount::value() const noexcept
     return *this;
 }
 
+inline bool
+isLegalNet(STAmount const& value)
+{
+    return !value.native() || (value.mantissa() <= STAmount::cMaxNativeN);
+}
+
 //------------------------------------------------------------------------------
 //
 // Operators

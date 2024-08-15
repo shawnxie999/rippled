@@ -213,47 +213,6 @@ operator!=(STEitherAmount const& lhs, STEitherAmount const& rhs)
     return !operator==(lhs, rhs);
 }
 
-template <ValidAssetType T1, ValidAssetType T2>
-bool
-sameAsset(T1 const& t1, T2 const& t2)
-{
-    if constexpr (std::is_same_v<T1, T2>)
-        return t1 == t2;
-    else
-        return false;
-}
-
-template <ValidAssetType T>
-bool
-badAsset(T const& t)
-{
-    if constexpr (std::is_same_v<T, Currency>)
-        return badCurrency() == t;
-    else
-        return badMPT() == t;
-}
-
-inline bool
-isLegalNet(STEitherAmount const& value)
-{
-    if (value.isIssue())
-    {
-        auto const& v = get<STAmount>(value);
-        return !v.native() || (v.mantissa() <= STAmount::cMaxNativeN);
-    }
-    return true;
-}
-
-template <ValidAmountType T>
-bool
-isNative(T const& amount)
-{
-    if constexpr (std::is_same_v<T, STMPTAmount>)
-        return false;
-    else if constexpr (std::is_same_v<T, STAmount>)
-        return amount.native();
-}
-
 template <ValidAmountType T>
 bool
 isMPT(T const& amount)
