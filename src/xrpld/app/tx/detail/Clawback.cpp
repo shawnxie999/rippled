@@ -157,7 +157,7 @@ preclaimHelper<STAmount>(PreclaimContext const& ctx)
 }
 
 template <>
-static TER
+TER
 preclaimHelper<STMPTAmount>(PreclaimContext const& ctx)
 {
     AccountID const issuer = ctx.tx[sfAccount];
