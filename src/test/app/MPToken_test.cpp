@@ -824,8 +824,7 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
             env.fund(XRP(1'000), alice, bob);
-            STMPTAmount mpt{
-                MPTIssue{std::make_pair(1, alice.id())}, UINT64_C(100)};
+            STMPTAmount mpt{MPTIssue{getMptID(alice.id(), 1)}, UINT64_C(100)};
             Json::Value jv;
             jv[jss::secret] = alice.name();
             jv[jss::tx_json] = pay(alice, bob, mpt);
@@ -904,8 +903,7 @@ class MPToken_test : public beast::unit_test::suite
 
             env.fund(XRP(1'000), alice);
             env.fund(XRP(1'000), bob);
-            STMPTAmount mpt{
-                MPTIssue{std::make_pair(1, alice.id())}, UINT64_C(100)};
+            STMPTAmount mpt{MPTIssue{getMptID(alice.id(), 1)}, UINT64_C(100)};
 
             env(pay(alice, bob, mpt), ter(temDISABLED));
         }
@@ -919,8 +917,7 @@ class MPToken_test : public beast::unit_test::suite
 
             env.fund(XRP(1'000), alice);
             env.fund(XRP(1'000), carol);
-            STMPTAmount mpt{
-                MPTIssue{std::make_pair(1, alice.id())}, UINT64_C(100)};
+            STMPTAmount mpt{MPTIssue{getMptID(alice.id(), 1)}, UINT64_C(100)};
 
             Json::Value jv;
             jv[jss::secret] = alice.name();
@@ -1007,7 +1004,7 @@ class MPToken_test : public beast::unit_test::suite
         Account const alice("alice");
         auto const USD = alice["USD"];
         Account const carol("carol");
-        MPTIssue issue(std::make_pair(1, alice.id()));
+        MPTIssue issue(getMptID(alice.id(), 1));
         STMPTAmount mpt{issue, UINT64_C(100)};
         auto const jvb = bridge(alice, USD, alice, USD);
         for (auto const& feature : {features, features - featureMPTokensV1})
@@ -1331,7 +1328,7 @@ class MPToken_test : public beast::unit_test::suite
 
             auto const USD = alice["USD"];
             auto const mpt = ripple::test::jtx::MPT(
-                alice.name(), std::make_pair(env.seq(alice), alice.id()));
+                alice.name(), getMptID(alice.id(), env.seq(alice)));
 
             env(claw(alice, bob["USD"](5), bob), ter(temMALFORMED));
             env.close();
@@ -1354,7 +1351,7 @@ class MPToken_test : public beast::unit_test::suite
 
             auto const USD = alice["USD"];
             auto const mpt = ripple::test::jtx::MPT(
-                alice.name(), std::make_pair(env.seq(alice), alice.id()));
+                alice.name(), getMptID(alice.id(), env.seq(alice)));
 
             // clawing back IOU from a MPT holder fails
             env(claw(alice, bob["USD"](5), bob), ter(temMALFORMED));
@@ -1413,7 +1410,7 @@ class MPToken_test : public beast::unit_test::suite
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
             auto const fakeMpt = ripple::test::jtx::MPT(
-                alice.name(), std::make_pair(env.seq(alice), alice.id()));
+                alice.name(), getMptID(alice.id(), env.seq(alice)));
 
             // issuer tries to clawback MPT where issuance doesn't exist
             env(claw(alice, fakeMpt(5), bob), ter(tecOBJECT_NOT_FOUND));
@@ -1452,7 +1449,7 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
 
             auto const mpt = ripple::test::jtx::MPT(
-                alice.name(), std::make_pair(env.seq(alice), alice.id()));
+                alice.name(), getMptID(alice.id(), env.seq(alice)));
 
             Json::Value jv = claw(alice, mpt(1), bob);
             jv[jss::Amount][jss::value] = to_string(maxMPTokenAmount + 1);

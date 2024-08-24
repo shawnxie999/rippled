@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -125,11 +126,11 @@ noCurrency()
     return currency;
 }
 
-MPT const&
+MPTID const&
 noMPT()
 {
-    static MPT const mpt{0, noAccount()};
-    return mpt;
+    static MPTID const id = getMptID(noAccount(), 0);
+    return id;
 }
 
 Currency const&

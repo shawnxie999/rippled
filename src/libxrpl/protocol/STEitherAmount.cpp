@@ -183,7 +183,7 @@ STEitherAmount::getValue()
     return amount_;
 }
 
-AccountID const&
+AccountID
 STEitherAmount::getIssuer() const
 {
     if (isIssue())
@@ -297,7 +297,7 @@ amountFromJson(SField const& name, Json::Value const& v)
         if (isMPT)
         {
             // sequence (32 bits) + account (160 bits)
-            uint192 u;
+            MPTID u;
             if (!u.parseHex(currencyOrMPTID.asString()))
                 Throw<std::runtime_error>("invalid MPTokenIssuanceID");
             issue = u;

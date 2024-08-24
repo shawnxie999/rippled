@@ -180,7 +180,7 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer)
 bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mpt)
 {
-    if (auto const sle = view.read(keylet::mptIssuance(mpt.mpt())))
+    if (auto const sle = view.read(keylet::mptIssuance(mpt.getMptID())))
         return sle->getFlags() & lsfMPTLocked;
     return false;
 }
@@ -211,7 +211,7 @@ isIndividualFrozen(
     AccountID const& account,
     MPTIssue const& mpt)
 {
-    if (auto const sle = view.read(keylet::mptoken(mpt.mpt(), account)))
+    if (auto const sle = view.read(keylet::mptoken(mpt.getMptID(), account)))
         return sle->getFlags() & lsfMPTLocked;
     return false;
 }
@@ -316,7 +316,7 @@ accountHolds(
 {
     STMPTAmount amount;
 
-    auto const sleMpt = view.read(keylet::mptoken(issue.mpt(), account));
+    auto const sleMpt = view.read(keylet::mptoken(issue.getMptID(), account));
     if (!sleMpt)
         amount.clear(issue);
     else if (zeroIfFrozen == fhZERO_IF_FROZEN && isFrozen(view, account, issue))
@@ -564,7 +564,7 @@ transferRate(ReadView const& view, AccountID const& issuer)
 }
 
 Rate
-transferRate(ReadView const& view, MPT const& id)
+transferRate(ReadView const& view, MPTID const& id)
 {
     auto const sle = view.read(keylet::mptIssuance(id));
 
@@ -1363,11 +1363,13 @@ rippleSend(
     }
 
     // Sending 3rd party MPTs: transit.
-    if (auto const sle = view.read(keylet::mptIssuance(saAmount.issue().mpt())))
+    if (auto const sle =
+            view.read(keylet::mptIssuance(saAmount.issue().getMptID())))
     {
         saActual = (waiveFee == WaiveTransferFee::Yes)
             ? saAmount
-            : multiply(saAmount, transferRate(view, saAmount.issue().mpt()));
+            : multiply(
+                  saAmount, transferRate(view, saAmount.issue().getMptID()));
 
         JLOG(j.debug()) << "rippleSend> " << to_string(uSenderID) << " - > "
                         << to_string(uReceiverID)
@@ -1693,7 +1695,7 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
 TER
 requireAuth(ReadView const& view, MPTIssue const& mpt, AccountID const& account)
 {
-    auto const mptID = keylet::mptIssuance(mpt.mpt());
+    auto const mptID = keylet::mptIssuance(mpt.getMptID());
     if (auto const sle = view.read(mptID);
         sle && sle->getFieldU32(sfFlags) & lsfMPTRequireAuth)
     {
@@ -1713,7 +1715,7 @@ canTransfer(
     AccountID const& from,
     AccountID const& to)
 {
-    auto const mptID = keylet::mptIssuance(mpt.mpt());
+    auto const mptID = keylet::mptIssuance(mpt.getMptID());
     if (auto const sle = view.read(mptID);
         sle && !(sle->getFieldU32(sfFlags) & lsfMPTCanTransfer))
     {
@@ -1856,7 +1858,7 @@ rippleCredit(
     STMPTAmount saAmount,
     beast::Journal j)
 {
-    auto const mptID = keylet::mptIssuance(saAmount.issue().mpt());
+    auto const mptID = keylet::mptIssuance(saAmount.issue().getMptID());
     auto const issuer = saAmount.getIssuer();
     if (uSenderID == issuer)
     {

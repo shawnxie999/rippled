@@ -29,11 +29,6 @@ template <typename TAmnt>
 concept ValidAmountType =
     std::is_same_v<TAmnt, STAmount> || std::is_same_v<TAmnt, STMPTAmount>;
 
-// Currency or MPT issuance ID
-template <typename T>
-concept ValidAssetType =
-    std::is_same_v<T, Currency> || std::is_same_v<T, uint192>;
-
 template <typename T>
 concept EitherAmountType = std::is_same_v<T, STEitherAmount> ||
     std::is_same_v<T, std::optional<STEitherAmount>>;
@@ -100,7 +95,7 @@ public:
     std::variant<STAmount, STMPTAmount>&
     getValue();
 
-    AccountID const&
+    AccountID
     getIssuer() const;
 
     bool

@@ -73,13 +73,15 @@ public:
     {
         init(fieldName);
     }
-    SOElement(TypedFieldAmount<SFieldMPT::No> const& fieldName, SOEStyle style)
+    SOElement(
+        TypedVariantField<STEitherAmount, STAmount> const& fieldName,
+        SOEStyle style)
         : sField_(fieldName), style_(style), supportMpt_(soeMPTNotSupported)
     {
         init(fieldName);
     }
     SOElement(
-        TypedFieldAmount<SFieldMPT::Yes> const& fieldName,
+        TypedVariantField<STEitherAmount> const& fieldName,
         SOEStyle style,
         SOETxMPTAmount supportMpt = soeMPTNotSupported)
         : sField_(fieldName), style_(style), supportMpt_(supportMpt)

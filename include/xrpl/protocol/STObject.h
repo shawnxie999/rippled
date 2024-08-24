@@ -54,15 +54,12 @@ throwFieldNotFound(SField const& field)
 
 class STObject : public STBase, public CountedObject<STObject>
 {
-    template <typename T, SFieldMPT M>
-    using ValueType = std::conditional<M == SFieldMPT::No, STAmount, T>::type;
-
     // Proxy value for a STBase derived class
-    template <class T, SFieldMPT = SFieldMPT::None>
+    template <class T, class H = T>
     class Proxy;
-    template <class T, SFieldMPT = SFieldMPT::None>
+    template <class T, class H = T>
     class ValueProxy;
-    template <class T, SFieldMPT = SFieldMPT::None>
+    template <class T, class H = T>
     class OptionalProxy;
 
     struct Transform
@@ -240,11 +237,10 @@ public:
     Blob
     getFieldVL(SField const& field) const;
     STEitherAmount const&
-    getFieldEitherAmount(SField const& field) const;
-    STEitherAmount const&
     getFieldAmount(SField const& field) const;
     STAmount const&
-    getFieldAmount(TypedFieldAmount<SFieldMPT::No> const& field) const;
+    getFieldAmount(
+        TypedVariantField<STEitherAmount, STAmount> const& field) const;
     STPathSet const&
     getFieldPathSet(SField const& field) const;
     const STVector256&
@@ -265,11 +261,11 @@ public:
     typename T::value_type
     operator[](TypedField<T> const& f) const;
 
-    /** Overload for amount fields
+    /** Overload for amount field
      */
-    template <SFieldMPT M>
-    typename ValueType<STEitherAmount, M>::value_type
-    operator[](TypedFieldAmount<M> const& f) const;
+    template <class T, class H = T>
+    H::value_type
+    operator[](TypedVariantField<T, H> const& f) const;
 
     /** Get the value of a field as a std::optional
 
@@ -283,12 +279,11 @@ public:
     std::optional<std::decay_t<typename T::value_type>>
     operator[](OptionaledField<T> const& of) const;
 
-    /** Overload for amount fields
+    /** Overload for a variant field
      */
-    template <SFieldMPT M>
-    std::optional<
-        std::decay_t<typename ValueType<STEitherAmount, M>::value_type>>
-    operator[](OptionaledFieldAmount<M> const& of) const;
+    template <class T, class H>
+    std::optional<std::decay_t<typename H::value_type>>
+    operator[](OptionaledVariantField<T, H> const& of) const;
 
     /** Get a modifiable field value.
         @param A TypedField built from an SField value representing the desired
@@ -301,11 +296,11 @@ public:
     ValueProxy<T>
     operator[](TypedField<T> const& f);
 
-    /** Overload for amount fields
+    /** Overload for a variant field
      */
-    template <SFieldMPT M>
-    ValueProxy<STEitherAmount, M>
-    operator[](TypedFieldAmount<M> const& f);
+    template <class T, class H = T>
+    ValueProxy<T, H>
+    operator[](TypedVariantField<T, H> const& f);
 
     /** Return a modifiable field value as std::optional
 
@@ -320,11 +315,11 @@ public:
     OptionalProxy<T>
     operator[](OptionaledField<T> const& of);
 
-    /** Overload for amount fields
+    /** Overload for a variant field
      */
-    template <SFieldMPT M>
-    OptionalProxy<STEitherAmount, M>
-    operator[](OptionaledFieldAmount<M> const& of);
+    template <class T, class H = T>
+    OptionalProxy<T, H>
+    operator[](OptionaledVariantField<T, H> const& of);
 
     /** Get the value of a field.
         @param A TypedField built from an SField value representing the desired
@@ -337,11 +332,11 @@ public:
     typename T::value_type
     at(TypedField<T> const& f) const;
 
-    /** Overload for amount fields
+    /** Overload for a variant field
      */
-    template <SFieldMPT M>
-    typename ValueType<STEitherAmount, M>::value_type
-    at(TypedFieldAmount<M> const& f) const;
+    template <class T, class H = T>
+    H::value_type
+    at(TypedVariantField<T, H> const& f) const;
 
     /** Get the value of a field as std::optional
 
@@ -355,12 +350,11 @@ public:
     std::optional<std::decay_t<typename T::value_type>>
     at(OptionaledField<T> const& of) const;
 
-    /** Overload for amount fields
+    /** Overload for a variant field
      */
-    template <SFieldMPT M>
-    std::optional<
-        std::decay_t<typename ValueType<STEitherAmount, M>::value_type>>
-    at(OptionaledFieldAmount<M> const& of) const;
+    template <class T, class H = T>
+    std::optional<std::decay_t<typename H::value_type>>
+    at(OptionaledVariantField<T, H> const& of) const;
 
     /** Get a modifiable field value.
         @param A TypedField built from an SField value representing the desired
@@ -373,11 +367,11 @@ public:
     ValueProxy<T>
     at(TypedField<T> const& f);
 
-    /** Overload for amount fields that don't support MPT
+    /** Overload for a variant field
      */
-    template <SFieldMPT M>
-    ValueProxy<STEitherAmount, M>
-    at(TypedFieldAmount<M> const& f);
+    template <class T, class H = T>
+    ValueProxy<T, H>
+    at(TypedVariantField<T, H> const& f);
 
     /** Return a modifiable field value as std::optional
 
@@ -392,11 +386,11 @@ public:
     OptionalProxy<T>
     at(OptionaledField<T> const& of);
 
-    /** Overload for amount fields that don't support MPT
+    /** Overload for a variant field
      */
-    template <SFieldMPT M>
-    OptionalProxy<STEitherAmount, M>
-    at(OptionaledFieldAmount<M> const& of);
+    template <class T, class H = T>
+    OptionalProxy<T, H>
+    at(OptionaledVariantField<T, H> const& of);
 
     /** Set a field.
         if the field already exists, it is replaced.
@@ -541,11 +535,11 @@ private:
 
 //------------------------------------------------------------------------------
 
-template <class T, SFieldMPT M>
+template <class T, class H>
 class STObject::Proxy
 {
 protected:
-    using value_type = ValueType<T, M>::value_type;
+    using value_type = H::value_type;
 
     STObject* st_;
     SOEStyle style_;
@@ -566,11 +560,11 @@ protected:
     assign(U&& u);
 };
 
-template <class T, SFieldMPT M>
-class STObject::ValueProxy : private Proxy<T, M>
+template <class T, class H>
+class STObject::ValueProxy : private Proxy<T, H>
 {
 private:
-    using value_type = ValueType<T, M>::value_type;
+    using value_type = H::value_type;
 
 public:
     ValueProxy(ValueProxy const&) = default;
@@ -589,11 +583,11 @@ private:
     ValueProxy(STObject* st, TypedField<T> const* f);
 };
 
-template <class T, SFieldMPT M>
-class STObject::OptionalProxy : private Proxy<T, M>
+template <class T, class H>
+class STObject::OptionalProxy : private Proxy<T, H>
 {
 private:
-    using value_type = ValueType<T, M>::value_type;
+    using value_type = H::value_type;
 
     using optional_type = std::optional<typename std::decay<value_type>::type>;
 
@@ -725,8 +719,8 @@ class STObject::FieldErr : public std::runtime_error
     using std::runtime_error::runtime_error;
 };
 
-template <class T, SFieldMPT M>
-STObject::Proxy<T, M>::Proxy(STObject* st, TypedField<T> const* f)
+template <class T, class H>
+STObject::Proxy<T, H>::Proxy(STObject* st, TypedField<T> const* f)
     : st_(st), f_(f)
 {
     if (st_->mType)
@@ -743,13 +737,18 @@ STObject::Proxy<T, M>::Proxy(STObject* st, TypedField<T> const* f)
     }
 }
 
-template <class T, SFieldMPT M>
+template <class T, class H>
 auto
-STObject::Proxy<T, M>::value() const -> value_type
+STObject::Proxy<T, H>::value() const -> value_type
 {
     auto const t = find();
     if (t)
-        return t->value();
+    {
+        if constexpr (std::is_same_v<T, H>)
+            return t->value();
+        else
+            return get<H>(t->value());
+    }
     if (style_ == soeINVALID)
     {
         Throw<STObject::FieldErr>("Value requested from invalid STObject.");
@@ -762,36 +761,17 @@ STObject::Proxy<T, M>::value() const -> value_type
     return value_type{};
 }
 
-template <>
-inline auto
-STObject::Proxy<STEitherAmount, SFieldMPT::No>::value() const -> STAmount
-{
-    auto const t = find();
-    if (t)
-        return get<STAmount>(t->value());
-    if (style_ == soeINVALID)
-    {
-        Throw<STObject::FieldErr>("Value requested from invalid STObject.");
-    }
-    if (style_ != soeDEFAULT)
-    {
-        Throw<STObject::FieldErr>(
-            "Missing field '" + this->f_->getName() + "'");
-    }
-    return STAmount{};
-}
-
-template <class T, SFieldMPT M>
+template <class T, class H>
 inline T const*
-STObject::Proxy<T, M>::find() const
+STObject::Proxy<T, H>::find() const
 {
     return dynamic_cast<T const*>(st_->peekAtPField(*f_));
 }
 
-template <class T, SFieldMPT M>
+template <class T, class H>
 template <class U>
 void
-STObject::Proxy<T, M>::assign(U&& u)
+STObject::Proxy<T, H>::assign(U&& u)
 {
     if (style_ == soeDEFAULT && u == value_type{})
     {
@@ -809,68 +789,68 @@ STObject::Proxy<T, M>::assign(U&& u)
 
 //------------------------------------------------------------------------------
 
-template <class T, SFieldMPT M>
+template <class T, class H>
 template <class U>
-std::enable_if_t<std::is_assignable_v<T, U>, STObject::ValueProxy<T, M>&>
-STObject::ValueProxy<T, M>::operator=(U&& u)
+std::enable_if_t<std::is_assignable_v<T, U>, STObject::ValueProxy<T, H>&>
+STObject::ValueProxy<T, H>::operator=(U&& u)
 {
     this->assign(std::forward<U>(u));
     return *this;
 }
 
-template <class T, SFieldMPT M>
-STObject::ValueProxy<T, M>::operator value_type() const
+template <class T, class H>
+STObject::ValueProxy<T, H>::operator value_type() const
 {
     return this->value();
 }
 
-template <class T, SFieldMPT M>
-STObject::ValueProxy<T, M>::ValueProxy(STObject* st, TypedField<T> const* f)
-    : Proxy<T, M>(st, f)
+template <class T, class H>
+STObject::ValueProxy<T, H>::ValueProxy(STObject* st, TypedField<T> const* f)
+    : Proxy<T, H>(st, f)
 {
 }
 
 //------------------------------------------------------------------------------
 
-template <class T, SFieldMPT M>
-STObject::OptionalProxy<T, M>::operator bool() const noexcept
+template <class T, class H>
+STObject::OptionalProxy<T, H>::operator bool() const noexcept
 {
     return engaged();
 }
 
-template <class T, SFieldMPT M>
+template <class T, class H>
 auto
-STObject::OptionalProxy<T, M>::operator*() const -> value_type
+STObject::OptionalProxy<T, H>::operator*() const -> value_type
 {
     return this->value();
 }
 
-template <class T, SFieldMPT M>
-STObject::OptionalProxy<T, M>::operator typename STObject::OptionalProxy<T, M>::
+template <class T, class H>
+STObject::OptionalProxy<T, H>::operator typename STObject::OptionalProxy<T, H>::
     optional_type() const
 {
     return optional_value();
 }
 
-template <class T, SFieldMPT M>
-typename STObject::OptionalProxy<T, M>::optional_type
-STObject::OptionalProxy<T, M>::operator~() const
+template <class T, class H>
+typename STObject::OptionalProxy<T, H>::optional_type
+STObject::OptionalProxy<T, H>::operator~() const
 {
     return optional_value();
 }
 
-template <class T, SFieldMPT M>
+template <class T, class H>
 auto
-STObject::OptionalProxy<T, M>::operator=(std::nullopt_t const&)
+STObject::OptionalProxy<T, H>::operator=(std::nullopt_t const&)
     -> OptionalProxy&
 {
     disengage();
     return *this;
 }
 
-template <class T, SFieldMPT M>
+template <class T, class H>
 auto
-STObject::OptionalProxy<T, M>::operator=(optional_type&& v) -> OptionalProxy&
+STObject::OptionalProxy<T, H>::operator=(optional_type&& v) -> OptionalProxy&
 {
     if (v)
         this->assign(std::move(*v));
@@ -879,9 +859,9 @@ STObject::OptionalProxy<T, M>::operator=(optional_type&& v) -> OptionalProxy&
     return *this;
 }
 
-template <class T, SFieldMPT M>
+template <class T, class H>
 auto
-STObject::OptionalProxy<T, M>::operator=(optional_type const& v)
+STObject::OptionalProxy<T, H>::operator=(optional_type const& v)
     -> OptionalProxy&
 {
     if (v)
@@ -891,33 +871,33 @@ STObject::OptionalProxy<T, M>::operator=(optional_type const& v)
     return *this;
 }
 
-template <class T, SFieldMPT M>
+template <class T, class H>
 template <class U>
-std::enable_if_t<std::is_assignable_v<T, U>, STObject::OptionalProxy<T, M>&>
-STObject::OptionalProxy<T, M>::operator=(U&& u)
+std::enable_if_t<std::is_assignable_v<T, U>, STObject::OptionalProxy<T, H>&>
+STObject::OptionalProxy<T, H>::operator=(U&& u)
 {
     this->assign(std::forward<U>(u));
     return *this;
 }
 
-template <class T, SFieldMPT M>
-STObject::OptionalProxy<T, M>::OptionalProxy(
+template <class T, class H>
+STObject::OptionalProxy<T, H>::OptionalProxy(
     STObject* st,
     TypedField<T> const* f)
-    : Proxy<T, M>(st, f)
+    : Proxy<T, H>(st, f)
 {
 }
 
-template <class T, SFieldMPT M>
+template <class T, class H>
 bool
-STObject::OptionalProxy<T, M>::engaged() const noexcept
+STObject::OptionalProxy<T, H>::engaged() const noexcept
 {
     return this->style_ == soeDEFAULT || this->find() != nullptr;
 }
 
-template <class T, SFieldMPT M>
+template <class T, class H>
 void
-STObject::OptionalProxy<T, M>::disengage()
+STObject::OptionalProxy<T, H>::disengage()
 {
     if (this->style_ == soeREQUIRED || this->style_ == soeDEFAULT)
         Throw<STObject::FieldErr>(
@@ -928,18 +908,18 @@ STObject::OptionalProxy<T, M>::disengage()
         this->st_->makeFieldAbsent(*this->f_);
 }
 
-template <class T, SFieldMPT M>
+template <class T, class H>
 auto
-STObject::OptionalProxy<T, M>::optional_value() const -> optional_type
+STObject::OptionalProxy<T, H>::optional_value() const -> optional_type
 {
     if (!engaged())
         return std::nullopt;
     return this->value();
 }
 
-template <class T, SFieldMPT M>
-typename STObject::OptionalProxy<T, M>::value_type
-STObject::OptionalProxy<T, M>::value_or(value_type val) const
+template <class T, class H>
+typename STObject::OptionalProxy<T, H>::value_type
+STObject::OptionalProxy<T, H>::value_or(value_type val) const
 {
     return engaged() ? this->value() : val;
 }
@@ -1051,9 +1031,9 @@ STObject::operator[](TypedField<T> const& f) const
     return at(f);
 }
 
-template <SFieldMPT M>
-typename STObject::ValueType<STEitherAmount, M>::value_type
-STObject::operator[](TypedFieldAmount<M> const& f) const
+template <class T, class H>
+inline H::value_type
+STObject::operator[](TypedVariantField<T, H> const& f) const
 {
     return at(f);
 }
@@ -1065,10 +1045,9 @@ STObject::operator[](OptionaledField<T> const& of) const
     return at(of);
 }
 
-template <SFieldMPT M>
-std::optional<
-    std::decay_t<typename STObject::ValueType<STEitherAmount, M>::value_type>>
-STObject::operator[](OptionaledFieldAmount<M> const& of) const
+template <class T, class H>
+inline std::optional<std::decay_t<typename H::value_type>>
+STObject::operator[](OptionaledVariantField<T, H> const& of) const
 {
     return at(of);
 }
@@ -1080,10 +1059,9 @@ STObject::operator[](TypedField<T> const& f) -> ValueProxy<T>
     return at(f);
 }
 
-template <SFieldMPT M>
+template <class T, class H>
 inline auto
-STObject::operator[](TypedFieldAmount<M> const& f)
-    -> ValueProxy<STEitherAmount, M>
+STObject::operator[](TypedVariantField<T, H> const& f) -> ValueProxy<T, H>
 {
     return at(f);
 }
@@ -1095,10 +1073,10 @@ STObject::operator[](OptionaledField<T> const& of) -> OptionalProxy<T>
     return at(of);
 }
 
-template <SFieldMPT M>
+template <class T, class H>
 inline auto
-STObject::operator[](OptionaledFieldAmount<M> const& of)
-    -> OptionalProxy<STEitherAmount, M>
+STObject::operator[](OptionaledVariantField<T, H> const& of)
+    -> OptionalProxy<T, H>
 {
     return at(of);
 }
@@ -1137,14 +1115,14 @@ STObject::at(TypedField<T> const& f) const
     return atImpl(f);
 }
 
-template <SFieldMPT M>
-typename STObject::ValueType<STEitherAmount, M>::value_type
-STObject::at(TypedFieldAmount<M> const& f) const
+template <class T, class H>
+inline H::value_type
+STObject::at(TypedVariantField<T, H> const& f) const
 {
-    if constexpr (M == SFieldMPT::Yes)
+    if constexpr (std::is_same_v<T, H>)
         return atImpl(f);
     else
-        return get<STAmount>(atImpl(f));
+        return get<H>(atImpl(f));
 }
 
 template <class T>
@@ -1174,15 +1152,14 @@ STObject::at(OptionaledField<T> const& of) const
     return atImpl(of);
 }
 
-template <SFieldMPT M>
-std::optional<
-    std::decay_t<typename STObject::ValueType<STEitherAmount, M>::value_type>>
-STObject::at(OptionaledFieldAmount<M> const& of) const
+template <class T, class H>
+inline std::optional<std::decay_t<typename H::value_type>>
+STObject::at(OptionaledVariantField<T, H> const& of) const
 {
-    if constexpr (M == SFieldMPT::Yes)
+    if constexpr (std::is_same_v<T, H>)
         return atImpl(of);
     else
-        return get<STAmount>(atImpl(of));
+        return get<H>(atImpl(of));
 }
 
 template <class T>
@@ -1192,11 +1169,11 @@ STObject::at(TypedField<T> const& f) -> ValueProxy<T>
     return ValueProxy<T>(this, &f);
 }
 
-template <SFieldMPT M>
+template <class T, class H>
 inline auto
-STObject::at(TypedFieldAmount<M> const& f) -> ValueProxy<STEitherAmount, M>
+STObject::at(TypedVariantField<T, H> const& f) -> ValueProxy<T, H>
 {
-    return ValueProxy<STEitherAmount, M>(this, &f);
+    return ValueProxy<T, H>(this, &f);
 }
 
 template <class T>
@@ -1206,12 +1183,11 @@ STObject::at(OptionaledField<T> const& of) -> OptionalProxy<T>
     return OptionalProxy<T>(this, of.f);
 }
 
-template <SFieldMPT M>
+template <class T, class H>
 inline auto
-STObject::at(OptionaledFieldAmount<M> const& of)
-    -> OptionalProxy<STEitherAmount, M>
+STObject::at(OptionaledVariantField<T, H> const& of) -> OptionalProxy<T, H>
 {
-    return OptionalProxy<STEitherAmount, M>(this, of.f);
+    return OptionalProxy<T, H>(this, of.f);
 }
 
 template <class Tag>

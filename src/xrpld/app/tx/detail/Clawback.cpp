@@ -172,7 +172,7 @@ preclaimHelper<STMPTAmount>(PreclaimContext const& ctx)
     if (sleHolder->isFieldPresent(sfAMMID))
         return tecAMM_ACCOUNT;
 
-    auto const issuanceKey = keylet::mptIssuance(clawAmount.issue().mpt());
+    auto const issuanceKey = keylet::mptIssuance(clawAmount.issue().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;

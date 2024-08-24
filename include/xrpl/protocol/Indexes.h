@@ -290,10 +290,7 @@ Keylet
 mptIssuance(AccountID const& issuer, std::uint32_t seq) noexcept;
 
 Keylet
-mptIssuance(uint192 const& mpt) noexcept;
-
-Keylet
-mptIssuance(ripple::MPT const& mpt) noexcept;
+mptIssuance(MPTID const& mpt) noexcept;
 
 inline Keylet
 mptIssuance(uint256 const& issuance)
@@ -302,10 +299,7 @@ mptIssuance(uint256 const& issuance)
 }
 
 Keylet
-mptoken(MPT const& issuanceID, AccountID const& holder) noexcept;
-
-Keylet
-mptoken(uint192 const& issuanceID, AccountID const& holder) noexcept;
+mptoken(MPTID const& issuanceID, AccountID const& holder) noexcept;
 
 inline Keylet
 mptoken(uint256 const& mptokenKey)
@@ -336,7 +330,7 @@ getTicketIndex(AccountID const& account, std::uint32_t uSequence);
 uint256
 getTicketIndex(AccountID const& account, SeqProxy ticketSeq);
 
-uint192
+MPTID
 getMptID(AccountID const& account, std::uint32_t sequence);
 
 }  // namespace ripple

@@ -111,7 +111,7 @@ struct MPTCreate
 struct MPTDestroy
 {
     AccountP issuer = nullptr;
-    std::optional<uint192> id = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -122,7 +122,7 @@ struct MPTAuthorize
 {
     AccountP account = nullptr;
     AccountP holder = nullptr;
-    std::optional<uint192> id = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -133,7 +133,7 @@ struct MPTSet
 {
     AccountP account = nullptr;
     AccountP holder = nullptr;
-    std::optional<uint192> id = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -145,9 +145,8 @@ class MPTTester
     Env& env_;
     Account const& issuer_;
     std::unordered_map<std::string, AccountP> const holders_;
-    std::optional<uint192> id_;
+    std::optional<MPTID> id_;
     std::optional<uint256> issuanceKey_;
-    std::optional<ripple::MPT> mpt_;
     bool close_;
 
 public:
@@ -206,7 +205,7 @@ public:
         return *issuanceKey_;
     }
 
-    uint192 const&
+    MPTID const&
     issuanceID() const
     {
         assert(id_);

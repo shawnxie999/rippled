@@ -32,10 +32,6 @@
 
 namespace ripple {
 
-struct int64_tag_t
-{
-};
-
 // Internal form:
 // 1: If amount is zero, then value is zero and offset is -100
 // 2: Otherwise:
@@ -101,8 +97,6 @@ public:
         exponent_type exponent,
         bool native,
         bool negative);
-
-    STAmount(std::int64_t mantissa, int64_tag_t);
 
     explicit STAmount(std::uint64_t mantissa = 0, bool negative = false);
 

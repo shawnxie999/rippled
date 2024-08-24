@@ -187,12 +187,6 @@ STAmount::STAmount(
     canonicalize();
 }
 
-STAmount::STAmount(std::int64_t mantissa, int64_tag_t)
-    : mOffset(0), mIsNative(true)
-{
-    set(mantissa);
-}
-
 //------------------------------------------------------------------------------
 
 STAmount::STAmount(std::uint64_t mantissa, bool negative)
@@ -351,7 +345,12 @@ operator+(STAmount const& v1, STAmount const& v2)
     }
 
     if (v1.native())
-        return {getSNValue(v1) + getSNValue(v2), int64_tag_t{}};
+    {
+        auto const res = getSNValue(v1) + getSNValue(v2);
+        auto const negative = res < 0;
+        return STAmount{
+            static_cast<std::uint64_t>(negative ? -res : res), negative};
+    }
 
     if (getSTNumberSwitchover())
     {

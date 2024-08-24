@@ -45,10 +45,12 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 {
 }
 
-template <SFieldMPT M>
+template <class T, class H>
 template <class... Args>
-TypedFieldAmount<M>::TypedFieldAmount(private_access_tag_t pat, Args&&... args)
-    : TypedField<STEitherAmount>(pat, std::forward<Args>(args)...)
+TypedVariantField<T, H>::TypedVariantField(
+    SField::private_access_tag_t pat,
+    Args&&... args)
+    : TypedField<T>(pat, std::forward<Args>(args)...)
 {
 }
 

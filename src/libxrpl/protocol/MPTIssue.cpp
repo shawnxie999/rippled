@@ -23,49 +23,27 @@
 
 namespace ripple {
 
-MPTIssue::MPTIssue(MPT const& mpt) : mpt_(mpt)
+MPTIssue::MPTIssue(MPTID const& id) : mptID_(id)
 {
 }
 
-MPTIssue::MPTIssue(uint192 const& id)
-{
-    mpt_ = getMPT(id);
-}
-
-AccountID const&
+AccountID
 MPTIssue::getIssuer() const
 {
-    return mpt_.second;
-}
-
-MPT const&
-MPTIssue::mpt() const
-{
-    return mpt_;
-}
-
-MPT&
-MPTIssue::mpt()
-{
-    return mpt_;
-}
-
-uint192
-MPTIssue::getMptID() const
-{
-    return ripple::getMptID(mpt_.second, mpt_.first);
-}
-
-MPT
-getMPT(uint192 const& id)
-{
-    std::uint32_t sequence;
     AccountID account;
 
-    memcpy(&sequence, id.data(), sizeof(sequence));
-    sequence = boost::endian::big_to_native(sequence);
-    memcpy(account.data(), id.data() + sizeof(sequence), sizeof(AccountID));
-    return std::make_pair(sequence, account);
+    // copy from id skipping the sequence
+    memcpy(
+        account.data(),
+        mptID_.data() + sizeof(std::uint32_t),
+        sizeof(AccountID));
+    return account;
+}
+
+MPTID const&
+MPTIssue::getMptID() const
+{
+    return mptID_;
 }
 
 Json::Value

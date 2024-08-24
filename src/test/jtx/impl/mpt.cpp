@@ -94,8 +94,7 @@ MPTTester::create(const MPTCreate& arg)
 {
     if (issuanceKey_)
         Throw<std::runtime_error>("MPT can't be reused");
-    mpt_ = std::make_pair(env_.seq(issuer_), issuer_.id());
-    id_ = getMptID(issuer_.id(), mpt_->first);
+    id_ = getMptID(issuer_.id(), env_.seq(issuer_));
     issuanceKey_ = keylet::mptIssuance(*id_).key;
     Json::Value jv;
     jv[sfAccount.jsonName] = issuer_.human();
@@ -119,7 +118,6 @@ MPTTester::create(const MPTCreate& arg)
 
         id_.reset();
         issuanceKey_.reset();
-        mpt_.reset();
     }
     else if (arg.flags)
         env_.require(mptflags(*this, *arg.flags));
@@ -306,7 +304,7 @@ MPTTester::pay(
     std::int64_t amount,
     std::optional<TER> err)
 {
-    assert(mpt_);
+    assert(id_);
     auto const srcAmt = getAmount(src);
     auto const destAmt = getAmount(dest);
     auto const outstnAmt = getAmount(issuer_);
@@ -331,7 +329,7 @@ MPTTester::pay(
     else
     {
         auto const actual = static_cast<std::int64_t>(
-            amount * Number{transferRate(*env_.current(), *mpt_).value, -9});
+            amount * Number{transferRate(*env_.current(), *id_).value, -9});
         // Sender pays the transfer fee if any
         env_.require(mptpay(*this, src, srcAmt - actual));
         env_.require(mptpay(*this, dest, destAmt + amount));
@@ -347,7 +345,7 @@ MPTTester::claw(
     std::int64_t amount,
     std::optional<TER> err)
 {
-    assert(mpt_);
+    assert(id_);
     auto const issuerAmt = getAmount(issuer);
     auto const holderAmt = getAmount(holder);
     if (err)
@@ -368,8 +366,8 @@ MPTTester::claw(
 STMPTAmount
 MPTTester::mpt(std::int64_t amount) const
 {
-    assert(mpt_);
-    return ripple::test::jtx::MPT(issuer_.name(), *mpt_)(amount);
+    assert(id_);
+    return ripple::test::jtx::MPT(issuer_.name(), *id_)(amount);
 }
 
 std::int64_t

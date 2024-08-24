@@ -111,16 +111,16 @@ STMPTAmount::add(Serializer& s) const
 bool
 STMPTAmount::isDefault() const
 {
-    return value_ == 0 && issue_ == badMPT();
+    return value_ == 0 && issue_ == noMPT();
 }
 
-AccountID const&
+AccountID
 STMPTAmount::getIssuer() const
 {
     return issue_.getIssuer();
 }
 
-uint192
+MPTID const&
 STMPTAmount::getCurrency() const
 {
     return issue_.getMptID();

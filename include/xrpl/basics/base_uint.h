@@ -634,6 +634,7 @@ operator<<(std::ostream& out, base_uint<Bits, Tag> const& u)
 #ifndef __INTELLISENSE__
 static_assert(sizeof(uint128) == 128 / 8, "There should be no padding bytes");
 static_assert(sizeof(uint160) == 160 / 8, "There should be no padding bytes");
+static_assert(sizeof(uint192) == 192 / 8, "There should be no padding bytes");
 static_assert(sizeof(uint256) == 256 / 8, "There should be no padding bytes");
 #endif
 

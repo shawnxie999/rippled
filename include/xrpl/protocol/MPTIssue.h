@@ -28,25 +28,17 @@ namespace ripple {
 class MPTIssue
 {
 private:
-    MPT mpt_;
+    MPTID mptID_;
 
 public:
     MPTIssue() = default;
 
-    MPTIssue(MPT const& mpt);
+    MPTIssue(MPTID const& id);
 
-    MPTIssue(uint192 const& id);
-
-    AccountID const&
+    AccountID
     getIssuer() const;
 
-    MPT const&
-    mpt() const;
-
-    MPT&
-    mpt();
-
-    uint192
+    MPTID const&
     getMptID() const;
 
     friend constexpr bool
@@ -59,27 +51,17 @@ public:
 constexpr bool
 operator==(MPTIssue const& lhs, MPTIssue const& rhs)
 {
-    return lhs.mpt_ == rhs.mpt_;
+    return lhs.mptID_ == rhs.mptID_;
 }
 
 constexpr bool
 operator!=(MPTIssue const& lhs, MPTIssue const& rhs)
 {
-    return !(lhs.mpt_ == rhs.mpt_);
-}
-
-MPT
-getMPT(uint192 const&);
-
-inline MPT
-badMPT()
-{
-    static MPT mpt{0, AccountID{0}};
-    return mpt;
+    return !(lhs.mptID_ == rhs.mptID_);
 }
 
 inline bool
-isXRP(uint192 const&)
+isXRP(MPTID const&)
 {
     return false;
 }

@@ -268,7 +268,7 @@ preflightHelper<STMPTAmount>(PreflightContext const& ctx)
                         << "bad dst amount: " << saDstAmount.getFullText();
         return temBAD_AMOUNT;
     }
-    if (badMPT() == uDstCurrency)
+    if (noMPT() == uDstCurrency)
     {
         JLOG(j.trace()) << "Malformed transaction: "
                         << "Bad asset.";

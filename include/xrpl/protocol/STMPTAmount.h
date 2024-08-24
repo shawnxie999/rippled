@@ -66,13 +66,13 @@ public:
     bool
     isDefault() const;
 
-    AccountID const&
+    AccountID
     getIssuer() const;
 
     MPTIssue const&
     issue() const;
 
-    uint192
+    MPTID const&
     getCurrency() const;
 
     void

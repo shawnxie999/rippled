@@ -43,6 +43,7 @@ Some fields have a different meaning for their
 // Forwards
 class STAccount;
 class STEitherAmount;
+class STAmount;
 class STIssue;
 class STBlob;
 template <int>
@@ -56,44 +57,49 @@ class STCurrency;
 #pragma push_macro("XMACRO")
 #undef XMACRO
 
-#define XMACRO(STYPE)                             \
-    /* special types */                           \
-    STYPE(STI_UNKNOWN, -2)                        \
-    STYPE(STI_NOTPRESENT, 0)                      \
-    STYPE(STI_UINT16, 1)                          \
-                                                  \
-    /* types (common) */                          \
-    STYPE(STI_UINT32, 2)                          \
-    STYPE(STI_UINT64, 3)                          \
-    STYPE(STI_UINT128, 4)                         \
-    STYPE(STI_UINT256, 5)                         \
-    STYPE(STI_AMOUNT, 6)                          \
-    STYPE(STI_EITHER_AMOUNT, 6)                   \
-    STYPE(STI_VL, 7)                              \
-    STYPE(STI_ACCOUNT, 8)                         \
-                                                  \
-    /* 9-13 are reserved */                       \
-    STYPE(STI_OBJECT, 14)                         \
-    STYPE(STI_ARRAY, 15)                          \
-                                                  \
-    /* types (uncommon) */                        \
-    STYPE(STI_UINT8, 16)                          \
-    STYPE(STI_UINT160, 17)                        \
-    STYPE(STI_PATHSET, 18)                        \
-    STYPE(STI_VECTOR256, 19)                      \
-    STYPE(STI_UINT96, 20)                         \
-    STYPE(STI_UINT192, 21)                        \
-    STYPE(STI_UINT384, 22)                        \
-    STYPE(STI_UINT512, 23)                        \
-    STYPE(STI_ISSUE, 24)                          \
-    STYPE(STI_XCHAIN_BRIDGE, 25)                  \
-    STYPE(STI_CURRENCY, 26)                       \
-                                                  \
-    /* high-level types */                        \
-    /* cannot be serialized inside other types */ \
-    STYPE(STI_TRANSACTION, 10001)                 \
-    STYPE(STI_LEDGERENTRY, 10002)                 \
-    STYPE(STI_VALIDATION, 10003)                  \
+#define XMACRO(STYPE)                              \
+    /* special types */                            \
+    STYPE(STI_UNKNOWN, -2)                         \
+    STYPE(STI_NOTPRESENT, 0)                       \
+    STYPE(STI_UINT16, 1)                           \
+                                                   \
+    /* types (common) */                           \
+    STYPE(STI_UINT32, 2)                           \
+    STYPE(STI_UINT64, 3)                           \
+    STYPE(STI_UINT128, 4)                          \
+    STYPE(STI_UINT256, 5)                          \
+    /* Need two enumerators with the same value */ \
+    /* so that SF_AMOUNT and SF_EITHER_AMOUNT */   \
+    /* map to the same serialization id. */        \
+    /* This is an artifact of */                   \
+    /* CONSTRUCT_TYPED_SFIELD */                   \
+    STYPE(STI_AMOUNT, 6)                           \
+    STYPE(STI_EITHER_AMOUNT, 6)                    \
+    STYPE(STI_VL, 7)                               \
+    STYPE(STI_ACCOUNT, 8)                          \
+                                                   \
+    /* 9-13 are reserved */                        \
+    STYPE(STI_OBJECT, 14)                          \
+    STYPE(STI_ARRAY, 15)                           \
+                                                   \
+    /* types (uncommon) */                         \
+    STYPE(STI_UINT8, 16)                           \
+    STYPE(STI_UINT160, 17)                         \
+    STYPE(STI_PATHSET, 18)                         \
+    STYPE(STI_VECTOR256, 19)                       \
+    STYPE(STI_UINT96, 20)                          \
+    STYPE(STI_UINT192, 21)                         \
+    STYPE(STI_UINT384, 22)                         \
+    STYPE(STI_UINT512, 23)                         \
+    STYPE(STI_ISSUE, 24)                           \
+    STYPE(STI_XCHAIN_BRIDGE, 25)                   \
+    STYPE(STI_CURRENCY, 26)                        \
+                                                   \
+    /* high-level types */                         \
+    /* cannot be serialized inside other types */  \
+    STYPE(STI_TRANSACTION, 10001)                  \
+    STYPE(STI_LEDGERENTRY, 10002)                  \
+    STYPE(STI_VALIDATION, 10003)                   \
     STYPE(STI_METADATA, 10004)
 
 #pragma push_macro("TO_ENUM")
@@ -302,8 +308,6 @@ private:
     static std::map<int, SField const*> knownCodeToField;
 };
 
-enum class SFieldMPT { None, Yes, No };
-
 /** A field with a type known at compile time. */
 template <class T>
 struct TypedField : SField
@@ -325,6 +329,37 @@ struct OptionaledField
     }
 };
 
+/** A field representing a variant with a type known at compile time.
+ * First template parameter is the variant type, the second
+ * template parameter is one of its alternative types. A variant field
+ * enables STObject::operator[]() overload to return the specified
+ * alternative type. For instance, STEitherAmount is a variant of STAmount
+ * and STMPTAmount. Some Amount fields, like SFee, don't support MPT
+ * and are declared as TypedVariantField<STEitherAmount, STAmount>.
+ * Conversely, sfAmount field supports MPT and is declared as
+ * TypedVariantField<STEitherAmount>. Then tx[sfFee] always returns STAmount,
+ * while tx[sfAmount] returns STEitherAmount and the caller has to get
+ * the specific type that STEitherAmount holds.
+ */
+template <class T, class H = T>
+struct TypedVariantField : TypedField<T>
+{
+    template <class... Args>
+    explicit TypedVariantField(
+        SField::private_access_tag_t pat,
+        Args&&... args);
+};
+
+/** Indicate std::optional variant field semantics. */
+template <class T, class H = T>
+struct OptionaledVariantField : OptionaledField<T>
+{
+    explicit OptionaledVariantField(TypedVariantField<T, H> const& f_)
+        : OptionaledField<T>(f_)
+    {
+    }
+};
+
 template <class T>
 inline OptionaledField<T>
 operator~(TypedField<T> const& f)
@@ -332,31 +367,11 @@ operator~(TypedField<T> const& f)
     return OptionaledField<T>(f);
 }
 
-// Amount fields
-
-/** A field with a type known at compile time. */
-template <SFieldMPT>
-struct TypedFieldAmount : public TypedField<STEitherAmount>
+template <class T, class H = T>
+inline OptionaledVariantField<T, H>
+operator~(TypedVariantField<T, H> const& f)
 {
-    template <class... Args>
-    explicit TypedFieldAmount(private_access_tag_t pat, Args&&... args);
-};
-
-/** Indicate std::optional field semantics. */
-template <SFieldMPT M>
-struct OptionaledFieldAmount : public OptionaledField<STEitherAmount>
-{
-    explicit OptionaledFieldAmount(TypedFieldAmount<M> const& f_)
-        : OptionaledField<STEitherAmount>(f_)
-    {
-    }
-};
-
-template <SFieldMPT M>
-inline OptionaledFieldAmount<M>
-operator~(TypedFieldAmount<M> const& f)
-{
-    return OptionaledFieldAmount<M>(f);
+    return OptionaledVariantField<T, H>(f);
 }
 
 //------------------------------------------------------------------------------
@@ -376,8 +391,8 @@ using SF_UINT384 = TypedField<STBitString<384>>;
 using SF_UINT512 = TypedField<STBitString<512>>;
 
 using SF_ACCOUNT = TypedField<STAccount>;
-using SF_AMOUNT = TypedFieldAmount<SFieldMPT::No>;
-using SF_EITHER_AMOUNT = TypedFieldAmount<SFieldMPT::Yes>;
+using SF_AMOUNT = TypedVariantField<STEitherAmount, STAmount>;
+using SF_EITHER_AMOUNT = TypedVariantField<STEitherAmount>;
 using SF_ISSUE = TypedField<STIssue>;
 using SF_CURRENCY = TypedField<STCurrency>;
 using SF_VL = TypedField<STBlob>;

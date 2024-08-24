@@ -631,13 +631,6 @@ STObject::getFieldVL(SField const& field) const
 }
 
 STEitherAmount const&
-STObject::getFieldEitherAmount(SField const& field) const
-{
-    static STEitherAmount const empty{};
-    return getFieldByConstRef<STEitherAmount>(field, empty);
-}
-
-STEitherAmount const&
 STObject::getFieldAmount(SField const& field) const
 {
     static STEitherAmount const empty{};
@@ -645,7 +638,8 @@ STObject::getFieldAmount(SField const& field) const
 }
 
 STAmount const&
-STObject::getFieldAmount(TypedFieldAmount<SFieldMPT::No> const& field) const
+STObject::getFieldAmount(
+    TypedVariantField<STEitherAmount, STAmount> const& field) const
 {
     static STEitherAmount const empty{};
     return get<STAmount>(getFieldByConstRef<STEitherAmount>(field, empty));
