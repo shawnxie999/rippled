@@ -66,13 +66,6 @@ JSS(AuthAccount);      // in: AMM Auction Slot
 JSS(AuthAccounts);     // in: AMM Auction Slot
 JSS(BaseAsset);        // in: Oracle
 JSS(Bridge);           // ledger type.
-JSS(MPToken);          // ledger type.
-JSS(MPTokenIssuance);  // ledger type.
-JSS(MPTokenIssuanceCreate);   // transaction type.
-JSS(MPTokenIssuanceDestroy);  // transaction type.
-JSS(MPTokenAuthorize);        // transaction type.
-JSS(MPTokenIssuanceSet);      // transaction type.
-JSS(MPTokenIssuanceID);       // in: MPTokenIssuanceDestroy, MPTokenAuthorize
 JSS(Check);                   // ledger type.
 JSS(CheckCancel);             // transaction type.
 JSS(CheckCash);               // transaction type.
@@ -103,6 +96,13 @@ JSS(LedgerHashes);            // ledger type.
 JSS(LimitAmount);             // field.
 JSS(BidMax);                  // in: AMM Bid
 JSS(BidMin);                  // in: AMM Bid
+JSS(MPToken);                 // ledger type.
+JSS(MPTokenIssuance);         // ledger type.
+JSS(MPTokenIssuanceCreate);   // transaction type.
+JSS(MPTokenIssuanceDestroy);  // transaction type.
+JSS(MPTokenAuthorize);        // transaction type.
+JSS(MPTokenIssuanceSet);      // transaction type.
+JSS(MPTokenIssuanceID);       // in: MPTokenIssuanceDestroy, MPTokenAuthorize
 JSS(NetworkID);               // field.
 JSS(NFTokenBurn);             // transaction type.
 JSS(NFTokenMint);             // transaction type.
