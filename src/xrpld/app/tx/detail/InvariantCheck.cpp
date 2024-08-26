@@ -362,6 +362,91 @@ AccountRootsNotDeleted::finalize(
 //------------------------------------------------------------------------------
 
 void
+AccountRootsDeletedClean::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const&)
+{
+    if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
+        accountsDeleted_.emplace_back(before);
+}
+
+bool
+AccountRootsDeletedClean::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    // Always check for objects in the ledger, but to prevent differing
+    // transaction processing results, however unlikely, only fail if the
+    // feature is enabled. Enabled, or not, though, a fatal-level message will
+    // be logged
+    bool const enforce = view.rules().enabled(featureInvariantsV1_1);
+
+    auto const objectExists = [&view, enforce, &j](auto const& keylet) {
+        if (auto const sle = view.read(keylet))
+        {
+            // Finding the object is bad
+            auto const typeName = [&sle]() {
+                auto item =
+                    LedgerFormats::getInstance().findByType(sle->getType());
+
+                if (item != nullptr)
+                    return item->getName();
+                return std::to_string(sle->getType());
+            }();
+
+            JLOG(j.fatal())
+                << "Invariant failed: account deletion left behind a "
+                << typeName << " object";
+            (void)enforce;
+            assert(enforce);
+            return true;
+        }
+        return false;
+    };
+
+    for (auto const& accountSLE : accountsDeleted_)
+    {
+        auto const accountID = accountSLE->getAccountID(sfAccount);
+        // Simple types
+        for (auto const& [keyletfunc, _, __] : directAccountKeylets)
+        {
+            if (objectExists(std::invoke(keyletfunc, accountID)) && enforce)
+                return false;
+        }
+
+        {
+            // NFT pages. ntfpage_min and nftpage_max were already explicitly
+            // checked above as entries in directAccountKeylets. This uses
+            // view.succ() to check for any NFT pages in between the two
+            // endpoints.
+            Keylet const first = keylet::nftpage_min(accountID);
+            Keylet const last = keylet::nftpage_max(accountID);
+
+            std::optional<uint256> key = view.succ(first.key, last.key.next());
+
+            // current page
+            if (key && objectExists(Keylet{ltNFTOKEN_PAGE, *key}) && enforce)
+                return false;
+        }
+
+        // Keys directly stored in the AccountRoot object
+        if (auto const ammKey = accountSLE->at(~sfAMMID))
+        {
+            if (objectExists(keylet::amm(*ammKey)) && enforce)
+                return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
 LedgerEntryTypesMatch::visitEntry(
     bool,
     std::shared_ptr<SLE const> const& before,
@@ -532,6 +617,10 @@ ValidNFTokenPage::visitEntry(
     static constexpr uint256 const& pageBits = nft::pageMask;
     static constexpr uint256 const accountBits = ~pageBits;
 
+    if ((before && before->getType() != ltNFTOKEN_PAGE) ||
+        (after && after->getType() != ltNFTOKEN_PAGE))
+        return;
+
     auto check = [this, isDelete](std::shared_ptr<SLE const> const& sle) {
         uint256 const account = sle->key() & accountBits;
         uint256 const hiLimit = sle->key() & pageBits;
@@ -593,11 +682,37 @@ ValidNFTokenPage::visitEntry(
         }
     };
 
-    if (before && before->getType() == ltNFTOKEN_PAGE)
+    if (before)
+    {
         check(before);
 
-    if (after && after->getType() == ltNFTOKEN_PAGE)
+        // While an account's NFToken directory contains any NFTokens, the last
+        // NFTokenPage (with 96 bits of 1 in the low part of the index) should
+        // never be deleted.
+        if (isDelete && (before->key() & nft::pageMask) == nft::pageMask &&
+            before->isFieldPresent(sfPreviousPageMin))
+        {
+            deletedFinalPage_ = true;
+        }
+    }
+
+    if (after)
         check(after);
+
+    if (!isDelete && before && after)
+    {
+        // If the NFTokenPage
+        //  1. Has a NextMinPage field in before, but loses it in after, and
+        //  2. This is not the last page in the directory
+        // Then we have identified a corruption in the links between the
+        // NFToken pages in the NFToken directory.
+        if ((before->key() & nft::pageMask) != nft::pageMask &&
+            before->isFieldPresent(sfNextPageMin) &&
+            !after->isFieldPresent(sfNextPageMin))
+        {
+            deletedLink_ = true;
+        }
+    }
 }
 
 bool
@@ -636,6 +751,21 @@ ValidNFTokenPage::finalize(
     {
         JLOG(j.fatal()) << "Invariant failed: NFT page has invalid size.";
         return false;
+    }
+
+    if (view.rules().enabled(fixNFTokenPageLinks))
+    {
+        if (deletedFinalPage_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Last NFT page deleted with "
+                               "non-empty directory.";
+            return false;
+        }
+        if (deletedLink_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Lost NextMinPage link.";
+            return false;
+        }
     }
 
     return true;
