@@ -1875,7 +1875,7 @@ rippleCredit(
             view.update(sle);
         }
         else
-            return tecINTERNAL;
+            return tecMPT_ISSUANCE_NOT_FOUND;
     }
     else
     {
@@ -1914,7 +1914,7 @@ rippleCredit(
                 return tecINSUFFICIENT_FUNDS;
         }
         else
-            return tecINTERNAL;
+            return tecMPT_ISSUANCE_NOT_FOUND;
     }
     else
     {
