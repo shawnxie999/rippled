@@ -199,6 +199,7 @@ Json::Value
 STUInt64::getJson(JsonOptions) const
 {
     auto convertToString = [](uint64_t const value, int const base) {
+        assert(base == 10 || base == 16);
         std::string str(
             base == 10 ? 20 : 16, 0);  // Allocate space depending on base
         auto ret =
