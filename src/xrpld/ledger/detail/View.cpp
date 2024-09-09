@@ -1861,7 +1861,7 @@ rippleCredit(
     auto const mptID = keylet::mptIssuance(saAmount.issue().getMptID());
     auto const issuer = saAmount.getIssuer();
 
-    if (!view.peek(mptID))
+    if (!view.exists(mptID))
         return tecMPT_ISSUANCE_NOT_FOUND;
 
     if (uSenderID == issuer)
