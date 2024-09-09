@@ -1359,6 +1359,8 @@ rippleSend(
         {
             auto const mptID = keylet::mptIssuance(saAmount.issue().getMptID());
             auto const sle = view.peek(mptID);
+            if (!sle)
+                return tecMPT_ISSUANCE_NOT_FOUND;
 
             if (sle->getFieldU64(sfOutstandingAmount) + saAmount.value() >
                 (*sle)[~sfMaximumAmount].value_or(maxMPTokenAmount))
