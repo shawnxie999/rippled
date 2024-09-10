@@ -94,7 +94,13 @@ class MPToken_test : public beast::unit_test::suite
 
             // MaximumAmount larger than 63 bit returns error
             mptAlice.create(
-                {.maxAmt = "18446744073709551600",
+                {.maxAmt = "18446744073709551600",  // FFFFFFFFFFFFFFF0
+                 .assetScale = 0,
+                 .transferFee = 0,
+                 .metadata = "test",
+                 .err = temMALFORMED});
+            mptAlice.create(
+                {.maxAmt = "9223372036854775808",  // 8000000000000000
                  .assetScale = 0,
                  .transferFee = 0,
                  .metadata = "test",
@@ -116,7 +122,7 @@ class MPToken_test : public beast::unit_test::suite
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
             mptAlice.create(
-                {.maxAmt = "9223372036854775807",
+                {.maxAmt = "9223372036854775807",  // 7FFFFFFFFFFFFFFF
                  .assetScale = 1,
                  .transferFee = 10,
                  .metadata = "123",
