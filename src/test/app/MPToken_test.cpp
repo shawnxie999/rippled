@@ -134,8 +134,7 @@ class MPToken_test : public beast::unit_test::suite
             std::string const txHash{
                 env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
 
-            Json::Value const result =
-                env.rpc("tx", txHash)[jss::result];
+            Json::Value const result = env.rpc("tx", txHash)[jss::result];
             BEAST_EXPECT(
                 result[sfMaximumAmount.getJsonName()] == "9223372036854775807");
         }
