@@ -144,6 +144,7 @@ constexpr std::uint32_t const tfMPTCanClawback             = lsfMPTCanClawback;
 
 // MPTokenAuthorize flags:
 constexpr std::uint32_t const tfMPTUnauthorize             = 0x00000001;
+constexpr std::uint32_t const tfMPTAuthorize               = 0x00000002;
 
 // MPTokenIssuanceSet flags:
 constexpr std::uint32_t const tfMPTLock                   = 0x00000001;
@@ -212,7 +213,7 @@ constexpr std::uint32_t const tfMPTokenIssuanceCreateMask  =
 constexpr std::uint32_t const tfMPTokenIssuanceDestroyMask  = ~tfUniversal;
 
 // MPTokenAuthorize flags:
-constexpr std::uint32_t const tfMPTokenAuthorizeMask  = ~(tfMPTUnauthorize | tfUniversal);
+constexpr std::uint32_t const tfMPTokenAuthorizeMask  = ~(tfMPTUnauthorize | tfMPTAuthorize | tfUniversal);
 
 // MPTokenIssuanceSet flags:
 constexpr std::uint32_t const tfMPTokenIssuanceSetMask  = ~(tfMPTLock | tfMPTUnlock | tfUniversal);

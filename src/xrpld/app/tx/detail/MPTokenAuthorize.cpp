@@ -34,7 +34,13 @@ MPTokenAuthorize::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.tx.getFlags() & tfMPTokenAuthorizeMask)
+    auto const flags = ctx.tx.getFlags();
+
+    if (flags & tfMPTokenAuthorizeMask)
+        return temINVALID_FLAG;
+
+    // use XOR to check that exactly one flag MUST be set
+    if (!((flags & tfMPTUnauthorize) ^ (flags & tfMPTAuthorize)))
         return temINVALID_FLAG;
 
     if (ctx.tx[sfAccount] == ctx.tx[~sfMPTokenHolder])
@@ -163,40 +169,44 @@ MPTokenAuthorize::authorize(
             view.erase(sleMpt);
             return tesSUCCESS;
         }
+        else if (args.flags & tfMPTAuthorize){
+            // A potential holder wants to authorize/hold a mpt, the ledger must:
+            //      - add the new mptokenKey to the owner directory
+            //      - create the MPToken object for the holder
+            std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
+            XRPAmount const reserveCreate(
+                (uOwnerCount < 2) ? XRPAmount(beast::zero)
+                                : view.fees().accountReserve(uOwnerCount + 1));
 
-        // A potential holder wants to authorize/hold a mpt, the ledger must:
-        //      - add the new mptokenKey to the owner directory
-        //      - create the MPToken object for the holder
-        std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
-        XRPAmount const reserveCreate(
-            (uOwnerCount < 2) ? XRPAmount(beast::zero)
-                              : view.fees().accountReserve(uOwnerCount + 1));
+            if (args.priorBalance < reserveCreate)
+                return tecINSUFFICIENT_RESERVE;
 
-        if (args.priorBalance < reserveCreate)
-            return tecINSUFFICIENT_RESERVE;
+            auto const mptokenKey =
+                keylet::mptoken(args.mptIssuanceID, args.account);
 
-        auto const mptokenKey =
-            keylet::mptoken(args.mptIssuanceID, args.account);
+            auto const ownerNode = view.dirInsert(
+                keylet::ownerDir(args.account),
+                mptokenKey,
+                describeOwnerDir(args.account));
 
-        auto const ownerNode = view.dirInsert(
-            keylet::ownerDir(args.account),
-            mptokenKey,
-            describeOwnerDir(args.account));
+            if (!ownerNode)
+                return tecDIR_FULL;
 
-        if (!ownerNode)
-            return tecDIR_FULL;
+            auto mptoken = std::make_shared<SLE>(mptokenKey);
+            (*mptoken)[sfAccount] = args.account;
+            (*mptoken)[sfMPTokenIssuanceID] = args.mptIssuanceID;
+            (*mptoken)[sfFlags] = 0;
+            (*mptoken)[sfOwnerNode] = *ownerNode;
+            view.insert(mptoken);
 
-        auto mptoken = std::make_shared<SLE>(mptokenKey);
-        (*mptoken)[sfAccount] = args.account;
-        (*mptoken)[sfMPTokenIssuanceID] = args.mptIssuanceID;
-        (*mptoken)[sfFlags] = 0;
-        (*mptoken)[sfOwnerNode] = *ownerNode;
-        view.insert(mptoken);
+            // Update owner count.
+            adjustOwnerCount(view, sleAcct, 1, journal);
 
-        // Update owner count.
-        adjustOwnerCount(view, sleAcct, 1, journal);
-
-        return tesSUCCESS;
+            return tesSUCCESS;
+        }
+        else{
+            return tecINTERNAL;
+        }
     }
 
     auto const sleMptIssuance =
@@ -224,8 +234,10 @@ MPTokenAuthorize::authorize(
         flagsOut &= ~lsfMPTAuthorized;
     // Issuer wants to authorize a holder, set lsfMPTAuthorized on their
     // MPToken
-    else
+    else if (args.flags & tfMPTAuthorize)
         flagsOut |= lsfMPTAuthorized;
+    else
+        return tecINTERNAL;
 
     if (flagsIn != flagsOut)
         sleMpt->setFieldU32(sfFlags, flagsOut);
