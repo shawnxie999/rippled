@@ -1754,10 +1754,13 @@ canTransfer(
     AccountID const& to)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
-    if (auto const sle = view.read(mptID);
-        sle && !(sle->getFieldU32(sfFlags) & lsfMPTCanTransfer))
+    auto const sleIssuance = view.read(mptID);
+    if (!sleIssuance)
+        return tecOBJECT_NOT_FOUND;
+
+    if (!(sleIssuance->getFieldU32(sfFlags) & lsfMPTCanTransfer))
     {
-        if (from != (*sle)[sfIssuer] && to != (*sle)[sfIssuer])
+        if (from != (*sleIssuance)[sfIssuer] && to != (*sleIssuance)[sfIssuer])
             return TER{tecNO_AUTH};
     }
     return tesSUCCESS;
