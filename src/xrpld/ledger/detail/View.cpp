@@ -1720,27 +1720,27 @@ requireAuth(
     AccountID const& account)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
-    auto const issuanceSle = view.read(mptID);
+    auto const sleIssuance = view.read(mptID);
 
-    if (!issuanceSle)
+    if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    auto const mptIssuer = issuanceSle->getAccountID(sfIssuer);
+    auto const mptIssuer = sleIssuance->getAccountID(sfIssuer);
 
     // issuer is always "authorized"
     if (mptIssuer == account)
         return tesSUCCESS;
 
     auto const mptokenID = keylet::mptoken(mptID.key, account);
-    auto const tokSle = view.read(mptokenID);
+    auto const sleToken = view.read(mptokenID);
 
     // if account has no MPToken, fail
-    if (!tokSle)
+    if (!sleToken)
         return tecNO_AUTH;
 
     // mptoken must be authorized if issuance enabled requireAuth
-    if (issuanceSle->getFieldU32(sfFlags) & lsfMPTRequireAuth &&
-        !(tokSle->getFlags() & lsfMPTAuthorized))
+    if (sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth &&
+        !(sleToken->getFlags() & lsfMPTAuthorized))
         return tecNO_AUTH;
 
     return tesSUCCESS;
