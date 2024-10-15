@@ -2424,7 +2424,6 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::mptoken] = Json::objectValue;
             jvParams[jss::mptoken][jss::account] = bob.human();
             jvParams[jss::mptoken][jss::mpt_issuance_id] = badMptID;
-            strHex(mptAlice.issuanceID());
             jvParams[jss::ledger_hash] = ledgerHash;
             Json::Value const jrr = env.rpc(
                 "json", "ledger_entry", to_string(jvParams))[jss::result];
