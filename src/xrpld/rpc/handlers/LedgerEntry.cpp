@@ -774,12 +774,7 @@ doLedgerEntry(RPC::JsonContext& context)
         }
         else
         {
-            auto sleJson = sleNode->getJson(JsonOptions::none);
-            if (sleNode->getType() == ltMPTOKEN_ISSUANCE)
-                sleJson[jss::mpt_issuance_id] = to_string(makeMptID(
-                    (*sleNode)[sfSequence], sleNode->getAccountID(sfIssuer)));
-
-            jvResult[jss::node] = sleJson;
+            jvResult[jss::node] = sleNode->getJson(JsonOptions::none);
             jvResult[jss::index] = to_string(uNodeIndex);
         }
     }
