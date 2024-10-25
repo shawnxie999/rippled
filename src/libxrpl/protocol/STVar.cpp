@@ -136,20 +136,29 @@ STVar::destroy()
 }
 
 template <typename... Args>
-requires ValidConstructSTArgs<Args...> void
+    requires ValidConstructSTArgs<Args...>
+void
 STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
 {
     auto constructWithDepth = [&]<typename T>() {
         if constexpr (std::is_same_v<
                           std::tuple<std::remove_cvref_t<Args>...>,
                           std::tuple<SField>>)
+        {
             construct<T>(std::forward<Args>(args)...);
+        }
         else if constexpr (std::is_same_v<
                                std::tuple<std::remove_cvref_t<Args>...>,
                                std::tuple<SerialIter, SField>>)
+        {
             construct<T>(std::forward<Args>(args)..., depth);
+        }
         else
-            static_assert(false, "Invalid STVar constructor arguments");
+        {
+            constexpr bool alwaysFalse =
+                !std::is_same_v<std::tuple<Args...>, std::tuple<Args...>>;
+            static_assert(alwaysFalse, "Invalid STVar constructor arguments");
+        }
     };
 
     switch (id)

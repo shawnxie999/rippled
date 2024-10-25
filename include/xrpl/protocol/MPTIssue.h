@@ -76,6 +76,8 @@ operator!=(MPTIssue const& lhs, MPTIssue const& rhs)
     return !(lhs == rhs);
 }
 
+/** MPT is a non-native token.
+ */
 inline bool
 isXRP(MPTID const&)
 {
@@ -87,6 +89,9 @@ to_json(MPTIssue const& mptIssue);
 
 std::string
 to_string(MPTIssue const& mptIssue);
+
+MPTIssue
+mptIssueFromJson(Json::Value const& jv);
 
 }  // namespace ripple
 
