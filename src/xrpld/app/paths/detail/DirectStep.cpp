@@ -902,9 +902,9 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         return terNO_ACCOUNT;
     }
 
+    // pure issue/redeem can't be frozen
     if (!(ctx.isLast && ctx.isFirst))
     {
-        // pure issue/redeem can't be frozen
         if (auto const ter = checkFreeze(ctx.view, src_, dst_, currency_);
             ter != tesSUCCESS)
             return ter;

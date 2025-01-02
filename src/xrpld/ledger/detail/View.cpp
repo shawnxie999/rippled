@@ -330,9 +330,8 @@ accountHolds(
                 auto const sleAmm =
                     view.read(keylet::amm((*sleIssuer)[sfAMMID]));
 
-                assert(sleAmm);
-
-                if (isLPTokenFrozen(
+                if (!sleAmm ||
+                    isLPTokenFrozen(
                         view,
                         account,
                         (*sleAmm)[sfAsset].get<Issue>(),
