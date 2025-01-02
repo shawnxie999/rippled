@@ -56,8 +56,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
         using namespace jtx;
         Env env{*this, features};
         fund(env, gw, {alice}, {USD(20'000), BTC(0.5)}, Fund::All);
-        env(rate(gw, 1.25));
         env.close();
+
         AMM ammAlice(env, alice, USD(20'000), BTC(0.5));
         BEAST_EXPECT(
             ammAlice.expectBalances(USD(20'000), BTC(0.5), IOUAmount{100, 0}));
