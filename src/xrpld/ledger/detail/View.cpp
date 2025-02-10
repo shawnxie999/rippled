@@ -380,7 +380,8 @@ accountHolds(
         amount.clear(Issue{currency, issuer});
     }
 
-    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(account)
+    JLOG(j.trace()) << "accountHolds:"
+                    << " account=" << to_string(account)
                     << " amount=" << amount.getFullText();
 
     return view.balanceHook(account, issuer, amount);
@@ -2121,6 +2122,29 @@ rippleCredit(
             }
         },
         saAmount.asset().value());
+}
+
+bool
+isInDomain(
+    ReadView const& view,
+    AccountID const& account,
+    uint256 const& domainID)
+{
+    auto const sleDomain = view.read(keylet::permissionedDomain(domainID));
+
+    if (!sleDomain)
+        return false;
+
+    auto const& credentials = sleDomain->getFieldArray(sfAcceptedCredentials);
+
+    bool const inDomain = std::any_of(
+        credentials.begin(),
+        credentials.end(),
+        [&account](auto const& credential) {
+            return credential.getAccountID(sfIssuer) == account;
+        });
+
+    return inDomain;
 }
 
 }  // namespace ripple

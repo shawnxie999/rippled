@@ -35,12 +35,18 @@ class Book final : public CountedObject<Book>
 public:
     Issue in;
     Issue out;
+    std::optional<uint256> domain;
 
     Book()
     {
     }
 
     Book(Issue const& in_, Issue const& out_) : in(in_), out(out_)
+    {
+    }
+
+    Book(Issue const& in_, Issue const& out_, std::optional<uint256> domain_)
+        : in(in_), out(out_), domain(domain_)
     {
     }
 };
@@ -59,7 +65,7 @@ void
 hash_append(Hasher& h, Book const& b)
 {
     using beast::hash_append;
-    hash_append(h, b.in, b.out);
+    hash_append(h, b.in, b.out);  // TODO: add domain
 }
 
 Book
@@ -70,7 +76,8 @@ reversed(Book const& book);
 [[nodiscard]] inline constexpr bool
 operator==(Book const& lhs, Book const& rhs)
 {
-    return (lhs.in == rhs.in) && (lhs.out == rhs.out);
+    return (lhs.in == rhs.in) && (lhs.out == rhs.out) &&
+        (lhs.domain == rhs.domain);
 }
 /** @} */
 
@@ -81,7 +88,7 @@ operator<=>(Book const& lhs, Book const& rhs)
 {
     if (auto const c{lhs.in <=> rhs.in}; c != 0)
         return c;
-    return lhs.out <=> rhs.out;
+    return lhs.out <=> rhs.out;  // TODO: add domain
 }
 /** @} */
 

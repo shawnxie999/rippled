@@ -596,6 +596,12 @@ deleteAMMTrustLine(
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j);
 
+[[nodiscard]] bool
+isInDomain(
+    ReadView const& view,
+    AccountID const& account,
+    uint256 const& domainID);
+
 }  // namespace ripple
 
 #endif

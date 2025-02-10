@@ -122,14 +122,19 @@ private:
     flowCross(
         PaymentSandbox& psb,
         PaymentSandbox& psbCancel,
-        Amounts const& takerAmount);
+        Amounts const& takerAmount,
+        std::optional<uint256> domainID);
 
     // Temporary
     // This is a central location that invokes both versions of cross
     // so the results can be compared.  Eventually this layer will be
     // removed once flowCross is determined to be stable.
     std::pair<TER, Amounts>
-    cross(Sandbox& sb, Sandbox& sbCancel, Amounts const& takerAmount);
+    cross(
+        Sandbox& sb,
+        Sandbox& sbCancel,
+        Amounts const& takerAmount,
+        std::optional<uint256> domainID);
 
     static std::string
     format_amount(STAmount const& amount);

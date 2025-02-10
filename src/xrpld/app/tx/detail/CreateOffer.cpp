@@ -21,6 +21,7 @@
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/tx/detail/CreateOffer.h>
 #include <xrpld/ledger/PaymentSandbox.h>
+#include <xrpld/ledger/View.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
@@ -43,15 +44,21 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 CreateOffer::preflight(PreflightContext const& ctx)
 {
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !ctx.rules.enabled(featurePermissionedDEX))
+        return temDISABLED;
+
+    // Permissioned offers should use the PE (which must be enabled by
+    // featureFlowCross amendment)
+    if (ctx.rules.enabled(featurePermissionedDEX) &&
+        !ctx.rules.enabled(featureFlowCross))
+        return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     auto& tx = ctx.tx;
     auto& j = ctx.j;
-
-    if (tx.isFieldPresent(sfDomainID) &&
-        !ctx.rules.enabled(featurePermissionedDEX))
-        return temDISABLED;
 
     std::uint32_t const uTxFlags = tx.getFlags();
 
@@ -203,28 +210,11 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
             return result;
     }
 
-    // if domain is specified, make sure that domain exists and the offer create is part of the domain
-    if (ctx.tx.isFieldPresent(sfDomainID))
-    {
-        auto const sleDomain =
-            ctx.view.read(keylet::permissionedDomain(ctx.tx[sfDomainID]));
-
-        if (!sleDomain)
-            return tecNO_ENTRY;
-
-        auto const& credentials =
-            sleDomain->getFieldArray(sfAcceptedCredentials);
-
-        bool const inDomain = std::any_of(
-            credentials.begin(),
-            credentials.end(),
-            [&id](auto const& credential) {
-                return credential.getAccountID(sfIssuer) == id;
-            });
-
-        if (!inDomain)
-            return tecNO_PERMISSION;
-    }
+    // if domain is specified, make sure that domain exists and the offer create
+    // is part of the domain
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !isInDomain(ctx.view, id, ctx.tx[sfDomainID]))
+        return tecNO_PERMISSION;
 
     return tesSUCCESS;
 }
@@ -736,7 +726,8 @@ std::pair<TER, Amounts>
 CreateOffer::flowCross(
     PaymentSandbox& psb,
     PaymentSandbox& psbCancel,
-    Amounts const& takerAmount)
+    Amounts const& takerAmount,
+    std::optional<uint256> domainID)
 {
     try
     {
@@ -833,7 +824,7 @@ CreateOffer::flowCross(
             offerCrossing,
             threshold,
             sendMax,
-            std::nullopt,  // TODO: change to domain
+            domainID,
             j_);
 
         // If stale offers were found remove them.
@@ -936,17 +927,27 @@ CreateOffer::flowCross(
 }
 
 std::pair<TER, Amounts>
-CreateOffer::cross(Sandbox& sb, Sandbox& sbCancel, Amounts const& takerAmount)
+CreateOffer::cross(
+    Sandbox& sb,
+    Sandbox& sbCancel,
+    Amounts const& takerAmount,
+    std::optional<uint256> domainID)
 {
     if (sb.rules().enabled(featureFlowCross))
     {
         PaymentSandbox psbFlow{&sb};
         PaymentSandbox psbCancelFlow{&sbCancel};
-        auto const ret = flowCross(psbFlow, psbCancelFlow, takerAmount);
+        auto const ret =
+            flowCross(psbFlow, psbCancelFlow, takerAmount, domainID);
         psbFlow.apply(sb);
         psbCancelFlow.apply(sbCancel);
         return ret;
     }
+
+    XRPL_ASSERT(
+        !sb.rules().enabled(featurePermissionedDEX),
+        "ripple::CreateOffer::cross: featurePermissionedDEX must be enabled "
+        "with featureFlowCross.");
 
     Sandbox sbTaker{&sb};
     Sandbox sbCancelTaker{&sbCancel};
@@ -993,6 +994,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     auto saTakerPays = ctx_.tx[sfTakerPays];
     auto saTakerGets = ctx_.tx[sfTakerGets];
+    auto const domainID = ctx_.tx[~sfDomainID];
 
     auto const cancelSequence = ctx_.tx[~sfOfferSequence];
 
@@ -1109,7 +1111,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             stream << "    out: " << format_amount(takerAmount.out);
         }
 
-        std::tie(result, place_offer) = cross(sb, sbCancel, takerAmount);
+        std::tie(result, place_offer) =
+            cross(sb, sbCancel, takerAmount, domainID);
 
         // We expect the implementation of cross to succeed
         // or give a tec.
@@ -1253,7 +1256,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.issue())
                      << " : " << to_string(saTakerGets.issue());
 
-    Book const book{saTakerPays.issue(), saTakerGets.issue()};
+    Book const book{saTakerPays.issue(), saTakerGets.issue(), domainID};
 
     // Add offer to order book, using the original rate
     // before any crossing occured.
@@ -1266,6 +1269,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         sle->setFieldH160(sfTakerGetsCurrency, saTakerGets.issue().currency);
         sle->setFieldH160(sfTakerGetsIssuer, saTakerGets.issue().account);
         sle->setFieldU64(sfExchangeRate, uRate);
+        if (domainID)
+            sle->setFieldH256(sfDomainID, *domainID);
     });
 
     if (!bookNode)
@@ -1288,6 +1293,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         sleOffer->setFlag(lsfPassive);
     if (bSell)
         sleOffer->setFlag(lsfSell);
+    if (domainID)
+        sleOffer->setFieldH256(sfDomainID, *domainID);
     sb.insert(sleOffer);
 
     if (!bookExisted)
