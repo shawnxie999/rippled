@@ -28,6 +28,7 @@
 #include <xrpl/protocol/TER.h>
 
 #include <boost/container/flat_set.hpp>
+#include "xrpl/basics/base_uint.h"
 #include <optional>
 
 namespace ripple {
@@ -551,28 +552,29 @@ struct StrandContext
     */
     boost::container::flat_set<Issue>& seenBookOuts;
     AMMContext& ammContext;
+    std::optional<uint256> domainID;
     beast::Journal const j;
 
     /** StrandContext constructor. */
-    StrandContext(
-        ReadView const& view_,
-        std::vector<std::unique_ptr<Step>> const& strand_,
-        // A strand may not include an inner node that
-        // replicates the source or destination.
-        AccountID const& strandSrc_,
-        AccountID const& strandDst_,
-        Issue const& strandDeliver_,
-        std::optional<Quality> const& limitQuality_,
-        bool isLast_,
-        bool ownerPaysTransferFee_,
-        OfferCrossing offerCrossing_,
-        bool isDefaultPath_,
-        std::array<boost::container::flat_set<Issue>, 2>&
-            seenDirectIssues_,  ///< For detecting currency loops
-        boost::container::flat_set<Issue>&
-            seenBookOuts_,  ///< For detecting book loops
-        AMMContext& ammContext_,
-        beast::Journal j_);  ///< Journal for logging
+    StrandContext(ReadView const& view_,
+                  std::vector<std::unique_ptr<Step>> const& strand_,
+                  // A strand may not include an inner node that
+                  // replicates the source or destination.
+                  AccountID const& strandSrc_,
+                  AccountID const& strandDst_,
+                  Issue const& strandDeliver_,
+                  std::optional<Quality> const& limitQuality_,
+                  bool isLast_,
+                  bool ownerPaysTransferFee_,
+                  OfferCrossing offerCrossing_,
+                  bool isDefaultPath_,
+                  std::array<boost::container::flat_set<Issue>, 2>&
+                      seenDirectIssues_,  ///< For detecting currency loops
+                  boost::container::flat_set<Issue>&
+                      seenBookOuts_,  ///< For detecting book loops
+                  AMMContext& ammContext_,
+                  std::optional<uint256> domainID,
+                  beast::Journal j_);  ///< Journal for logging
 };
 
 /// @cond INTERNAL

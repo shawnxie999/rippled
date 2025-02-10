@@ -25,6 +25,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/st.h>
+#include "xrpl/protocol/TER.h"
 
 namespace ripple {
 
@@ -47,6 +48,10 @@ CreateOffer::preflight(PreflightContext const& ctx)
 
     auto& tx = ctx.tx;
     auto& j = ctx.j;
+
+    if (tx.isFieldPresent(sfDomainID) &&
+        !ctx.rules.enabled(featurePermissionedDEX))
+        return temDISABLED;
 
     std::uint32_t const uTxFlags = tx.getFlags();
 
@@ -196,6 +201,29 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
             Issue(uPaysCurrency, uPaysIssuerID));
         if (result != tesSUCCESS)
             return result;
+    }
+
+    // if domain is specified, make sure that domain exists and the offer create is part of the domain
+    if (ctx.tx.isFieldPresent(sfDomainID))
+    {
+        auto const sleDomain =
+            ctx.view.read(keylet::permissionedDomain(ctx.tx[sfDomainID]));
+
+        if (!sleDomain)
+            return tecNO_ENTRY;
+
+        auto const& credentials =
+            sleDomain->getFieldArray(sfAcceptedCredentials);
+
+        bool const inDomain = std::any_of(
+            credentials.begin(),
+            credentials.end(),
+            [&id](auto const& credential) {
+                return credential.getAccountID(sfIssuer) == id;
+            });
+
+        if (!inDomain)
+            return tecNO_PERMISSION;
     }
 
     return tesSUCCESS;

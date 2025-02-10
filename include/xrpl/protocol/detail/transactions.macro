@@ -88,12 +88,17 @@ TRANSACTION(ttREGULAR_KEY_SET, 5, SetRegularKey, ({
 // 6 deprecated
 
 /** This transaction type creates an offer to trade one asset for another. */
-TRANSACTION(ttOFFER_CREATE, 7, OfferCreate, ({
-    {sfTakerPays, soeREQUIRED},
-    {sfTakerGets, soeREQUIRED},
-    {sfExpiration, soeOPTIONAL},
-    {sfOfferSequence, soeOPTIONAL},
-}))
+TRANSACTION(
+    ttOFFER_CREATE,
+    7,
+    OfferCreate,
+    ({
+        {sfTakerPays, soeREQUIRED},
+        {sfTakerGets, soeREQUIRED},
+        {sfExpiration, soeOPTIONAL},
+        {sfOfferSequence, soeOPTIONAL},
+        {sfDomainID, soeOPTIONAL},
+    }))
 
 /** This transaction type cancels existing offers to trade one asset for another. */
 TRANSACTION(ttOFFER_CANCEL, 8, OfferCancel, ({

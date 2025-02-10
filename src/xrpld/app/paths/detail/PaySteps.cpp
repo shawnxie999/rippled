@@ -282,6 +282,7 @@ toStrand(
             seenDirectIssues,
             seenBookOuts,
             ammContext,
+            {},
             j};
     };
 
@@ -595,6 +596,7 @@ StrandContext::StrandContext(
     std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues_,
     boost::container::flat_set<Issue>& seenBookOuts_,
     AMMContext& ammContext_,
+    std::optional<uint256> domainID_,
     beast::Journal j_)
     : view(view_)
     , strandSrc(strandSrc_)
@@ -611,6 +613,7 @@ StrandContext::StrandContext(
     , seenDirectIssues(seenDirectIssues_)
     , seenBookOuts(seenBookOuts_)
     , ammContext(ammContext_)
+    , domainID(domainID_)
     , j(j_)
 {
 }
