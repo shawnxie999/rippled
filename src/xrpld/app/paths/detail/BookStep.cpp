@@ -67,6 +67,8 @@ protected:
     // if AMM offer quality is better than CLOB offer
     // quality or there is no CLOB offer.
     std::optional<AMMLiquidity<TIn, TOut>> ammLiquidity_;
+    // If set, the step must executed under a domain
+    std::optional<uint256> domainID_;
     beast::Journal const j_;
 
     struct Cache
@@ -97,6 +99,7 @@ public:
         , strandDst_(ctx.strandDst)
         , prevStep_(ctx.prevStep)
         , ownerPaysTransferFee_(ctx.ownerPaysTransferFee)
+        , domainID_(ctx.domainID)
         , j_(ctx.j)
     {
         if (auto const ammSle = ctx.view.read(keylet::amm(in, out));

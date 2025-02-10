@@ -371,6 +371,7 @@ Pathfinder::getPathLiquidity(
             mDstAccount,
             mSrcAccount,
             pathSet,
+            std::nullopt,  // TODO: change to domain
             app_.logs(),
             &rcInput);
         // If we can't get even the minimum liquidity requested, we're done.
@@ -391,6 +392,7 @@ Pathfinder::getPathLiquidity(
                 mDstAccount,
                 mSrcAccount,
                 pathSet,
+                std::nullopt,  // TODO: change to domain
                 app_.logs(),
                 &rcInput);
 
@@ -430,6 +432,7 @@ Pathfinder::computePathRanks(
             mDstAccount,
             mSrcAccount,
             STPathSet(),
+            std::nullopt,  // TODO: change to domain
             app_.logs(),
             &rcInput);
 

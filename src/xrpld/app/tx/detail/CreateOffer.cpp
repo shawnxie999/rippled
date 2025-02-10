@@ -833,6 +833,7 @@ CreateOffer::flowCross(
             offerCrossing,
             threshold,
             sendMax,
+            std::nullopt,  // TODO: change to domain
             j_);
 
         // If stale offers were found remove them.

@@ -29,6 +29,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
+#include <optional>
 
 namespace ripple {
 namespace test {
@@ -658,6 +659,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 true,
                 OfferCrossing::no,
                 ammContext,
+                std::nullopt,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(ter == expTer);
             if (sizeof...(expSteps) != 0)
@@ -686,6 +688,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     true,
                     OfferCrossing::no,
                     ammContext,
+                    std::nullopt,
                     env.app().logs().journal("Flow"));
                 (void)_;
                 BEAST_EXPECT(ter == tesSUCCESS);
@@ -703,6 +706,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     true,
                     OfferCrossing::no,
                     ammContext,
+                    std::nullopt,
                     env.app().logs().journal("Flow"));
                 (void)_;
                 BEAST_EXPECT(ter == tesSUCCESS);
@@ -823,6 +827,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         true,
                         OfferCrossing::no,
                         ammContext,
+                        std::nullopt,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
                 }
@@ -839,6 +844,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         true,
                         OfferCrossing::no,
                         ammContext,
+                        std::nullopt,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
                 }
@@ -855,6 +861,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         true,
                         OfferCrossing::no,
                         ammContext,
+                        std::nullopt,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
                 }
@@ -992,6 +999,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 true,
                 OfferCrossing::no,
                 ammContext,
+                std::nullopt,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(ter == tesSUCCESS);
             BEAST_EXPECT(equal(strand, D{alice, gw, usdC}));
@@ -1019,6 +1027,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 false,
                 OfferCrossing::no,
                 ammContext,
+                std::nullopt,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(ter == tesSUCCESS);
             BEAST_EXPECT(equal(
@@ -1203,6 +1212,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     dstAcc,
                     noAccount(),
                     pathSet,
+                    std::nullopt,
                     env.app().logs(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
@@ -1215,6 +1225,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     noAccount(),
                     srcAcc,
                     pathSet,
+                    std::nullopt,
                     env.app().logs(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
@@ -1227,6 +1238,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     dstAcc,
                     srcAcc,
                     pathSet,
+                    std::nullopt,
                     env.app().logs(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
@@ -1239,6 +1251,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     dstAcc,
                     srcAcc,
                     pathSet,
+                    std::nullopt,
                     env.app().logs(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);

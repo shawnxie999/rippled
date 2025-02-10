@@ -402,6 +402,7 @@ toStrand(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
+    std::optional<uint256> domainID,
     beast::Journal j);
 
 /**
@@ -442,6 +443,7 @@ toStrands(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
+    std::optional<uint256> domainID,
     beast::Journal j);
 
 /// @cond INTERNAL
