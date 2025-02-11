@@ -45,7 +45,10 @@ public:
     {
     }
 
-    Book(Issue const& in_, Issue const& out_, std::optional<uint256> domain_)
+    Book(
+        Issue const& in_,
+        Issue const& out_,
+        std::optional<uint256> const& domain_)
         : in(in_), out(out_), domain(domain_)
     {
     }

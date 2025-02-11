@@ -123,7 +123,7 @@ private:
         PaymentSandbox& psb,
         PaymentSandbox& psbCancel,
         Amounts const& takerAmount,
-        std::optional<uint256> domainID);
+        std::optional<uint256> const& domainID);
 
     // Temporary
     // This is a central location that invokes both versions of cross
@@ -134,7 +134,7 @@ private:
         Sandbox& sb,
         Sandbox& sbCancel,
         Amounts const& takerAmount,
-        std::optional<uint256> domainID);
+        std::optional<uint256> const& domainID);
 
     static std::string
     format_amount(STAmount const& amount);

@@ -727,7 +727,7 @@ CreateOffer::flowCross(
     PaymentSandbox& psb,
     PaymentSandbox& psbCancel,
     Amounts const& takerAmount,
-    std::optional<uint256> domainID)
+    std::optional<uint256> const& domainID)
 {
     try
     {
@@ -931,7 +931,7 @@ CreateOffer::cross(
     Sandbox& sb,
     Sandbox& sbCancel,
     Amounts const& takerAmount,
-    std::optional<uint256> domainID)
+    std::optional<uint256> const& domainID)
 {
     if (sb.rules().enabled(featureFlowCross))
     {

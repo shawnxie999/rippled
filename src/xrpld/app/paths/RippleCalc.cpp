@@ -53,7 +53,7 @@ RippleCalc::rippleCalculate(
     // explore for liquidity.
     STPathSet const& spsPaths,
 
-    std::optional<uint256> domainID,
+    std::optional<uint256> const& domainID,
     Logs& l,
     Input const* const pInputs)
 {
