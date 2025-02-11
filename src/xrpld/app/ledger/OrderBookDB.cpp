@@ -26,6 +26,7 @@
 #include <xrpld/core/JobQueue.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Indexes.h>
+#include <utility>
 
 namespace ripple {
 
@@ -88,6 +89,8 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
 
     decltype(allBooks_) allBooks;
     decltype(xrpBooks_) xrpBooks;
+    decltype(domainBooks_) domainBooks;
+    decltype(xrpDomainBooks_) xrpDomainBooks;
 
     allBooks.reserve(allBooks_.size());
     xrpBooks.reserve(xrpBooks_.size());
@@ -119,10 +122,18 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
                 book.in.account = sle->getFieldH160(sfTakerPaysIssuer);
                 book.out.currency = sle->getFieldH160(sfTakerGetsCurrency);
                 book.out.account = sle->getFieldH160(sfTakerGetsIssuer);
+                book.domain = (*sle)[~sfDomainID];
 
-                allBooks[book.in].insert(book.out);
+                if (book.domain)
+                    domainBooks_[std::make_pair(book.in, *book.domain)].insert(
+                        book.out);
+                else
+                    allBooks[book.in].insert(book.out);
 
-                if (isXRP(book.out))
+                if (book.domain && isXRP(book.out))
+                    xrpDomainBooks.insert(
+                        std::make_pair(book.in, *book.domain));
+                else if (isXRP(book.out))
                     xrpBooks.insert(book.in);
 
                 ++cnt;
@@ -159,6 +170,8 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
         std::lock_guard sl(mLock);
         allBooks_.swap(allBooks);
         xrpBooks_.swap(xrpBooks);
+        domainBooks_.swap(domainBooks);
+        xrpDomainBooks_.swap(xrpDomainBooks);
     }
 
     app_.getLedgerMaster().newOrderBookDB();
@@ -171,9 +184,14 @@ OrderBookDB::addOrderBook(Book const& book)
 
     std::lock_guard sl(mLock);
 
-    allBooks_[book.in].insert(book.out);
+    if (book.domain)
+        domainBooks_[std::make_pair(book.in, *book.domain)].insert(book.out);
+    else
+        allBooks_[book.in].insert(book.out);
 
-    if (toXRP)
+    if (book.domain && toXRP)
+        xrpDomainBooks_.insert(std::make_pair(book.in, *book.domain));
+    else if (toXRP)
         xrpBooks_.insert(book.in);
 }
 
@@ -198,6 +216,29 @@ OrderBookDB::getBooksByTakerPays(Issue const& issue)
     return ret;
 }
 
+// return list of all orderbooks that want this issuerID and currencyID and
+// domain
+std::vector<Book>
+OrderBookDB::getBooksByTakerPaysDomain(Issue const& issue, Domain const& domain)
+{
+    std::vector<Book> ret;
+
+    {
+        std::lock_guard sl(mLock);
+
+        if (auto it = domainBooks_.find(std::make_pair(issue, domain));
+            it != domainBooks_.end())
+        {
+            ret.reserve(it->second.size());
+
+            for (auto const& gets : it->second)
+                ret.push_back(Book(issue, gets, domain));
+        }
+    }
+
+    return ret;
+}
+
 int
 OrderBookDB::getBookSize(Issue const& issue)
 {
@@ -207,15 +248,28 @@ OrderBookDB::getBookSize(Issue const& issue)
     return 0;
 }
 
-bool
-OrderBookDB::isBookToXRP(Issue const& issue)
+int
+OrderBookDB::getDomainBookSize(Issue const& issue, Domain domain)
 {
     std::lock_guard sl(mLock);
+    if (auto it = domainBooks_.find(std::make_pair(issue, domain));
+        it != domainBooks_.end())
+        return static_cast<int>(it->second.size());
+    return 0;
+}
+
+bool
+OrderBookDB::isBookToXRP(Issue const& issue, std::optional<Domain> domain)
+{
+    std::lock_guard sl(mLock);
+    if (domain)
+        return xrpDomainBooks_.count(std::make_pair(issue, *domain)) > 0;
     return xrpBooks_.count(issue) > 0;
 }
 
 BookListeners::pointer
-OrderBookDB::makeBookListeners(Book const& book)
+OrderBookDB::makeBookListeners(
+    Book const& book)  // todo: make sure the hashing works
 {
     std::lock_guard sl(mLock);
     auto ret = getBookListeners(book);
@@ -277,7 +331,10 @@ OrderBookDB::processTxn(
                     {
                         auto listeners = getBookListeners(
                             {data->getFieldAmount(sfTakerGets).issue(),
-                             data->getFieldAmount(sfTakerPays).issue()});
+                             data->getFieldAmount(sfTakerPays).issue(),
+                             (*data)[~sfDomainID]});  // todo: make sure the
+                                                      // hashing works with
+                                                      // Book's hash_append
                         if (listeners)
                             listeners->publish(jvObj, havePublished);
                     }

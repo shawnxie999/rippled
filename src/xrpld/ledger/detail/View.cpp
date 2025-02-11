@@ -2138,10 +2138,12 @@ isInDomain(
     auto const& credentials = sleDomain->getFieldArray(sfAcceptedCredentials);
 
     bool const inDomain = std::any_of(
-        credentials.begin(),
-        credentials.end(),
-        [&account](auto const& credential) {
-            return credential.getAccountID(sfIssuer) == account;
+        credentials.begin(), credentials.end(), [&](auto const& credential) {
+            auto const sleCred = view.read(keylet::credential(
+                account, credential[sfIssuer], credential[sfCredentialType]));
+            if (sleCred)
+                return true;
+            return false;
         });
 
     return inDomain;

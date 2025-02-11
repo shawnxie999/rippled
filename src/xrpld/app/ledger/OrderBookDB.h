@@ -26,12 +26,15 @@
 #include <xrpl/protocol/MultiApiJson.h>
 
 #include <mutex>
+#include <optional>
 
 namespace ripple {
 
 class OrderBookDB
 {
 public:
+    using Domain = uint256;
+
     explicit OrderBookDB(Application& app);
 
     void
@@ -47,13 +50,23 @@ public:
     std::vector<Book>
     getBooksByTakerPays(Issue const&);
 
+    /** @return a list of all orderbooks that want this issuerID and currencyID
+     * and domainID
+     */
+    std::vector<Book>
+    getBooksByTakerPaysDomain(Issue const& issue, Domain const& domain);
+
     /** @return a count of all orderbooks that want this issuerID and
         currencyID. */
     int
     getBookSize(Issue const&);
 
+    /** @return a count of domain orderbooks that want this Issue and Domain*/
+    int
+    getDomainBookSize(Issue const& issue, Domain domain);
+
     bool
-    isBookToXRP(Issue const&);
+    isBookToXRP(Issue const&, std::optional<Domain> domain = std::nullopt);
 
     BookListeners::pointer
     getBookListeners(Book const&);
@@ -73,8 +86,14 @@ private:
     // Maps order books by "issue in" to "issue out":
     hardened_hash_map<Issue, hardened_hash_set<Issue>> allBooks_;
 
+    hardened_hash_map<std::pair<Issue, Domain>, hardened_hash_set<Issue>>
+        domainBooks_;
+
     // does an order book to XRP exist
     hash_set<Issue> xrpBooks_;
+
+    // does an order book to XRP exist
+    hash_set<std::pair<Issue, Domain>> xrpDomainBooks_;
 
     std::recursive_mutex mLock;
 

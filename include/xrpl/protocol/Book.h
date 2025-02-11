@@ -65,7 +65,8 @@ void
 hash_append(Hasher& h, Book const& b)
 {
     using beast::hash_append;
-    hash_append(h, b.in, b.out);  // TODO: add domain
+    b.domain ? hash_append(h, b.in, b.out, *(b.domain))
+             : hash_append(h, b.in, b.out);  // TODO: make sure its right
 }
 
 Book

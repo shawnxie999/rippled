@@ -70,6 +70,10 @@ Payment::preflight(PreflightContext const& ctx)
         !ctx.rules.enabled(featureCredentials))
         return temDISABLED;
 
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !ctx.rules.enabled(featurePermissionedDEX))
+        return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -323,6 +327,10 @@ Payment::preclaim(PreclaimContext const& ctx)
         !isTesSuccess(err))
         return err;
 
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !isInDomain(ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
+        return tecNO_PERMISSION;
+
     return tesSUCCESS;
 }
 
@@ -424,7 +432,7 @@ Payment::doApply()
                 dstAccountID,
                 account_,
                 ctx_.tx.getFieldPathSet(sfPaths),
-                std::nullopt,
+                ctx_.tx[~sfDomainID],
                 ctx_.app.logs(),
                 &rcInput);
             // VFALCO NOTE We might not need to apply, depending
