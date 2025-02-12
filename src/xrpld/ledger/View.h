@@ -597,7 +597,7 @@ deleteAMMTrustLine(
     beast::Journal j);
 
 [[nodiscard]] bool
-isInDomain(
+isAccountInDomain(
     ReadView const& view,
     AccountID const& account,
     uint256 const& domainID);

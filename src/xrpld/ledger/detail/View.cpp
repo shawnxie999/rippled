@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
@@ -2125,7 +2126,7 @@ rippleCredit(
 }
 
 bool
-isInDomain(
+isAccountInDomain(
     ReadView const& view,
     AccountID const& account,
     uint256 const& domainID)
@@ -2141,9 +2142,11 @@ isInDomain(
         credentials.begin(), credentials.end(), [&](auto const& credential) {
             auto const sleCred = view.read(keylet::credential(
                 account, credential[sfIssuer], credential[sfCredentialType]));
-            if (sleCred)
-                return true;
-            return false;
+            if (!sleCred)
+                return false;
+
+            return !credentials::isCredentialExpired(
+                sleCred, view.info().parentCloseTime);
         });
 
     return inDomain;

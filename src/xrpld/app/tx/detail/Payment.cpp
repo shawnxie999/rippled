@@ -328,7 +328,7 @@ Payment::preclaim(PreclaimContext const& ctx)
         return err;
 
     if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !isInDomain(ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
+        !isAccountInDomain(ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;

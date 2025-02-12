@@ -173,21 +173,25 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
     \sa keylet::page, keylet::quality, keylet::book, keylet::next and
         keylet::ownerDir
  */
-LEDGER_ENTRY(ltDIR_NODE, 0x0064, DirectoryNode, directory, ({
-    {sfOwner,                soeOPTIONAL},  // for owner directories
-    {sfTakerPaysCurrency,    soeOPTIONAL},  // order book directories
-    {sfTakerPaysIssuer,      soeOPTIONAL},  // order book directories
-    {sfTakerGetsCurrency,    soeOPTIONAL},  // order book directories
-    {sfTakerGetsIssuer,      soeOPTIONAL},  // order book directories
-    {sfExchangeRate,         soeOPTIONAL},  // order book directories
-    {sfIndexes,              soeREQUIRED},
-    {sfRootIndex,            soeREQUIRED},
-    {sfIndexNext,            soeOPTIONAL},
-    {sfIndexPrevious,        soeOPTIONAL},
-    {sfNFTokenID,            soeOPTIONAL},
-    {sfPreviousTxnID,        soeOPTIONAL},
-    {sfPreviousTxnLgrSeq,    soeOPTIONAL},
-}))
+LEDGER_ENTRY(
+    ltDIR_NODE,
+    0x0064,
+    DirectoryNode,
+    directory,
+    ({{sfOwner, soeOPTIONAL},              // for owner directories
+      {sfTakerPaysCurrency, soeOPTIONAL},  // order book directories
+      {sfTakerPaysIssuer, soeOPTIONAL},    // order book directories
+      {sfTakerGetsCurrency, soeOPTIONAL},  // order book directories
+      {sfTakerGetsIssuer, soeOPTIONAL},    // order book directories
+      {sfExchangeRate, soeOPTIONAL},       // order book directories
+      {sfIndexes, soeREQUIRED},
+      {sfRootIndex, soeREQUIRED},
+      {sfIndexNext, soeOPTIONAL},
+      {sfIndexPrevious, soeOPTIONAL},
+      {sfNFTokenID, soeOPTIONAL},
+      {sfPreviousTxnID, soeOPTIONAL},
+      {sfPreviousTxnLgrSeq, soeOPTIONAL},
+      {sfDomainID, soeOPTIONAL}}))
 
 /** The ledger object which lists details about amendments on the network.
 
@@ -237,18 +241,22 @@ LEDGER_ENTRY(ltBRIDGE, 0x0069, Bridge, bridge, ({
 
     \sa keylet::offer
  */
-LEDGER_ENTRY(ltOFFER, 0x006f, Offer, offer, ({
-    {sfAccount,              soeREQUIRED},
-    {sfSequence,             soeREQUIRED},
-    {sfTakerPays,            soeREQUIRED},
-    {sfTakerGets,            soeREQUIRED},
-    {sfBookDirectory,        soeREQUIRED},
-    {sfBookNode,             soeREQUIRED},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-    {sfExpiration,           soeOPTIONAL},
-}))
+LEDGER_ENTRY(
+    ltOFFER,
+    0x006f,
+    Offer,
+    offer,
+    ({{sfAccount, soeREQUIRED},
+      {sfSequence, soeREQUIRED},
+      {sfTakerPays, soeREQUIRED},
+      {sfTakerGets, soeREQUIRED},
+      {sfBookDirectory, soeREQUIRED},
+      {sfBookNode, soeREQUIRED},
+      {sfOwnerNode, soeREQUIRED},
+      {sfPreviousTxnID, soeREQUIRED},
+      {sfPreviousTxnLgrSeq, soeREQUIRED},
+      {sfExpiration, soeOPTIONAL},
+      {sfDomainID, soeOPTIONAL}}))
 
 /** A ledger object which describes a deposit preauthorization.
 

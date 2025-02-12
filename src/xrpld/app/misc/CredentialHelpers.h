@@ -30,7 +30,7 @@ namespace credentials {
 
 // Check if credential sfExpiration field has passed ledger's parentCloseTime
 bool
-checkExpired(
+isCredentialExpired(
     std::shared_ptr<SLE const> const& sleCredential,
     NetClock::time_point const& closed);
 

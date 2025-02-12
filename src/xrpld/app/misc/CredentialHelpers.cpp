@@ -27,7 +27,7 @@ namespace ripple {
 namespace credentials {
 
 bool
-checkExpired(
+isCredentialExpired(
     std::shared_ptr<SLE const> const& sleCredential,
     NetClock::time_point const& closed)
 {
@@ -50,7 +50,7 @@ removeExpired(ApplyView& view, STTx const& tx, beast::Journal const j)
         auto const k = keylet::credential(h);
         auto const sleCred = view.peek(k);
 
-        if (sleCred && checkExpired(sleCred, closeTime))
+        if (sleCred && isCredentialExpired(sleCred, closeTime))
         {
             JLOG(j.trace())
                 << "Credentials are expired. Cred: " << sleCred->getText();

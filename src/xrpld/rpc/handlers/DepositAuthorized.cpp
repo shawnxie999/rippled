@@ -152,7 +152,7 @@ doDepositAuthorized(RPC::JsonContext& context)
                 return result;
             }
 
-            if (credentials::checkExpired(
+            if (credentials::isCredentialExpired(
                     sleCred, ledger->info().parentCloseTime))
             {
                 RPC::inject_error(
