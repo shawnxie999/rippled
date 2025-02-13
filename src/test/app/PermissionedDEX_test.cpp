@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <test/jtx/permissioned_dex.h>
 #include <xrpld/app/tx/detail/PermissionedDomainSet.h>
 #include <xrpld/ledger/ApplyViewImpl.h>
 #include <xrpl/basics/Blob.h>
@@ -26,6 +27,8 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/jss.h>
 
+#include "xrpl/beast/unit_test/suite.h"
+#include "xrpl/protocol/TER.h"
 #include <exception>
 #include <map>
 #include <optional>
@@ -45,53 +48,40 @@ class PermissionedDEX_test : public beast::unit_test::suite
     testOffer(FeatureBitset features)
     {
         testcase("Offer");
-        auto const gw = Account{"gateway"};
-        auto const alice = Account{"alice"};
-        auto const bob = Account{"bob"};
-        auto const carol = Account{"carol"};
-        auto const USD = gw["USD"];
 
         Env env(*this, features);
-        env.fund(XRP(1000), alice, bob, carol, gw);
-        env.close();
-        env.trust(USD(1000), alice);
-        env.close();
-        env.trust(USD(1000), bob);
-        env.close();
-        env.trust(USD(1000), carol);
+        PermissionedDEX permDex(env);
+        auto const gw = permDex.gw;
+        auto const domainOwner = permDex.domainOwner;
+        auto const alice = permDex.alice;
+        auto const bob = permDex.bob;
+        auto const carol = permDex.carol;
+        auto const USD = permDex.USD;
+        auto const domainID = permDex.domainID;
+
+        auto const regularOfferID{env.seq(bob)};
+        env(offer(bob, XRP(10), USD(10)),
+            require(offers(bob, 1)));
         env.close();
 
-        env(pay(gw, alice, USD(100)));
+        env(pay(alice, carol, USD(10)), path(~USD), sendmax(XRP(10)));
         env.close();
-        env(pay(gw, bob, USD(100)));
-        env.close();
-        env(pay(gw, carol, USD(100)));
-        env.close();
+        BEAST_EXPECT(expectOffers(env, bob, 0));
 
-        BEAST_EXPECT(env.ownerCount(alice) == 1);
-        BEAST_EXPECT(env.ownerCount(bob) == 1);
-
-        const char credType[] = "abcde";
-        pdomain::Credentials credentials{{alice, credType}};
-        env(pdomain::setTx(alice, credentials));
-        BEAST_EXPECT(env.ownerCount(alice) == 2);
-        auto objects = pdomain::getObjects(alice, env);
-        BEAST_EXPECT(objects.size() == 1);
-        // Test that account_objects is correct without passing it the type
-        BEAST_EXPECT(objects == pdomain::getObjects(alice, env, false));
-        auto const domainID = objects.begin()->first;
-
-        // alice also issues a credential for bob
-        env(credentials::create(bob, alice, credType));
+        // if trying to make permissioned payment with a valid offer, it fails
+        env(pay(alice, carol, USD(10)),
+            path(~USD),
+            sendmax(XRP(10)),
+            domain(domainID), ter(tecPATH_PARTIAL));
         env.close();
 
-        BEAST_EXPECT(env.ownerCount(alice) == 3);
-
+        auto const domainOfferID{env.seq(bob)};
         env(offer(bob, XRP(10), USD(10)),
             require(offers(bob, 1)),
             domain(domainID));
+        env.close();
 
-        BEAST_EXPECT(env.ownerCount(bob) == 2);
+        env(pay(alice, carol, USD(10)),path(~USD), sendmax(XRP(10)), domain(domainID));
     }
 
 
