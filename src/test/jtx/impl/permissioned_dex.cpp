@@ -29,8 +29,7 @@ namespace test {
 namespace jtx {
 
 PermissionedDEX::PermissionedDEX(Env& env)
-    : env(env)
-    , gw("gateway")
+    : gw("gateway")
     , domainOwner("domainOwner")
     , alice("alice")
     , bob("bob")
@@ -53,6 +52,8 @@ PermissionedDEX::PermissionedDEX(Env& env)
     env.close();
 
     // Issue payments
+    env(pay(gw, domainOwner, USD(100)));
+    env.close();
     env(pay(gw, alice, USD(100)));
     env.close();
     env(pay(gw, bob, USD(100)));

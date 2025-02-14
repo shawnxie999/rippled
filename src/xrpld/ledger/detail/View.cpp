@@ -2132,9 +2132,12 @@ isAccountInDomain(
     uint256 const& domainID)
 {
     auto const sleDomain = view.read(keylet::permissionedDomain(domainID));
-
     if (!sleDomain)
         return false;
+
+    // domain owner is in the domain
+    if (sleDomain->getAccountID(sfOwner) == account)
+        return true;
 
     auto const& credentials = sleDomain->getFieldArray(sfAcceptedCredentials);
 
@@ -2148,7 +2151,7 @@ isAccountInDomain(
             if (!sleCred->isFlag(lsfAccepted))
                 return false;
 
-            return !credentials::isCredentialExpired(
+            return !credentials::isExpired(
                 sleCred, view.info().parentCloseTime);
         });
 

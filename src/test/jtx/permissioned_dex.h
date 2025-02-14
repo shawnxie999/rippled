@@ -27,9 +27,6 @@ namespace jtx {
 
 class PermissionedDEX
 {
-protected:
-    Env& env;
-
 public:
     Account gw;
     Account domainOwner;

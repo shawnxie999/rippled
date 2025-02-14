@@ -116,44 +116,21 @@ class PermissionedDEX_test : public beast::unit_test::suite
     }
 
     void
-    testOfferCreateDomainValidations(FeatureBitset features)
+    testOfferCreate(FeatureBitset features)
     {
-        testcase("OfferCreate domain validations");
+        testcase("OfferCreate");
 
         // test preflight
         {
             Env env(*this, features - featurePermissionedDEX);
             PermissionedDEX permDex(env);
-            auto const gw = permDex.gw;
-            auto const domainOwner = permDex.domainOwner;
-            auto const alice = permDex.alice;
-            auto const bob = permDex.bob;
-            auto const USD = permDex.USD;
-            auto const domainID = permDex.domainID;
-            auto const credType = permDex.credType;
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
 
             env(offer(bob, XRP(10), USD(10)),
                 domain(domainID),
                 ter(temDISABLED));
             env.close();
-
-            // // enable only featureFlowCross but not featurePermissionedDEX
-            // env.enableFeature(featureFlowCross);
-            // env.close();
-            // env(offer(bob, XRP(10), USD(10)),
-            //     domain(domainID),
-            //     ter(temDISABLED));
-            // env.close();
-
-            // // enabled only featurePermissionedDEX but not featureFlowCross
-            // env.disableFeature(featureFlowCross);
-            // env.close();
-            // env.enableFeature(featurePermissionedDEX);
-            // env.close();
-            // env(offer(bob, XRP(10), USD(10)),
-            //     domain(domainID),
-            //     ter(temDISABLED));
-            // env.close();
 
             env.enableFeature(featurePermissionedDEX);
             env.close();
@@ -161,26 +138,263 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env.close();
         }
 
-        // // preclaim
-        // {
-        //     // create devin account who is not part of the domain
-        //     Account devin("devin");
-        //     env.fund(XRP(1000), devin);
-        //     env.close();
-        //     env.trust(USD(1000), devin);
-        //     env.close();
-        //     env(pay(gw, devin, USD(100)));
-        //     env.close();
+        // test preflight: permissioned dex cannot be used without enable
+        // flowcross
+        {
+            Env env(*this, features - featureFlowCross);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
 
-        //     env(offer(devin, XRP(10), USD(10)),
-        //         domain(domainID),
-        //         ter(tecNO_PERMISSION));
-        //     env.close();
+            env(offer(bob, XRP(10), USD(10)),
+                domain(domainID),
+                ter(temDISABLED));
+            env.close();
 
-        //     // domain owner also issues a credential for devin
-        //     env(credentials::create(devin, domainOwner, credType));
-        //     env.close();
-        // }
+            env.enableFeature(featureFlowCross);
+            env.close();
+            env(offer(bob, XRP(10), USD(10)), domain(domainID));
+            env.close();
+        }
+
+        // preclaim
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            // create devin account who is not part of the domain
+            Account devin("devin");
+            env.fund(XRP(1000), devin);
+            env.close();
+            env.trust(USD(1000), devin);
+            env.close();
+            env(pay(gw, devin, USD(100)));
+            env.close();
+
+            env(offer(devin, XRP(10), USD(10)),
+                domain(domainID),
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            // domain owner also issues a credential for devin
+            env(credentials::create(devin, domainOwner, credType));
+            env.close();
+
+            // devin still cannot create offer since he didn't accept credential
+            env(offer(devin, XRP(10), USD(10)),
+                domain(domainID),
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            env(credentials::accept(devin, domainOwner, credType));
+            env.close();
+
+            env(offer(devin, XRP(10), USD(10)), domain(domainID));
+            env.close();
+        }
+
+        // preclaim: test expired cred
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            // create devin account who is not part of the domain
+            Account devin("devin");
+            env.fund(XRP(1000), devin);
+            env.close();
+            env.trust(USD(1000), devin);
+            env.close();
+            env(pay(gw, devin, USD(100)));
+            env.close();
+
+            auto jv = credentials::create(devin, domainOwner, credType);
+            uint32_t const t = env.current()
+                                   ->info()
+                                   .parentCloseTime.time_since_epoch()
+                                   .count();
+            jv[sfExpiration.jsonName] = t + 20;
+            env(jv);
+
+            env(credentials::accept(devin, domainOwner, credType));
+            env.close();
+
+            // devin can still create offer while his cred is not expired
+            env(offer(devin, XRP(10), USD(10)), domain(domainID));
+            env.close();
+
+            // time advance
+            env.close();
+            env.close();
+            env.close();
+
+            // devin cannot create offer with expired cred
+            env(offer(devin, XRP(10), USD(10)),
+                domain(domainID),
+                ter(tecNO_PERMISSION));
+            env.close();
+        }
+    }
+
+    void
+    testPayment(FeatureBitset features)
+    {
+        testcase("Payment");
+
+        // test preflight
+        {
+            Env env(*this, features - featurePermissionedDEX);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            env(pay(bob, alice, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(domainID),
+                ter(temDISABLED));
+            env.close();
+
+            env.enableFeature(featurePermissionedDEX);
+            env.close();
+
+            env(offer(bob, XRP(10), USD(10)), domain(domainID));
+            env.close();
+
+            env(pay(bob, alice, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(domainID));
+            env.close();
+        }
+
+        // preclaim: non-domain destination cannot accept
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            env(offer(bob, XRP(10), USD(10)), domain(domainID));
+            env.close();
+
+            // create devin account who is not part of the domain
+            Account devin("devin");
+            env.fund(XRP(1000), devin);
+            env.close();
+            env.trust(USD(1000), devin);
+            env.close();
+            env(pay(gw, devin, USD(100)));
+            env.close();
+
+            // devin is not part of domain
+            env(pay(alice, devin, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(domainID),
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            // domain owner also issues a credential for devin
+            env(credentials::create(devin, domainOwner, credType));
+            env.close();
+
+            // devin has not yet accepted cred
+            env(pay(alice, devin, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(domainID),
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            env(credentials::accept(devin, domainOwner, credType));
+            env.close();
+
+            env(pay(alice, devin, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(domainID));
+            env.close();
+        }
+
+        // preclaim: non-domain sender cannot send
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            env(offer(bob, XRP(10), USD(10)), domain(domainID));
+            env.close();
+
+            // create devin account who is not part of the domain
+            Account devin("devin");
+            env.fund(XRP(1000), devin);
+            env.close();
+            env.trust(USD(1000), devin);
+            env.close();
+            env(pay(gw, devin, USD(100)));
+            env.close();
+
+            // devin is not part of domain
+            env(pay(devin, alice, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(domainID),
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            // domain owner also issues a credential for devin
+            env(credentials::create(devin, domainOwner, credType));
+            env.close();
+
+            // devin has not yet accepted cred
+            env(pay(devin, alice, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(domainID),
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            env(credentials::accept(devin, domainOwner, credType));
+            env.close();
+
+            env(pay(devin, alice, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(domainID));
+            env.close();
+        }
+        // preclaim: non-domain sender cannot send
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            env(offer(bob, XRP(10), USD(10)), domain(domainID));
+            env.close();
+
+            // domain owner can always be destination
+            env(pay(alice, domainOwner, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(domainID));
+            env.close();
+
+            env(offer(bob, XRP(10), USD(10)), domain(domainID));
+            env.close();
+
+            // domain owner can send
+            env(pay(domainOwner, alice, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(domainID));
+            env.close();
+        }
     }
 
     void
@@ -190,13 +404,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
         Env env(*this, features);
         PermissionedDEX permDex(env);
-        auto const gw = permDex.gw;
-        auto const domainOwner = permDex.domainOwner;
-        auto const alice = permDex.alice;
-        auto const bob = permDex.bob;
-        auto const carol = permDex.carol;
-        auto const USD = permDex.USD;
-        auto const domainID = permDex.domainID;
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            permDex;
 
         auto const regularOfferSeq{env.seq(bob)};
         env(offer(bob, XRP(10), USD(10)));
@@ -246,7 +455,8 @@ public:
             jtx::supported_amendments() | featurePermissionedDomains |
             featureCredentials | featurePermissionedDEX};
 
-        testOfferCreateDomainValidations(all);
+        testOfferCreate(all);
+        testPayment(all);
         testSimpleBookStep(all);
     }
 };

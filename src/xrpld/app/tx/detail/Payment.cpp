@@ -327,9 +327,15 @@ Payment::preclaim(PreclaimContext const& ctx)
         !isTesSuccess(err))
         return err;
 
-    if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !isAccountInDomain(ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
-        return tecNO_PERMISSION;
+    if (ctx.tx.isFieldPresent(sfDomainID))
+    {
+        if (!isAccountInDomain(ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
+            return tecNO_PERMISSION;
+
+        if (!isAccountInDomain(
+                ctx.view, ctx.tx[sfDestination], ctx.tx[sfDomainID]))
+            return tecNO_PERMISSION;
+    }
 
     return tesSUCCESS;
 }
