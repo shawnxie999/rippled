@@ -38,6 +38,7 @@ public:
     Account carol;
     IOU USD;
     uint256 domainID;
+    std::string credType;
 
     PermissionedDEX(Env& env);
 };

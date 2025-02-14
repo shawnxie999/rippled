@@ -20,6 +20,7 @@
 #include <xrpld/app/tx/detail/OfferStream.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
+#include "xrpld/ledger/View.h"
 
 namespace ripple {
 
@@ -282,6 +283,17 @@ TOfferStreamBase<TIn, TOut>::step()
         {
             JLOG(j_.trace())
                 << "Removing deep frozen unfunded offer " << entry->key();
+            permRmOffer(entry->key());
+            offer_ = TOffer<TIn, TOut>{};
+            continue;
+        }
+
+        if (entry->isFieldPresent(sfDomainID) &&
+            !isAccountInDomain(
+                view_, offer_.owner(), entry->getFieldH256(sfDomainID)))
+        {
+            JLOG(j_.trace())
+                << "Removing offer no longer in domain " << entry->key();
             permRmOffer(entry->key());
             offer_ = TOffer<TIn, TOut>{};
             continue;

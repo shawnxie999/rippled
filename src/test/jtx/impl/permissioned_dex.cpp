@@ -36,6 +36,7 @@ PermissionedDEX::PermissionedDEX(Env& env)
     , bob("bob")
     , carol("carol")
     , USD(gw["USD"])
+    , credType("abcde")
 {
     // Fund accounts
     env.fund(XRP(1000), domainOwner, alice, bob, carol, gw);
@@ -59,7 +60,6 @@ PermissionedDEX::PermissionedDEX(Env& env)
     env(pay(gw, carol, USD(100)));
     env.close();
 
-    const char credType[] = "abcde";
     pdomain::Credentials credentials{{domainOwner, credType}};
     env(pdomain::setTx(domainOwner, credentials));
 
@@ -69,9 +69,19 @@ PermissionedDEX::PermissionedDEX(Env& env)
     // domain owner also issues a credential for alice
     env(credentials::create(alice, domainOwner, credType));
     env.close();
-    
+    env(credentials::accept(alice, domainOwner, credType));
+    env.close();
+
     // domain owner also issues a credential for bob
     env(credentials::create(bob, domainOwner, credType));
+    env.close();
+    env(credentials::accept(bob, domainOwner, credType));
+    env.close();
+
+    // domain owner also issues a credential for bob
+    env(credentials::create(carol, domainOwner, credType));
+    env.close();
+    env(credentials::accept(carol, domainOwner, credType));
     env.close();
 }
 

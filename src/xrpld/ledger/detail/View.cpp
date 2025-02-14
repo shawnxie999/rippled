@@ -2145,6 +2145,9 @@ isAccountInDomain(
             if (!sleCred)
                 return false;
 
+            if (!sleCred->isFlag(lsfAccepted))
+                return false;
+
             return !credentials::isCredentialExpired(
                 sleCred, view.info().parentCloseTime);
         });
