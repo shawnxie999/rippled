@@ -289,8 +289,8 @@ TOfferStreamBase<TIn, TOut>::step()
         }
 
         if (entry->isFieldPresent(sfDomainID) &&
-            !isAccountInDomain(
-                view_, offer_.owner(), entry->getFieldH256(sfDomainID)))
+            !offerInDomain(
+                view_, entry->key(), entry->getFieldH256(sfDomainID)))
         {
             JLOG(j_.trace())
                 << "Removing offer no longer in domain " << entry->key();

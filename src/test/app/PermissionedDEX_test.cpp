@@ -237,6 +237,75 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 ter(tecNO_PERMISSION));
             env.close();
         }
+
+        // preclaim - takergets issuer is not in domain
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            env(credentials::deleteCred(
+                domainOwner, gw, domainOwner, credType));
+            env.close();
+
+            auto const bobOfferSeq{env.seq(bob)};
+            env(offer(bob, XRP(10), USD(10)),
+                domain(domainID),
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
+        }
+
+        // preclaim - takerpays issuer is not in domain
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            env(credentials::deleteCred(
+                domainOwner, gw, domainOwner, credType));
+            env.close();
+
+            auto const bobOfferSeq{env.seq(bob)};
+            env(offer(bob, USD(10), XRP(10)),
+                domain(domainID),
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
+        }
+
+        // apply - offer cross
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            auto const bobOfferSeq{env.seq(bob)};
+            env(offer(bob, XRP(10), USD(10)), domain(domainID));
+            env.close();
+
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+            BEAST_EXPECT(ownerCount(env, bob) == 3);
+
+            // a non domain offer cannot cross with domain offer
+            env(offer(carol, USD(10), XRP(10)));
+            env.close();
+
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+
+            auto const aliceOfferSeq{env.seq(bob)};
+            env(offer(alice, USD(10), XRP(10)), domain(domainID));
+            env.close();
+
+            BEAST_EXPECT(!offerExists(env, alice, aliceOfferSeq));
+            BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+        }
     }
 
     void
@@ -443,7 +512,40 @@ class PermissionedDEX_test : public beast::unit_test::suite
         BEAST_EXPECT(
             checkOfferBalance(env, bob, regularOfferSeq, XRP(10), USD(10)));
 
-        // domain direct is empty
+        // domain directory is empty
+        BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 0));
+    }
+
+    void
+    testTakerPaysIssuerNotInDomain(FeatureBitset features)
+    {
+        testcase("Taker pays issuer not in domain");
+
+        Env env(*this, features);
+        PermissionedDEX permDex(env);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            permDex;
+
+        auto const domainOfferSeq{env.seq(bob)};
+        env(offer(bob, XRP(10), USD(10)), domain(domainID));
+        env.close();
+
+        BEAST_EXPECT(
+            checkOfferBalance(env, bob, domainOfferSeq, XRP(10), USD(10)));
+
+        auto const domainDirKey = getOfferDirKey(env, bob, domainOfferSeq);
+        BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 1));
+
+        // cross-currency permissioned payment consumed
+        // domain offer instead of regular offer
+        env(pay(alice, carol, USD(10)),
+            path(~USD),
+            sendmax(XRP(10)),
+            domain(domainID));
+        env.close();
+        BEAST_EXPECT(!offerExists(env, bob, domainOfferSeq));
+
+        // domain directory is empty
         BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 0));
     }
 
@@ -458,6 +560,7 @@ public:
         testOfferCreate(all);
         testPayment(all);
         testSimpleBookStep(all);
+        testTakerPaysIssuerNotInDomain(all);
     }
 };
 

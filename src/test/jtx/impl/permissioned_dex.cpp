@@ -84,6 +84,11 @@ PermissionedDEX::PermissionedDEX(Env& env)
     env.close();
     env(credentials::accept(carol, domainOwner, credType));
     env.close();
+
+    env(credentials::create(gw, domainOwner, credType));
+    env.close();
+    env(credentials::accept(gw, domainOwner, credType));
+    env.close();
 }
 
 }  // namespace jtx

@@ -212,9 +212,19 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
 
     // if domain is specified, make sure that domain exists and the offer create
     // is part of the domain
-    if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !isAccountInDomain(ctx.view, id, ctx.tx[sfDomainID]))
-        return tecNO_PERMISSION;
+    if (ctx.tx.isFieldPresent(sfDomainID))
+    {
+        if (!accountInDomain(ctx.view, id, ctx.tx[sfDomainID]))
+            return tecNO_PERMISSION;
+
+        if (!saTakerPays.native() &&
+            !accountInDomain(ctx.view, uPaysIssuerID, ctx.tx[sfDomainID]))
+            return tecNO_PERMISSION;
+
+        if (!saTakerGets.native() &&
+            !accountInDomain(ctx.view, uGetsIssuerID, ctx.tx[sfDomainID]))
+            return tecNO_PERMISSION;
+    }
 
     return tesSUCCESS;
 }

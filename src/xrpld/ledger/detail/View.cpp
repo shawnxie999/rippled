@@ -28,6 +28,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/st.h>
+#include "xrpl/protocol/SField.h"
 #include <optional>
 
 namespace ripple {
@@ -2126,7 +2127,7 @@ rippleCredit(
 }
 
 bool
-isAccountInDomain(
+accountInDomain(
     ReadView const& view,
     AccountID const& account,
     uint256 const& domainID)
@@ -2156,6 +2157,34 @@ isAccountInDomain(
         });
 
     return inDomain;
+}
+
+bool
+offerInDomain(
+    ReadView const& view,
+    uint256 const& offerID,
+    uint256 const& domainID)
+{
+    auto const sleOffer = view.read(keylet::offer(offerID));
+
+    if (!sleOffer)
+        return false;
+
+    if (!accountInDomain(view, sleOffer->getAccountID(sfAccount), domainID))
+        return false;
+
+    // check the issuer of each token
+    auto const& takerGets = sleOffer->getFieldAmount(sfTakerGets);
+    auto const& takerPays = sleOffer->getFieldAmount(sfTakerPays);
+
+    auto const issuerInDomain = [&](Issue const& issue) {
+        if (issue.native())
+            return true;
+        return accountInDomain(view, issue.getIssuer(), domainID);
+    };
+
+    return issuerInDomain(takerGets.issue()) &&
+        issuerInDomain(takerPays.issue());
 }
 
 }  // namespace ripple
