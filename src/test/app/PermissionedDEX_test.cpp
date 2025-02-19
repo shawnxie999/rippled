@@ -29,6 +29,7 @@
 #include <xrpl/protocol/jss.h>
 
 #include "test/jtx/Account.h"
+#include "test/jtx/txflags.h"
 #include "xrpl/beast/unit_test/suite.h"
 #include "xrpl/protocol/Indexes.h"
 #include "xrpl/protocol/TER.h"
@@ -437,6 +438,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 domain(domainID));
             env.close();
         }
+
         // preclaim: non-domain sender cannot send
         {
             Env env(*this, features);
@@ -517,35 +519,111 @@ class PermissionedDEX_test : public beast::unit_test::suite
     }
 
     void
-    testTakerPaysIssuerNotInDomain(FeatureBitset features)
+    testOfferTokenIssuerInDomain(FeatureBitset features)
     {
-        testcase("Taker pays issuer not in domain");
+        testcase("Offer token issuer in domain");
 
         Env env(*this, features);
         PermissionedDEX permDex(env);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
             permDex;
 
-        auto const domainOfferSeq{env.seq(bob)};
+        // create an offer with usd as takergets
+        auto const bobOffer1Seq{env.seq(bob)};
         env(offer(bob, XRP(10), USD(10)), domain(domainID));
         env.close();
 
+        // create an offer with usd as takerpays
+        auto const bobOffer2Seq{env.seq(bob)};
+        env(offer(bob, USD(10), XRP(10)), domain(domainID), txflags(tfPassive));
+        env.close();
+
         BEAST_EXPECT(
-            checkOfferBalance(env, bob, domainOfferSeq, XRP(10), USD(10)));
+            checkOfferBalance(env, bob, bobOffer1Seq, XRP(10), USD(10)));
+        BEAST_EXPECT(
+            checkOfferBalance(env, bob, bobOffer2Seq, USD(10), XRP(10)));
 
-        auto const domainDirKey = getOfferDirKey(env, bob, domainOfferSeq);
-        BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 1));
+        // remove gateway from domain
+        env(credentials::deleteCred(domainOwner, gw, domainOwner, credType));
+        env.close();
 
-        // cross-currency permissioned payment consumed
-        // domain offer instead of regular offer
+        // payment fails since gateway is not in domain
+        env(pay(alice, carol, USD(10)),
+            path(~USD),
+            sendmax(XRP(10)),
+            domain(domainID),
+            ter(tecPATH_PARTIAL));
+        env.close();
+        BEAST_EXPECT(offerExists(env, bob, bobOffer1Seq));
+
+        env(pay(alice, carol, XRP(10)),
+            path(~XRP),
+            sendmax(USD(10)),
+            domain(domainID),
+            ter(tecPATH_PARTIAL));
+        env.close();
+        BEAST_EXPECT(offerExists(env, bob, bobOffer2Seq));
+
+        // add gateway back to domain
+        env(credentials::create(gw, domainOwner, credType));
+        env.close();
+        env(credentials::accept(gw, domainOwner, credType));
+        env.close();
+
+        // offers can now be consumed again
         env(pay(alice, carol, USD(10)),
             path(~USD),
             sendmax(XRP(10)),
             domain(domainID));
         env.close();
-        BEAST_EXPECT(!offerExists(env, bob, domainOfferSeq));
+        BEAST_EXPECT(!offerExists(env, bob, bobOffer1Seq));
 
-        // domain directory is empty
+        env(pay(alice, carol, XRP(10)),
+            path(~XRP),
+            sendmax(USD(10)),
+            domain(domainID));
+        env.close();
+        BEAST_EXPECT(!offerExists(env, bob, bobOffer2Seq));
+    }
+
+    void
+    testRemoveUnfundedOffer(FeatureBitset features)
+    {
+        testcase("Remove unfunded offer");
+
+        Env env(*this, features);
+        PermissionedDEX permDex(env);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            permDex;
+
+        auto const bobOfferSeq{env.seq(bob)};
+        env(offer(bob, XRP(10), USD(10)), domain(domainID));
+        env.close();
+
+        auto const aliceOfferSeq{env.seq(alice)};
+        env(offer(alice, XRP(50), USD(50)), domain(domainID));
+        env.close();
+
+        BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+        BEAST_EXPECT(offerExists(env, alice, aliceOfferSeq));
+
+        auto const domainDirKey = getOfferDirKey(env, bob, bobOfferSeq);
+        BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 2));
+
+        // remove alice from domain
+        env(credentials::deleteCred(domainOwner, alice, domainOwner, credType));
+        env.close();
+
+        env(pay(gw, carol, USD(10)),
+            path(~USD),
+            sendmax(XRP(10)),
+            domain(domainID));
+        env.close();
+
+        BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
+
+        // alice's unfunded offer is removed implicitly
+        BEAST_EXPECT(!offerExists(env, alice, aliceOfferSeq));
         BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 0));
     }
 
@@ -560,7 +638,12 @@ public:
         testOfferCreate(all);
         testPayment(all);
         testSimpleBookStep(all);
-        testTakerPaysIssuerNotInDomain(all);
+        testOfferTokenIssuerInDomain(all);
+        testRemoveUnfundedOffer(all);
+
+        // test rippling with multi issuers
+        // test more complex path
+        // test directory
     }
 };
 
