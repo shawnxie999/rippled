@@ -33,6 +33,7 @@
 #include "xrpl/beast/unit_test/suite.h"
 #include "xrpl/protocol/Indexes.h"
 #include "xrpl/protocol/TER.h"
+#include "xrpl/protocol/TxFlags.h"
 #include <cstdint>
 #include <exception>
 #include <map>
@@ -473,49 +474,81 @@ class PermissionedDEX_test : public beast::unit_test::suite
     {
         testcase("Simple book step");
 
-        Env env(*this, features);
-        PermissionedDEX permDex(env);
-        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-            permDex;
+        // test that a domain offer can be consumed and non-domain offer is not
+        // consumed during a domain payment
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
 
-        auto const regularOfferSeq{env.seq(bob)};
-        env(offer(bob, XRP(10), USD(10)));
-        env.close();
-        BEAST_EXPECT(
-            checkOfferBalance(env, bob, regularOfferSeq, XRP(10), USD(10)));
+            auto const regularOfferSeq{env.seq(bob)};
+            env(offer(bob, XRP(10), USD(10)));
+            env.close();
+            BEAST_EXPECT(
+                checkOfferBalance(env, bob, regularOfferSeq, XRP(10), USD(10)));
 
-        // if trying to make permissioned payment with a normal offer, it
-        // fails
-        env(pay(alice, carol, USD(10)),
-            path(~USD),
-            sendmax(XRP(10)),
-            domain(domainID),
-            ter(tecPATH_PARTIAL));
-        env.close();
+            // if trying to make permissioned payment with a normal offer, it
+            // fails
+            env(pay(alice, carol, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(domainID),
+                ter(tecPATH_PARTIAL));
+            env.close();
 
-        auto const domainOfferSeq{env.seq(bob)};
-        env(offer(bob, XRP(10), USD(10)), domain(domainID));
-        env.close();
+            auto const domainOfferSeq{env.seq(bob)};
+            env(offer(bob, XRP(10), USD(10)), domain(domainID));
+            env.close();
 
-        BEAST_EXPECT(
-            checkOfferBalance(env, bob, domainOfferSeq, XRP(10), USD(10)));
+            BEAST_EXPECT(
+                checkOfferBalance(env, bob, domainOfferSeq, XRP(10), USD(10)));
 
-        auto const domainDirKey = getOfferDirKey(env, bob, domainOfferSeq);
-        BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 1));
+            auto const domainDirKey = getOfferDirKey(env, bob, domainOfferSeq);
+            BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 1));
 
-        // cross-currency permissioned payment consumed
-        // domain offer instead of regular offer
-        env(pay(alice, carol, USD(10)),
-            path(~USD),
-            sendmax(XRP(10)),
-            domain(domainID));
-        env.close();
-        BEAST_EXPECT(!offerExists(env, bob, domainOfferSeq));
-        BEAST_EXPECT(
-            checkOfferBalance(env, bob, regularOfferSeq, XRP(10), USD(10)));
+            // cross-currency permissioned payment consumed
+            // domain offer instead of regular offer
+            env(pay(alice, carol, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(domainID));
+            env.close();
+            BEAST_EXPECT(!offerExists(env, bob, domainOfferSeq));
+            BEAST_EXPECT(
+                checkOfferBalance(env, bob, regularOfferSeq, XRP(10), USD(10)));
 
-        // domain directory is empty
-        BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 0));
+            // domain directory is empty
+            BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 0));
+        }
+
+        // test a non-domain account can still be part of rippling in a domain
+        // payment. If the domain wishes to control who is allowed to ripple
+        // through, they should set the rippling individually
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            auto const EURA = alice["EUR"];
+            auto const EURB = bob["EUR"];
+
+            env.trust(EURA(100), bob);
+            env.trust(EURB(100), carol);
+            env.close();
+
+            // remove bob from domain
+            env(credentials::deleteCred(
+                domainOwner, bob, domainOwner, credType));
+            env.close();
+
+            // alice can still ripple through bob even though he's not part
+            // of the domain
+            env(pay(alice, carol, EURB(10)), paths(EURA), domain(domainID));
+            env.close();
+            env.require(balance(bob, EURA(10)), balance(carol, EURB(10)));
+        }
     }
 
     void
@@ -641,6 +674,7 @@ public:
         testOfferTokenIssuerInDomain(all);
         testRemoveUnfundedOffer(all);
 
+        // domain does not affect non offers eg rippling
         // test rippling with multi issuers
         // test more complex path
         // test directory
