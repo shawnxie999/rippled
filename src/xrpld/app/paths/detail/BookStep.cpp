@@ -839,6 +839,10 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
     // At any payment engine iteration, AMM offer can only be consumed once.
     auto tryAMM = [&](std::optional<Quality> const& lobQuality) -> bool {
+        // amm doesn't support domain yet
+        if (domainID_)
+            return true;
+
         // If offer crossing then use either LOB quality or nullopt
         // to prevent AMM being blocked by a lower quality LOB.
         auto const qualityThreshold = [&]() -> std::optional<Quality> {
@@ -851,6 +855,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         return !ammOffer || execOffer(*ammOffer);
     };
 
+    // todo: exlude domain from amm
     if (offers.step())
     {
         if (tryAMM(offers.tip().quality()))
