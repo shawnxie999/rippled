@@ -289,9 +289,7 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        // only check if offer is in domain if it has a domain ID and isn't a
-        // hybrid offer. A hybrid offer is in both open and domain book
-        if (entry->isFieldPresent(sfDomainID) && !entry->isFlag(lsfHybrid) &&
+        if (entry->isFieldPresent(sfDomainID) &&
             !offerInDomain(
                 view_, entry->key(), entry->getFieldH256(sfDomainID)))
         {

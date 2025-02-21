@@ -1123,7 +1123,7 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
     if (sle->isFlag(lsfHybrid))
     {
         XRPL_ASSERT(
-            !sle->isFieldPresent(sfDomainID),
+            sle->isFieldPresent(sfDomainID),
             "ripple::offerDelete : missing domainID");
 
         auto const& additionalBookDirs =
@@ -1133,7 +1133,7 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
         {
             auto const& dirIndex = bookDir.getFieldH256(sfBookDirectory);
             auto const& dirNode = bookDir.getFieldU64(sfBookNode);
-            
+
             if (!view.dirRemove(
                     keylet::page(dirIndex), dirNode, offerIndex, false))
             {
@@ -2188,19 +2188,11 @@ offerInDomain(
     uint256 const& offerID,
     uint256 const& domainID)
 {
-    // todo: return true if hybrid
+
     auto const sleOffer = view.read(keylet::offer(offerID));
 
     if (!sleOffer)
         return false;
-    
-    // this function should not be needed to call on a hybrid offer
-    XRPL_ASSERT(
-        !sleOffer->isFlag(lsfHybrid),
-        "ripple::offerInDomain : offer is hybrid");
-
-    if (sleOffer->isFlag(lsfHybrid))
-        return true;  
 
     return accountInDomain(view, sleOffer->getAccountID(sfAccount), domainID);
 }
