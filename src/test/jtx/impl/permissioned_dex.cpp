@@ -38,7 +38,7 @@ PermissionedDEX::PermissionedDEX(Env& env)
     , credType("abcde")
 {
     // Fund accounts
-    env.fund(XRP(1000), domainOwner, alice, bob, carol, gw);
+    env.fund(XRP(100000), domainOwner, alice, bob, carol, gw);
     env.close();
 
     // Set up trust lines

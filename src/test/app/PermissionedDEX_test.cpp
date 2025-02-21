@@ -70,7 +70,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
         std::uint32_t offerSeq,
         STAmount const& takerPays,
         STAmount const& takerGets,
-        bool const isHybrid = false)
+        uint32_t const flags = 0)
     {
         auto offerInDir = [&](uint256 const& directory,
                               uint64_t const pageIndex,
@@ -100,7 +100,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             if (sle->getFieldAmount(sfTakerPays) != takerPays)
                 return false;
 
-            if (sle->isFlag(lsfHybrid) != isHybrid)
+            if (sle->getFlags() != flags)
                 return false;
 
             if (!offerInDir(
@@ -395,6 +395,23 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
             BEAST_EXPECT(ownerCount(env, alice) == 2);
         }
+
+        // apply - create lots of domain offers
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            for (size_t i = 0; i <= 100; i++)
+            {
+                auto const bobOfferSeq{env.seq(bob)};
+                env(offer(bob, XRP(10), USD(10)), domain(domainID));
+                env.close();
+                BEAST_EXPECT(
+                    checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), 0));
+            }
+        }
     }
 
     void
@@ -659,7 +676,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         env.close();
 
         BEAST_EXPECT(checkOffer(env, bob, bobOffer1Seq, XRP(10), USD(10)));
-        BEAST_EXPECT(checkOffer(env, bob, bobOffer2Seq, USD(10), XRP(10)));
+        BEAST_EXPECT(
+            checkOffer(env, bob, bobOffer2Seq, USD(10), XRP(10), lsfPassive));
 
         // remove gateway from domain
         env(credentials::deleteCred(domainOwner, gw, domainOwner, credType));
@@ -788,7 +806,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 domain(domainID));
             env.close();
             BEAST_EXPECT(
-                checkOffer(env, bob, offerSeq, XRP(10), USD(10), true));
+                checkOffer(env, bob, offerSeq, XRP(10), USD(10), lsfHybrid));
         }
 
         // apply - domain offer can cross with hybrid
@@ -804,6 +822,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 domain(domainID));
             env.close();
 
+            BEAST_EXPECT(
+                checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), lsfHybrid));
             BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
             BEAST_EXPECT(ownerCount(env, bob) == 3);
 
@@ -831,6 +851,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
             BEAST_EXPECT(ownerCount(env, bob) == 3);
+            BEAST_EXPECT(
+                checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), lsfHybrid));
 
             auto const aliceOfferSeq{env.seq(bob)};
             env(offer(alice, USD(10), XRP(10)));
@@ -839,6 +861,25 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(!offerExists(env, alice, aliceOfferSeq));
             BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
             BEAST_EXPECT(ownerCount(env, alice) == 2);
+        }
+
+        // apply - create lots of hybrid offers
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            for (size_t i = 0; i <= 100; i++)
+            {
+                auto const bobOfferSeq{env.seq(bob)};
+                env(offer(bob, XRP(10), USD(10)),
+                    txflags(tfHybrid),
+                    domain(domainID));
+                env.close();
+                BEAST_EXPECT(checkOffer(
+                    env, bob, bobOfferSeq, XRP(10), USD(10), lsfHybrid));
+            }
         }
     }
 
@@ -866,7 +907,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             ter(tecPATH_PARTIAL));
         env.close();
         BEAST_EXPECT(
-            checkOffer(env, bob, hybridOfferSeq, XRP(50), USD(50), true));
+            checkOffer(env, bob, hybridOfferSeq, XRP(50), USD(50), lsfHybrid));
 
         // hybrid offer can't be consumed since bob is not in domain anymore
         env(pay(alice, carol, USD(5)),
@@ -875,7 +916,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             ter(tecPATH_PARTIAL));
         env.close();
         BEAST_EXPECT(
-            checkOffer(env, bob, hybridOfferSeq, XRP(50), USD(50), true));
+            checkOffer(env, bob, hybridOfferSeq, XRP(50), USD(50), lsfHybrid));
 
         // create a regular offer
         auto const regularOfferSeq{env.seq(bob)};
@@ -916,8 +957,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 sendmax(XRP(5)),
                 domain(domainID));
             env.close();
-            BEAST_EXPECT(
-                checkOffer(env, bob, hybridOfferSeq, XRP(5), USD(5), true));
+            BEAST_EXPECT(checkOffer(
+                env, bob, hybridOfferSeq, XRP(5), USD(5), lsfHybrid));
 
             // hybrid offer can't be consumed since bob is not in domain anymore
             env(pay(alice, carol, USD(5)), path(~USD), sendmax(XRP(5)));
@@ -965,16 +1006,16 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 domain(badDomainID),
                 ter(tecPATH_DRY));
             env.close();
-            BEAST_EXPECT(
-                checkOffer(env, bob, hybridOfferSeq, XRP(10), USD(10), true));
+            BEAST_EXPECT(checkOffer(
+                env, bob, hybridOfferSeq, XRP(10), USD(10), lsfHybrid));
 
             env(pay(alice, carol, USD(5)),
                 path(~USD),
                 sendmax(XRP(5)),
                 domain(domainID));
             env.close();
-            BEAST_EXPECT(
-                checkOffer(env, bob, hybridOfferSeq, XRP(5), USD(5), true));
+            BEAST_EXPECT(checkOffer(
+                env, bob, hybridOfferSeq, XRP(5), USD(5), lsfHybrid));
 
             // hybrid offer can't be consumed since bob is not in domain anymore
             env(pay(alice, carol, USD(5)), path(~USD), sendmax(XRP(5)));
