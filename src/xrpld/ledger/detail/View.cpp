@@ -1120,6 +1120,29 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
         return tefBAD_LEDGER;
     }
 
+    if (sle->isFlag(lsfHybrid))
+    {
+        XRPL_ASSERT(
+            !sle->isFieldPresent(sfDomainID),
+            "ripple::offerDelete : missing domainID");
+
+        auto const& additionalBookDirs =
+            sle->getFieldArray(sfAdditionalBookDirectories);
+
+        for (auto const& bookDir : additionalBookDirs)
+        {
+            auto const& dirIndex = bookDir.getFieldH256(sfBookDirectory);
+            auto const& dirNode = bookDir.getFieldU64(sfBookNode);
+            
+            if (!view.dirRemove(
+                    keylet::page(dirIndex), dirNode, offerIndex, false))
+            {
+                return tefBAD_LEDGER;
+            }
+        }
+        
+    }
+
     adjustOwnerCount(view, view.peek(keylet::account(owner)), -1, j);
 
     view.erase(sle);
