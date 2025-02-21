@@ -20,6 +20,7 @@
 #include <xrpld/app/tx/detail/OfferStream.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
+#include "xrpl/protocol/LedgerFormats.h"
 #include "xrpld/ledger/View.h"
 
 namespace ripple {
@@ -288,7 +289,9 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        if (entry->isFieldPresent(sfDomainID) &&
+        // only check if offer is in domain if it has a domain ID and isn't a
+        // hybrid offer. A hybrid offer is in both open and domain book
+        if (entry->isFieldPresent(sfDomainID) && !entry->isFlag(lsfHybrid) &&
             !offerInDomain(
                 view_, entry->key(), entry->getFieldH256(sfDomainID)))
         {

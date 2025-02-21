@@ -26,7 +26,9 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/st.h>
+#include "xrpl/protocol/STAmount.h"
 #include "xrpl/protocol/TER.h"
+#include <memory>
 
 namespace ripple {
 
@@ -67,6 +69,12 @@ CreateOffer::preflight(PreflightContext const& ctx)
         JLOG(j.debug()) << "Malformed transaction: Invalid flags set.";
         return temINVALID_FLAG;
     }
+
+    if (!ctx.rules.enabled(featurePermissionedDEX) && tx.isFlag(tfHybrid))
+        return temINVALID_FLAG;
+
+    if (tx.isFlag(tfHybrid) && !tx.isFieldPresent(sfDomainID))
+        return temINVALID_FLAG;
 
     bool const bImmediateOrCancel(uTxFlags & tfImmediateOrCancel);
     bool const bFillOrKill(uTxFlags & tfFillOrKill);
@@ -215,14 +223,6 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     if (ctx.tx.isFieldPresent(sfDomainID))
     {
         if (!accountInDomain(ctx.view, id, ctx.tx[sfDomainID]))
-            return tecNO_PERMISSION;
-
-        if (!saTakerPays.native() &&
-            !accountInDomain(ctx.view, uPaysIssuerID, ctx.tx[sfDomainID]))
-            return tecNO_PERMISSION;
-
-        if (!saTakerGets.native() &&
-            !accountInDomain(ctx.view, uGetsIssuerID, ctx.tx[sfDomainID]))
             return tecNO_PERMISSION;
     }
 
@@ -990,6 +990,48 @@ CreateOffer::preCompute()
     return Transactor::preCompute();
 }
 
+TER
+CreateOffer::applyHybrid(
+    Sandbox& sb,
+    std::shared_ptr<STLedgerEntry> sleOffer,
+    Keylet const& offerKey,
+    STAmount const& saTakerPays,
+    STAmount const& saTakerGets,
+    std::function<void(SLE::ref, bool)>& setDir)
+{
+    // set hybrid flag
+    sleOffer->setFlag(lsfHybrid);
+
+    // if offer is hybrid, need to also place into open offer dir
+    Book const book{saTakerPays.issue(), saTakerGets.issue()};
+
+    auto dir =
+        keylet::quality(keylet::book(book), getRate(saTakerGets, saTakerPays));
+    bool const bookExisted = static_cast<bool>(sb.peek(dir));
+
+    auto const bookNode =
+        sb.dirAppend(dir, offerKey, [&](SLE::ref sle) { setDir(sle, false); });
+
+    if (!bookNode)
+    {
+        JLOG(j_.debug()) << "final result: failed to add offer to book";
+        return tecDIR_FULL;
+    }
+
+    STArray bookArr;
+    auto bookInfo = STObject::makeInnerObject(sfBook);
+    bookInfo.setFieldH256(sfBookDirectory, dir.key);
+    bookInfo.setFieldU64(sfBookNode, *bookNode);
+    bookArr.push_back(std::move(bookInfo));
+
+    if (!bookExisted)
+        ctx_.app.getOrderBookDB().addOrderBook(book);
+
+    sleOffer->setFieldArray(sfAdditionalBookDirectories, std::move(bookArr));
+    return tesSUCCESS;
+}
+
+
 std::pair<TER, bool>
 CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 {
@@ -1001,6 +1043,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     bool const bImmediateOrCancel(uTxFlags & tfImmediateOrCancel);
     bool const bFillOrKill(uTxFlags & tfFillOrKill);
     bool const bSell(uTxFlags & tfSell);
+    bool const bHybrid(uTxFlags & tfHybrid);
 
     auto saTakerPays = ctx_.tx[sfTakerPays];
     auto saTakerGets = ctx_.tx[sfTakerGets];
@@ -1273,14 +1316,19 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     auto dir = keylet::quality(keylet::book(book), uRate);
     bool const bookExisted = static_cast<bool>(sb.peek(dir));
 
-    auto const bookNode = sb.dirAppend(dir, offer_index, [&](SLE::ref sle) {
+    auto setBookDir = [&](SLE::ref sle, bool const setDomainIfAvailable) {
         sle->setFieldH160(sfTakerPaysCurrency, saTakerPays.issue().currency);
         sle->setFieldH160(sfTakerPaysIssuer, saTakerPays.issue().account);
         sle->setFieldH160(sfTakerGetsCurrency, saTakerGets.issue().currency);
         sle->setFieldH160(sfTakerGetsIssuer, saTakerGets.issue().account);
         sle->setFieldU64(sfExchangeRate, uRate);
-        if (domainID)
+        if (domainID && setDomainIfAvailable)
             sle->setFieldH256(sfDomainID, *domainID);
+    };
+
+    auto const bookNode = sb.dirAppend(dir, offer_index, [&](SLE::ref sle) {
+        // sets domain if it's available
+        setBookDir(sle, true);
     });
 
     if (!bookNode)
@@ -1305,6 +1353,52 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         sleOffer->setFlag(lsfSell);
     if (domainID)
         sleOffer->setFieldH256(sfDomainID, *domainID);
+    
+    // if it's a hybrid offer, set hybrid flag, and create an open dir
+    if (bHybrid)
+    {
+        std::function<void(SLE::ref, bool)> setDirFunc = setBookDir;
+        if (auto const res = applyHybrid(
+                sb,
+                sleOffer,
+                offer_index,
+                saTakerPays,
+                saTakerGets,
+                setDirFunc);
+            res != tesSUCCESS)
+            return {res, true};
+            
+        // sleOffer->setFlag(lsfHybrid);
+
+        // // if offer is hybrid, need to also place into open offer dir
+        // Book const book{saTakerPays.issue(), saTakerGets.issue()};
+
+        // // Add offer to order book, using the original rate
+        // // before any crossing occured.
+        // auto dir = keylet::quality(keylet::book(book), uRate);
+        // bool const bookExisted = static_cast<bool>(sb.peek(dir));
+
+        // auto const bookNode =
+        //     sb.dirAppend(dir, offer_index, [&](SLE::ref sle) { setBookDir(sle, false); });
+
+        // if (!bookNode)
+        // {
+        //     JLOG(j_.debug()) << "final result: failed to add offer to book";
+        //     return {tecDIR_FULL, true};
+        // }
+
+        // STArray bookArr;
+        // auto bookInfo = STObject::makeInnerObject(sfBook);
+        // bookInfo.setFieldH256(sfBookDirectory, dir.key);
+        // bookInfo.setFieldU64(sfBookNode, *bookNode);
+        // bookArr.push_back(std::move(bookInfo));
+
+        // if (!bookExisted)
+        //     ctx_.app.getOrderBookDB().addOrderBook(book);
+
+        // sleOffer->setFieldArray(sfAdditionalBookDirectories, std::move(bookArr));
+    }
+
     sb.insert(sleOffer);
 
     if (!bookExisted)

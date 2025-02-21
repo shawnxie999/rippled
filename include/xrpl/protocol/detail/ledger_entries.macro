@@ -246,17 +246,20 @@ LEDGER_ENTRY(
     0x006f,
     Offer,
     offer,
-    ({{sfAccount, soeREQUIRED},
-      {sfSequence, soeREQUIRED},
-      {sfTakerPays, soeREQUIRED},
-      {sfTakerGets, soeREQUIRED},
-      {sfBookDirectory, soeREQUIRED},
-      {sfBookNode, soeREQUIRED},
-      {sfOwnerNode, soeREQUIRED},
-      {sfPreviousTxnID, soeREQUIRED},
-      {sfPreviousTxnLgrSeq, soeREQUIRED},
-      {sfExpiration, soeOPTIONAL},
-      {sfDomainID, soeOPTIONAL}}))
+    ({
+        {sfAccount, soeREQUIRED},
+        {sfSequence, soeREQUIRED},
+        {sfTakerPays, soeREQUIRED},
+        {sfTakerGets, soeREQUIRED},
+        {sfBookDirectory, soeREQUIRED},
+        {sfBookNode, soeREQUIRED},
+        {sfOwnerNode, soeREQUIRED},
+        {sfPreviousTxnID, soeREQUIRED},
+        {sfPreviousTxnLgrSeq, soeREQUIRED},
+        {sfExpiration, soeOPTIONAL},
+        {sfDomainID, soeOPTIONAL},
+        {sfAdditionalBookDirectories, soeOPTIONAL},
+    }))
 
 /** A ledger object which describes a deposit preauthorization.
 

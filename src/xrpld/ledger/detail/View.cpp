@@ -2155,7 +2155,7 @@ accountInDomain(
             return !credentials::isExpired(
                 sleCred, view.info().parentCloseTime);
         });
-
+ 
     return inDomain;
 }
 
@@ -2165,26 +2165,21 @@ offerInDomain(
     uint256 const& offerID,
     uint256 const& domainID)
 {
+    // todo: return true if hybrid
     auto const sleOffer = view.read(keylet::offer(offerID));
 
     if (!sleOffer)
         return false;
+    
+    // this function should not be needed to call on a hybrid offer
+    XRPL_ASSERT(
+        !sleOffer->isFlag(lsfHybrid),
+        "ripple::offerInDomain : offer is hybrid");
 
-    if (!accountInDomain(view, sleOffer->getAccountID(sfAccount), domainID))
-        return false;
+    if (sleOffer->isFlag(lsfHybrid))
+        return true;  
 
-    // check the issuer of each token
-    auto const& takerGets = sleOffer->getFieldAmount(sfTakerGets);
-    auto const& takerPays = sleOffer->getFieldAmount(sfTakerPays);
-
-    auto const issuerInDomain = [&](Issue const& issue) {
-        if (issue.native())
-            return true;
-        return accountInDomain(view, issue.getIssuer(), domainID);
-    };
-
-    return issuerInDomain(takerGets.issue()) &&
-        issuerInDomain(takerPays.issue());
+    return accountInDomain(view, sleOffer->getAccountID(sfAccount), domainID);
 }
 
 }  // namespace ripple

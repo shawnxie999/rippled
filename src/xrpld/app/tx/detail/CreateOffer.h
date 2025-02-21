@@ -139,6 +139,15 @@ private:
     static std::string
     format_amount(STAmount const& amount);
 
+    TER
+    applyHybrid(
+        Sandbox& sb,
+        std::shared_ptr<STLedgerEntry> sleOffer,
+        Keylet const& offer_index,
+        STAmount const& saTakerPays,
+        STAmount const& saTakerGets,
+        std::function<void(SLE::ref, bool)>& setDir);
+    
 private:
     // What kind of offer we are placing
     CrossType cross_type_;

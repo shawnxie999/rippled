@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
   This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2024 Ripple Labs Inc.
+  Copyright (c) 2025 Ripple Labs Inc.
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose  with  or without fee is hereby granted, provided that the above
@@ -24,10 +24,11 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
-
 #include "test/jtx/Account.h"
 #include "test/jtx/txflags.h"
 #include "xrpl/beast/unit_test/suite.h"
@@ -240,7 +241,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env.close();
         }
 
-        // preclaim - takergets issuer is not in domain
+        // apply - offer can be created even if takergets issuer is not in
+        // domain
         {
             Env env(*this, features);
             PermissionedDEX permDex(env);
@@ -253,14 +255,13 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             auto const bobOfferSeq{env.seq(bob)};
             env(offer(bob, XRP(10), USD(10)),
-                domain(domainID),
-                ter(tecNO_PERMISSION));
+                domain(domainID));
             env.close();
 
-            BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
         }
 
-        // preclaim - takerpays issuer is not in domain
+        // apply - offer can be created even if takerpays issuer is not in domain
         {
             Env env(*this, features);
             PermissionedDEX permDex(env);
@@ -273,11 +274,10 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             auto const bobOfferSeq{env.seq(bob)};
             env(offer(bob, USD(10), XRP(10)),
-                domain(domainID),
-                ter(tecNO_PERMISSION));
+                domain(domainID));
             env.close();
 
-            BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
         }
 
         // apply - offer cross
@@ -584,29 +584,6 @@ class PermissionedDEX_test : public beast::unit_test::suite
         env(pay(alice, carol, USD(10)),
             path(~USD),
             sendmax(XRP(10)),
-            domain(domainID),
-            ter(tecPATH_PARTIAL));
-        env.close();
-        BEAST_EXPECT(offerExists(env, bob, bobOffer1Seq));
-
-        env(pay(alice, carol, XRP(10)),
-            path(~XRP),
-            sendmax(USD(10)),
-            domain(domainID),
-            ter(tecPATH_PARTIAL));
-        env.close();
-        BEAST_EXPECT(offerExists(env, bob, bobOffer2Seq));
-
-        // add gateway back to domain
-        env(credentials::create(gw, domainOwner, credType));
-        env.close();
-        env(credentials::accept(gw, domainOwner, credType));
-        env.close();
-
-        // offers can now be consumed again
-        env(pay(alice, carol, USD(10)),
-            path(~USD),
-            sendmax(XRP(10)),
             domain(domainID));
         env.close();
         BEAST_EXPECT(!offerExists(env, bob, bobOffer1Seq));
@@ -660,6 +637,85 @@ class PermissionedDEX_test : public beast::unit_test::suite
         BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 0));
     }
 
+    void
+    testAmmNotUsed(FeatureBitset features)
+    {
+        testcase("AMM not used");
+
+        Env env(*this, features);
+        PermissionedDEX permDex(env);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            permDex;
+        AMM amm(env, alice, XRP(10), USD(50));
+
+        // a domain payment isn't able to consume AMM
+        env(pay(bob, carol, USD(5)),
+            path(~USD),
+            sendmax(XRP(5)),
+            domain(domainID),
+            ter(tecPATH_PARTIAL));
+        env.close();
+
+        // a non domain payment can
+        env(pay(bob, carol, USD(5)), path(~USD), sendmax(XRP(5)));
+        env.close();
+
+        auto [xrp, usd, lpt] = amm.balances(XRP, USD);
+        BEAST_EXPECT(usd == USD(45));
+    }
+
+    // void
+    // testComplexPath(FeatureBitset features)
+    // {
+    //     testcase("Complex path");
+
+    //     // test that a domain offer can be consumed and non-domain offer is not
+    //     // consumed during a domain payment
+    //     Env env(*this, features);
+    //     PermissionedDEX permDex(env);
+    //     auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+    //         permDex;
+
+    //     auto const regularOfferSeq{env.seq(bob)};
+    //     env(offer(bob, XRP(10), USD(10)));
+    //     env.close();
+    //     BEAST_EXPECT(
+    //         checkOfferBalance(env, bob, regularOfferSeq, XRP(10), USD(10)));
+
+    //     // if trying to make permissioned payment with a normal offer, it
+    //     // fails
+    //     env(pay(alice, carol, USD(10)),
+    //         path(~USD),
+    //         sendmax(XRP(10)),
+    //         domain(domainID),
+    //         ter(tecPATH_PARTIAL));
+    //     env.close();
+
+    //     auto const domainOfferSeq{env.seq(bob)};
+    //     env(offer(bob, XRP(10), USD(10)), domain(domainID));
+    //     env.close();
+
+    //     BEAST_EXPECT(
+    //         checkOfferBalance(env, bob, domainOfferSeq, XRP(10), USD(10)));
+
+    //     auto const domainDirKey = getOfferDirKey(env, bob, domainOfferSeq);
+    //     BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 1));
+
+    //     // cross-currency permissioned payment consumed
+    //     // domain offer instead of regular offer
+    //     env(pay(alice, carol, USD(10)),
+    //         path(~USD),
+    //         sendmax(XRP(10)),
+    //         domain(domainID));
+    //     env.close();
+    //     BEAST_EXPECT(!offerExists(env, bob, domainOfferSeq));
+    //     BEAST_EXPECT(
+    //         checkOfferBalance(env, bob, regularOfferSeq, XRP(10), USD(10)));
+
+    //     // domain directory is empty
+    //     BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 0));
+    // }
+
 public:
     void
     run() override
@@ -673,6 +729,8 @@ public:
         testSimpleBookStep(all);
         testOfferTokenIssuerInDomain(all);
         testRemoveUnfundedOffer(all);
+        testAmmNotUsed(all);
+        // testComplexPath(all);
 
         // domain does not affect non offers eg rippling
         // test rippling with multi issuers
