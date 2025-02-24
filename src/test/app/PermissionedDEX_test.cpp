@@ -37,6 +37,7 @@
 #include "xrpl/protocol/LedgerFormats.h"
 #include "xrpl/protocol/TER.h"
 #include "xrpl/protocol/TxFlags.h"
+#include <atomic>
 #include <cstdint>
 #include <exception>
 #include <map>
@@ -147,24 +148,25 @@ class PermissionedDEX_test : public beast::unit_test::suite
         return true;
     }
 
-    // Keylet
-    // getOfferDirKey(
-    //     Book const& book,
-    //     STAmount const& takerPays,
-    //     STAmount const& takerGets)
-    // {
-    //     return keylet::quality(keylet::book(book), getRate(takerGets,
-    //     takerPays));
-    // }
+    uint256
+    getOfferDirKey(
+        Book const& book,
+        STAmount const& takerPays,
+        STAmount const& takerGets)
+    {
+        return keylet::quality(
+                   keylet::book(book), getRate(takerGets, takerPays))
+            .key;
+    }
 
-    std::optional<Keylet>
+    std::optional<uint256>
     getOfferDirKey(
         Env const& env,
         Account const& account,
         std::uint32_t offerSeq)
     {
         if (auto const sle = env.le(keylet::offer(account.id(), offerSeq)))
-            return Keylet(ltDIR_NODE, (*sle)[sfBookDirectory]);
+            return Keylet(ltDIR_NODE, (*sle)[sfBookDirectory]).key;
 
         return {};
     }
@@ -192,15 +194,11 @@ class PermissionedDEX_test : public beast::unit_test::suite
     [[nodiscard]] bool
     checkDirectorySizes(
         Env const& env,
-        std::vector<uint256> const& directories,
-        std::vector<std::uint32_t> const& dirSizes)
+        std::vector<std::pair<uint256, std::uint32_t>> const& dirSizes)
     {
-        if (directories.size() != dirSizes.size())
-            return false;
-
-        for (size_t i = 0; i < directories.size(); i++)
+        for (auto const& dirSize : dirSizes)
         {
-            if (!checkDirectorySize(env, directories[i], dirSizes[i]))
+            if (!checkDirectorySize(env, dirSize.first, dirSize.second))
                 return false;
         }
         return true;
@@ -403,13 +401,25 @@ class PermissionedDEX_test : public beast::unit_test::suite
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
                 permDex;
 
+            std::vector<std::uint32_t> offerSeqs;
+            offerSeqs.reserve(100);
+
             for (size_t i = 0; i <= 100; i++)
             {
                 auto const bobOfferSeq{env.seq(bob)};
+                offerSeqs.emplace_back(bobOfferSeq);
+
                 env(offer(bob, XRP(10), USD(10)), domain(domainID));
                 env.close();
                 BEAST_EXPECT(
                     checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), 0));
+            }
+
+            for (auto const offerSeq : offerSeqs)
+            {
+                env(offer_cancel(bob, offerSeq));
+                env.close();
+                BEAST_EXPECT(!offerExists(env, bob, offerSeq));
             }
         }
     }
@@ -580,79 +590,75 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
         // test that a domain offer can be consumed and non-domain offer is not
         // consumed during a domain payment
-        {
-            Env env(*this, features);
-            PermissionedDEX permDex(env);
-            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+        Env env(*this, features);
+        PermissionedDEX permDex(env);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            permDex;
 
-            auto const regularOfferSeq{env.seq(bob)};
-            env(offer(bob, XRP(10), USD(10)));
-            env.close();
-            BEAST_EXPECT(
-                checkOffer(env, bob, regularOfferSeq, XRP(10), USD(10)));
+        auto const regularOfferSeq{env.seq(bob)};
+        env(offer(bob, XRP(10), USD(10)));
+        env.close();
+        BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, XRP(10), USD(10)));
 
-            // if trying to make permissioned payment with a normal offer, it
-            // fails
-            env(pay(alice, carol, USD(10)),
-                path(~USD),
-                sendmax(XRP(10)),
-                domain(domainID),
-                ter(tecPATH_PARTIAL));
-            env.close();
+        // if trying to make permissioned payment with a normal offer, it
+        // fails
+        env(pay(alice, carol, USD(10)),
+            path(~USD),
+            sendmax(XRP(10)),
+            domain(domainID),
+            ter(tecPATH_PARTIAL));
+        env.close();
 
-            auto const domainOfferSeq{env.seq(bob)};
-            env(offer(bob, XRP(10), USD(10)), domain(domainID));
-            env.close();
+        auto const domainOfferSeq{env.seq(bob)};
+        env(offer(bob, XRP(10), USD(10)), domain(domainID));
+        env.close();
 
-            BEAST_EXPECT(
-                checkOffer(env, bob, domainOfferSeq, XRP(10), USD(10)));
+        BEAST_EXPECT(checkOffer(env, bob, domainOfferSeq, XRP(10), USD(10)));
 
-            auto const domainDirKey = getOfferDirKey(env, bob, domainOfferSeq);
-            BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 1));
+        auto const domainDirKey = getOfferDirKey(env, bob, domainOfferSeq);
+        BEAST_EXPECT(checkDirectorySize(env, *domainDirKey, 1));
 
-            // cross-currency permissioned payment consumed
-            // domain offer instead of regular offer
-            env(pay(alice, carol, USD(10)),
-                path(~USD),
-                sendmax(XRP(10)),
-                domain(domainID));
-            env.close();
-            BEAST_EXPECT(!offerExists(env, bob, domainOfferSeq));
-            BEAST_EXPECT(
-                checkOffer(env, bob, regularOfferSeq, XRP(10), USD(10)));
+        // cross-currency permissioned payment consumed
+        // domain offer instead of regular offer
+        env(pay(alice, carol, USD(10)),
+            path(~USD),
+            sendmax(XRP(10)),
+            domain(domainID));
+        env.close();
+        BEAST_EXPECT(!offerExists(env, bob, domainOfferSeq));
+        BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, XRP(10), USD(10)));
 
-            // domain directory is empty
-            BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 0));
-        }
+        // domain directory is empty
+        BEAST_EXPECT(checkDirectorySize(env, *domainDirKey, 0));
+    }
 
+    void
+    testRippling(FeatureBitset features)
+    {
         // test a non-domain account can still be part of rippling in a domain
         // payment. If the domain wishes to control who is allowed to ripple
         // through, they should set the rippling individually
-        {
-            Env env(*this, features);
-            PermissionedDEX permDex(env);
-            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+        Env env(*this, features);
+        PermissionedDEX permDex(env);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            permDex;
 
-            auto const EURA = alice["EUR"];
-            auto const EURB = bob["EUR"];
+        auto const EURA = alice["EUR"];
+        auto const EURB = bob["EUR"];
 
-            env.trust(EURA(100), bob);
-            env.trust(EURB(100), carol);
-            env.close();
+        env.trust(EURA(100), bob);
+        env.trust(EURB(100), carol);
+        env.close();
 
-            // remove bob from domain
-            env(credentials::deleteCred(
-                domainOwner, bob, domainOwner, credType));
-            env.close();
+        // remove bob from domain
+        env(credentials::deleteCred(domainOwner, bob, domainOwner, credType));
+        env.close();
 
-            // alice can still ripple through bob even though he's not part
-            // of the domain
-            env(pay(alice, carol, EURB(10)), paths(EURA), domain(domainID));
-            env.close();
-            env.require(balance(bob, EURA(10)), balance(carol, EURB(10)));
-        }
+        // alice can still ripple through bob even though he's not part
+        // of the domain
+        env(pay(alice, carol, EURB(10)), paths(EURA), domain(domainID));
+        env.close();
+        env.require(balance(bob, EURA(10)), balance(carol, EURB(10)));
     }
 
     void
@@ -721,7 +727,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
         BEAST_EXPECT(offerExists(env, alice, aliceOfferSeq));
 
         auto const domainDirKey = getOfferDirKey(env, bob, bobOfferSeq);
-        BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 2));
+        BEAST_EXPECT(checkDirectorySize(env, *domainDirKey, 2));
 
         // remove alice from domain
         env(credentials::deleteCred(domainOwner, alice, domainOwner, credType));
@@ -737,7 +743,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
         // alice's unfunded offer is removed implicitly
         BEAST_EXPECT(!offerExists(env, alice, aliceOfferSeq));
-        BEAST_EXPECT(checkDirectorySize(env, domainDirKey->key, 0));
+        BEAST_EXPECT(checkDirectorySize(env, *domainDirKey, 0));
     }
 
     void
@@ -861,25 +867,6 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(!offerExists(env, alice, aliceOfferSeq));
             BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
             BEAST_EXPECT(ownerCount(env, alice) == 2);
-        }
-
-        // apply - create lots of hybrid offers
-        {
-            Env env(*this, features);
-            PermissionedDEX permDex(env);
-            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
-
-            for (size_t i = 0; i <= 100; i++)
-            {
-                auto const bobOfferSeq{env.seq(bob)};
-                env(offer(bob, XRP(10), USD(10)),
-                    txflags(tfHybrid),
-                    domain(domainID));
-                env.close();
-                BEAST_EXPECT(checkOffer(
-                    env, bob, bobOfferSeq, XRP(10), USD(10), lsfHybrid));
-            }
         }
     }
 
@@ -1025,6 +1012,58 @@ class PermissionedDEX_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testHybridOfferDirectories(FeatureBitset features)
+    {
+        Env env(*this, features);
+        PermissionedDEX permDex(env);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            permDex;
+
+        std::vector<std::uint32_t> offerSeqs;
+        offerSeqs.reserve(100);
+
+        Book domainBook{Issue(XRP), Issue(USD), domainID};
+        Book openBook{Issue(XRP), Issue(USD)};
+
+        auto const domainDir = getOfferDirKey(domainBook, XRP(10), USD(10));
+        auto const openDir = getOfferDirKey(openBook, XRP(10), USD(10));
+
+        size_t dirCnt = 100;
+
+        for (size_t i = 0; i < dirCnt; i++)
+        {
+            auto const bobOfferSeq{env.seq(bob)};
+            offerSeqs.emplace_back(bobOfferSeq);
+            env(offer(bob, XRP(10), USD(10)),
+                txflags(tfHybrid),
+                domain(domainID));
+            env.close();
+
+            auto const sleOffer = env.le(keylet::offer(bob.id(), bobOfferSeq));
+            BEAST_EXPECT(sleOffer);
+            BEAST_EXPECT(sleOffer->getFieldH256(sfBookDirectory) == domainDir);
+            BEAST_EXPECT(
+                sleOffer->getFieldArray(sfAdditionalBookDirectories)[0]
+                    .getFieldH256(sfBookDirectory) == openDir);
+
+            BEAST_EXPECT(
+                checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), lsfHybrid));
+            BEAST_EXPECT(checkDirectorySize(env, domainDir, i + 1));
+            BEAST_EXPECT(checkDirectorySize(env, openDir, i + 1));
+        }
+
+        for (auto const offerSeq : offerSeqs)
+        {
+            env(offer_cancel(bob, offerSeq));
+            env.close();
+            dirCnt--;
+            BEAST_EXPECT(!offerExists(env, bob, offerSeq));
+            BEAST_EXPECT(checkDirectorySize(env, domainDir, dirCnt));
+            BEAST_EXPECT(checkDirectorySize(env, openDir, dirCnt));
+        }
+    }
+
 public:
     void
     run() override
@@ -1037,6 +1076,7 @@ public:
         testOfferCreate(all);
         testPayment(all);
         testBookStep(all);
+        testRippling(all);
         testOfferTokenIssuerInDomain(all);
         testRemoveUnfundedOffer(all);
         testAmmNotUsed(all);
@@ -1045,6 +1085,7 @@ public:
         testHybridOfferCreate(all);
         testHybridBookStep(all);
         testHybridInvalidOffer(all);
+        testHybridOfferDirectories(all);
 
         // domain does not affect non offers eg rippling
         // test rippling with multi issuers

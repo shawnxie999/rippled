@@ -1140,7 +1140,6 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
                 return tefBAD_LEDGER;
             }
         }
-        
     }
 
     adjustOwnerCount(view, view.peek(keylet::account(owner)), -1, j);
@@ -2178,7 +2177,7 @@ accountInDomain(
             return !credentials::isExpired(
                 sleCred, view.info().parentCloseTime);
         });
- 
+
     return inDomain;
 }
 
@@ -2188,10 +2187,13 @@ offerInDomain(
     uint256 const& offerID,
     uint256 const& domainID)
 {
-
     auto const sleOffer = view.read(keylet::offer(offerID));
 
     if (!sleOffer)
+        return false;
+    if (!sleOffer->isFieldPresent(sfDomainID))
+        return false;
+    if (sleOffer->getFieldH256(sfDomainID) != domainID)
         return false;
 
     return accountInDomain(view, sleOffer->getAccountID(sfAccount), domainID);
