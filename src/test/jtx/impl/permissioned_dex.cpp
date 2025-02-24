@@ -85,6 +85,7 @@ PermissionedDEX::PermissionedDEX(Env& env)
     env(credentials::accept(carol, domainOwner, credType));
     env.close();
 
+    // domain owner also issues a credential for gw
     env(credentials::create(gw, domainOwner, credType));
     env.close();
     env(credentials::accept(gw, domainOwner, credType));

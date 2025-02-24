@@ -83,8 +83,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
             if (hasDomain != page->isFieldPresent(sfDomainID))
                 return false;
 
-            auto const indexes = page->getFieldV256(sfIndexes);
-            for (auto const index : indexes)
+            auto const& indexes = page->getFieldV256(sfIndexes);
+            for (auto const& index : indexes)
             {
                 if (index == keylet::offer(account, offerSeq).key)
                     return true;
@@ -119,7 +119,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 if (sle->getFieldArray(sfAdditionalBookDirectories).size() != 1)
                     return false;
 
-                auto const additionalBookDirs =
+                auto const& additionalBookDirs =
                     sle->getFieldArray(sfAdditionalBookDirectories);
 
                 for (auto const& bookDir : additionalBookDirs)
@@ -160,7 +160,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
     }
 
     std::optional<uint256>
-    getOfferDirKey(
+    getDefaultOfferDirKey(
         Env const& env,
         Account const& account,
         std::uint32_t offerSeq)
@@ -343,7 +343,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env(offer(bob, XRP(10), USD(10)), domain(domainID));
             env.close();
 
-            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+            BEAST_EXPECT(
+                checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), 0));
         }
 
         // apply - offer can be created even if takerpays issuer is not in
@@ -362,7 +363,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env(offer(bob, USD(10), XRP(10)), domain(domainID));
             env.close();
 
-            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+            BEAST_EXPECT(
+                checkOffer(env, bob, bobOfferSeq, USD(10), XRP(10), 0));
         }
 
         // apply - offer cross
@@ -376,14 +378,16 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env(offer(bob, XRP(10), USD(10)), domain(domainID));
             env.close();
 
-            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+            BEAST_EXPECT(
+                checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), 0));
             BEAST_EXPECT(ownerCount(env, bob) == 3);
 
             // a non domain offer cannot cross with domain offer
             env(offer(carol, USD(10), XRP(10)));
             env.close();
 
-            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+            BEAST_EXPECT(
+                checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), 0));
 
             auto const aliceOfferSeq{env.seq(bob)};
             env(offer(alice, USD(10), XRP(10)), domain(domainID));
@@ -615,7 +619,9 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
         BEAST_EXPECT(checkOffer(env, bob, domainOfferSeq, XRP(10), USD(10)));
 
-        auto const domainDirKey = getOfferDirKey(env, bob, domainOfferSeq);
+        auto const domainDirKey =
+            getDefaultOfferDirKey(env, bob, domainOfferSeq);
+        BEAST_EXPECT(domainDirKey);
         BEAST_EXPECT(checkDirectorySize(env, *domainDirKey, 1));
 
         // cross-currency permissioned payment consumed
@@ -635,6 +641,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
     void
     testRippling(FeatureBitset features)
     {
+        testcase("Rippling");
+
         // test a non-domain account can still be part of rippling in a domain
         // payment. If the domain wishes to control who is allowed to ripple
         // through, they should set the rippling individually
@@ -726,7 +734,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
         BEAST_EXPECT(offerExists(env, alice, aliceOfferSeq));
 
-        auto const domainDirKey = getOfferDirKey(env, bob, bobOfferSeq);
+        auto const domainDirKey = getDefaultOfferDirKey(env, bob, bobOfferSeq);
+        BEAST_EXPECT(domainDirKey);
         BEAST_EXPECT(checkDirectorySize(env, *domainDirKey, 2));
 
         // remove alice from domain
@@ -1031,7 +1040,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
         size_t dirCnt = 100;
 
-        for (size_t i = 0; i < dirCnt; i++)
+        for (size_t i = 1; i <= dirCnt; i++)
         {
             auto const bobOfferSeq{env.seq(bob)};
             offerSeqs.emplace_back(bobOfferSeq);
@@ -1049,8 +1058,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             BEAST_EXPECT(
                 checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), lsfHybrid));
-            BEAST_EXPECT(checkDirectorySize(env, domainDir, i + 1));
-            BEAST_EXPECT(checkDirectorySize(env, openDir, i + 1));
+            BEAST_EXPECT(checkDirectorySize(env, domainDir, i));
+            BEAST_EXPECT(checkDirectorySize(env, openDir, i));
         }
 
         for (auto const offerSeq : offerSeqs)
