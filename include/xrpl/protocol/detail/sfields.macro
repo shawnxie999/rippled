@@ -364,7 +364,7 @@ UNTYPED_SFIELD(sfMemos,                  ARRAY,      9)
 UNTYPED_SFIELD(sfNFTokens,               ARRAY,     10)
 UNTYPED_SFIELD(sfHooks,                  ARRAY,     11)
 UNTYPED_SFIELD(sfVoteSlots,              ARRAY,     12)
-UNTYPED_SFIELD(sfAdditionalBookDirectories, ARRAY,  13)
+UNTYPED_SFIELD(sfAdditionalBooks,        ARRAY,     13)
 
 // array of objects (uncommon)
 UNTYPED_SFIELD(sfMajorities,             ARRAY,     16)

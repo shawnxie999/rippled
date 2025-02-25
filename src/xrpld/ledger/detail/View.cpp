@@ -1126,8 +1126,7 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
             sle->isFieldPresent(sfDomainID),
             "ripple::offerDelete : missing domainID");
 
-        auto const& additionalBookDirs =
-            sle->getFieldArray(sfAdditionalBookDirectories);
+        auto const& additionalBookDirs = sle->getFieldArray(sfAdditionalBooks);
 
         for (auto const& bookDir : additionalBookDirs)
         {

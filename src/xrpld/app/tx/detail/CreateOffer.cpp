@@ -999,6 +999,9 @@ CreateOffer::applyHybrid(
     STAmount const& saTakerGets,
     std::function<void(SLE::ref, bool)>& setDir)
 {
+    if (!sleOffer->isFieldPresent(sfDomainID))
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
     // set hybrid flag
     sleOffer->setFlag(lsfHybrid);
 
@@ -1027,10 +1030,9 @@ CreateOffer::applyHybrid(
     if (!bookExisted)
         ctx_.app.getOrderBookDB().addOrderBook(book);
 
-    sleOffer->setFieldArray(sfAdditionalBookDirectories, std::move(bookArr));
+    sleOffer->setFieldArray(sfAdditionalBooks, std::move(bookArr));
     return tesSUCCESS;
 }
-
 
 std::pair<TER, bool>
 CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
@@ -1313,6 +1315,15 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     // Add offer to order book, using the original rate
     // before any crossing occured.
+    //
+    // Regular offer - BookDirectory points to open directory
+    //
+    // Domain offer (w/o hyrbid) - BookDirectory points to domain
+    // directory
+    //
+    // Hybrid domain offer - BookDirectory points to domain directory,
+    // and AdditionalBooks field stores one entry that points to the open
+    // directory
     auto dir = keylet::quality(keylet::book(book), uRate);
     bool const bookExisted = static_cast<bool>(sb.peek(dir));
 
@@ -1353,7 +1364,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         sleOffer->setFlag(lsfSell);
     if (domainID)
         sleOffer->setFieldH256(sfDomainID, *domainID);
-    
+
     // if it's a hybrid offer, set hybrid flag, and create an open dir
     if (bHybrid)
     {
@@ -1367,36 +1378,6 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
                 setDirFunc);
             res != tesSUCCESS)
             return {res, true};
-            
-        // sleOffer->setFlag(lsfHybrid);
-
-        // // if offer is hybrid, need to also place into open offer dir
-        // Book const book{saTakerPays.issue(), saTakerGets.issue()};
-
-        // // Add offer to order book, using the original rate
-        // // before any crossing occured.
-        // auto dir = keylet::quality(keylet::book(book), uRate);
-        // bool const bookExisted = static_cast<bool>(sb.peek(dir));
-
-        // auto const bookNode =
-        //     sb.dirAppend(dir, offer_index, [&](SLE::ref sle) { setBookDir(sle, false); });
-
-        // if (!bookNode)
-        // {
-        //     JLOG(j_.debug()) << "final result: failed to add offer to book";
-        //     return {tecDIR_FULL, true};
-        // }
-
-        // STArray bookArr;
-        // auto bookInfo = STObject::makeInnerObject(sfBook);
-        // bookInfo.setFieldH256(sfBookDirectory, dir.key);
-        // bookInfo.setFieldU64(sfBookNode, *bookNode);
-        // bookArr.push_back(std::move(bookInfo));
-
-        // if (!bookExisted)
-        //     ctx_.app.getOrderBookDB().addOrderBook(book);
-
-        // sleOffer->setFieldArray(sfAdditionalBookDirectories, std::move(bookArr));
     }
 
     sb.insert(sleOffer);

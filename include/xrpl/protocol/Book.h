@@ -92,7 +92,9 @@ operator<=>(Book const& lhs, Book const& rhs)
 {
     if (auto const c{lhs.in <=> rhs.in}; c != 0)
         return c;
-    return lhs.out <=> rhs.out;  // TODO: add domain
+    if (auto const c{lhs.out <=> rhs.out}; c != 0)
+        return c;
+    return *lhs.domain <=> *rhs.domain; //todo: if this is right
 }
 /** @} */
 

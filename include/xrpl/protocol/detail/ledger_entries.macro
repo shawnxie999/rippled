@@ -258,7 +258,7 @@ LEDGER_ENTRY(
         {sfPreviousTxnLgrSeq, soeREQUIRED},
         {sfExpiration, soeOPTIONAL},
         {sfDomainID, soeOPTIONAL},
-        {sfAdditionalBookDirectories, soeOPTIONAL},
+        {sfAdditionalBooks, soeOPTIONAL},
     }))
 
 /** A ledger object which describes a deposit preauthorization.
