@@ -20,6 +20,7 @@
 #include <test/jtx/paths.h>
 #include <xrpld/app/paths/Pathfinder.h>
 #include <xrpl/protocol/jss.h>
+#include <optional>
 
 namespace ripple {
 namespace test {
@@ -41,6 +42,7 @@ paths::operator()(Env& env, JTx& jt) const
         in_.account,
         amount,
         std::nullopt,
+        std::nullopt,  // todo: should support domain?
         env.app());
     if (!pf.findPaths(depth_))
         return;

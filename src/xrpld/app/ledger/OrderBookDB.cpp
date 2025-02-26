@@ -197,19 +197,35 @@ OrderBookDB::addOrderBook(Book const& book)
 
 // return list of all orderbooks that want this issuerID and currencyID
 std::vector<Book>
-OrderBookDB::getBooksByTakerPays(Issue const& issue)
+OrderBookDB::getBooksByTakerPays(
+    Issue const& issue,
+    std::optional<uint256> const& domain)
 {
     std::vector<Book> ret;
 
     {
         std::lock_guard sl(mLock);
 
-        if (auto it = allBooks_.find(issue); it != allBooks_.end())
+        if (!domain)
         {
-            ret.reserve(it->second.size());
+            if (auto it = allBooks_.find(issue); it != allBooks_.end())
+            {
+                ret.reserve(it->second.size());
 
-            for (auto const& gets : it->second)
-                ret.push_back(Book(issue, gets));
+                for (auto const& gets : it->second)
+                    ret.push_back(Book(issue, gets));
+            }
+        }
+        else
+        {
+            if (auto it = domainBooks_.find(std::make_pair(issue, *domain));
+                it != domainBooks_.end())
+            {
+                ret.reserve(it->second.size());
+
+                for (auto const& gets : it->second)
+                    ret.push_back(Book(issue, gets, domain));
+            }
         }
     }
 

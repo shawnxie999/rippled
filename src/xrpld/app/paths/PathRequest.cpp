@@ -438,6 +438,20 @@ PathRequest::parseJson(Json::Value const& jvParams)
     if (jvParams.isMember(jss::id))
         jvId = jvParams[jss::id];
 
+    if (jvParams.isMember(jss::domain))
+    {
+        uint256 num;
+        if (auto const s = jvParams[jss::domain].asString(); !num.parseHex(s))
+        {
+            jvStatus = rpcError(rpcDOMAIN_MALFORMED);
+            return PFR_PJ_INVALID;
+        }
+        else
+        {
+            domain = num;
+        }
+    }
+
     return PFR_PJ_NOCHANGE;
 }
 
@@ -484,6 +498,7 @@ PathRequest::getPathFinder(
         std::nullopt,
         dst_amount,
         saSendMax,
+        domain,
         app_);
     if (pathfinder->findPaths(level, continueCallback))
         pathfinder->computePathRanks(max_paths_, continueCallback);
@@ -581,7 +596,7 @@ PathRequest::findPaths(
             *raDstAccount,  // --> Account to deliver to.
             *raSrcAccount,  // --> Account sending from.
             ps,             // --> Path set.
-            std::nullopt,   // TODO: change to domain
+            domain,         // TODO: change to domain
             app_.logs(),
             &rcInput);
 
@@ -602,7 +617,7 @@ PathRequest::findPaths(
                 *raDstAccount,  // --> Account to deliver to.
                 *raSrcAccount,  // --> Account sending from.
                 ps,             // --> Path set.
-                std::nullopt, // TODO: change to domain
+                domain,         // TODO: change to domain
                 app_.logs());
 
             if (rc.result() != tesSUCCESS)

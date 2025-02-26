@@ -154,6 +154,9 @@ enum error_code_i {
     // Simulate
     rpcTX_SIGNED = 96,
 
+    // Pathfinding
+    rpcDOMAIN_MALFORMED = 97,
+
     rpcLAST = rpcTX_SIGNED  // rpcLAST should always equal the last code.
 };
 

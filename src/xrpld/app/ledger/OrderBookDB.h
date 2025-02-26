@@ -48,7 +48,7 @@ public:
     /** @return a list of all orderbooks that want this issuerID and currencyID.
      */
     std::vector<Book>
-    getBooksByTakerPays(Issue const&);
+    getBooksByTakerPays(Issue const&, std::optional<Domain> const&);
 
     /** @return a list of all orderbooks that want this issuerID and currencyID
      * and domainID

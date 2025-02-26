@@ -26,6 +26,7 @@
 #include <xrpld/net/InfoSub.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/UintTypes.h>
+#include "xrpl/basics/base_uint.h"
 #include <map>
 #include <mutex>
 #include <optional>
@@ -154,6 +155,8 @@ private:
 
     std::set<Issue> sciSourceCurrencies;
     std::map<Issue, STPathSet> mContext;
+
+    std::optional<uint256> domain;
 
     bool convert_all_;
 

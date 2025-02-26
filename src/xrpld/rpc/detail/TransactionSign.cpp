@@ -41,6 +41,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <algorithm>
 #include <iterator>
+#include <optional>
 
 namespace ripple {
 namespace RPC {
@@ -261,6 +262,7 @@ checkPayment(
                     sendMax.issue().account,
                     amount,
                     std::nullopt,
+                    std::nullopt,  // todo: should this support domain
                     app);
                 if (pf.findPaths(app.config().PATH_SEARCH_OLD))
                 {
@@ -717,8 +719,7 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 
 //------------------------------------------------------------------------------
 
-[[nodiscard]]
-static XRPAmount
+[[nodiscard]] static XRPAmount
 getTxFee(Application const& app, Config const& config, Json::Value tx)
 {
     // autofilling only needed in this function so that the `STParsedJSONObject`
