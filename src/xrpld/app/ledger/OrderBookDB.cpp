@@ -232,45 +232,25 @@ OrderBookDB::getBooksByTakerPays(
     return ret;
 }
 
-// return list of all orderbooks that want this issuerID and currencyID and
-// domain
-std::vector<Book>
-OrderBookDB::getBooksByTakerPaysDomain(Issue const& issue, Domain const& domain)
+int
+OrderBookDB::getBookSize(
+    Issue const& issue,
+    std::optional<uint256> const& domain)
 {
-    std::vector<Book> ret;
+    std::lock_guard sl(mLock);
 
+    if (!domain)
     {
-        std::lock_guard sl(mLock);
-
-        if (auto it = domainBooks_.find(std::make_pair(issue, domain));
+        if (auto it = allBooks_.find(issue); it != allBooks_.end())
+            return static_cast<int>(it->second.size());
+    }
+    else
+    {
+        if (auto it = domainBooks_.find(std::make_pair(issue, *domain));
             it != domainBooks_.end())
-        {
-            ret.reserve(it->second.size());
-
-            for (auto const& gets : it->second)
-                ret.push_back(Book(issue, gets, domain));
-        }
+            return static_cast<int>(it->second.size());
     }
 
-    return ret;
-}
-
-int
-OrderBookDB::getBookSize(Issue const& issue)
-{
-    std::lock_guard sl(mLock);
-    if (auto it = allBooks_.find(issue); it != allBooks_.end())
-        return static_cast<int>(it->second.size());
-    return 0;
-}
-
-int
-OrderBookDB::getDomainBookSize(Issue const& issue, Domain domain)
-{
-    std::lock_guard sl(mLock);
-    if (auto it = domainBooks_.find(std::make_pair(issue, domain));
-        it != domainBooks_.end())
-        return static_cast<int>(it->second.size());
     return 0;
 }
 

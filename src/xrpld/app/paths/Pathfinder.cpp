@@ -746,7 +746,7 @@ Pathfinder::getPathsOut(
 
     if (!bFrozen)
     {
-        count = app_.getOrderBookDB().getBookSize(issue);
+        count = app_.getOrderBookDB().getBookSize(issue, mDomain);
 
         if (auto const lines = mRLCache->getRippleLines(account, direction))
         {

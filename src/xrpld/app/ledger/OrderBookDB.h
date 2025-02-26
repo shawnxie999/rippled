@@ -48,22 +48,16 @@ public:
     /** @return a list of all orderbooks that want this issuerID and currencyID.
      */
     std::vector<Book>
-    getBooksByTakerPays(Issue const&, std::optional<Domain> const&);
-
-    /** @return a list of all orderbooks that want this issuerID and currencyID
-     * and domainID
-     */
-    std::vector<Book>
-    getBooksByTakerPaysDomain(Issue const& issue, Domain const& domain);
+    getBooksByTakerPays(
+        Issue const&,
+        std::optional<Domain> const& domain = std::nullopt);
 
     /** @return a count of all orderbooks that want this issuerID and
         currencyID. */
     int
-    getBookSize(Issue const&);
-
-    /** @return a count of domain orderbooks that want this Issue and Domain*/
-    int
-    getDomainBookSize(Issue const& issue, Domain domain);
+    getBookSize(
+        Issue const&,
+        std::optional<Domain> const& domain = std::nullopt);
 
     bool
     isBookToXRP(Issue const&, std::optional<Domain> domain = std::nullopt);
