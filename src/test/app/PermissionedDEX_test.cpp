@@ -680,7 +680,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 checkOffer(env, bob, regularOfferSeq, USD(10), EUR(10)));
 
-            // alice tries to pay again, and fails because the regular offer cannot be consumed
+            // alice tries to pay again, and fails because the regular offer
+            // cannot be consumed
             env(pay(alice, carol, EUR(10)),
                 path(~USD, ~EUR),
                 sendmax(XRP(10)),
@@ -706,7 +707,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(!offerExists(env, bob, usdOfferSeq));
             BEAST_EXPECT(!offerExists(env, bob, eurOfferSeq));
         }
-     
+
         // domain payment cannot consume offer from another domain
         {
             Env env(*this, features);
@@ -1193,8 +1194,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 domain(domainID));
             env.close();
 
-            BEAST_EXPECT(
-                checkOffer(env, bob, usdOfferSeq, XRP(5), USD(5)));
+            BEAST_EXPECT(checkOffer(env, bob, usdOfferSeq, XRP(5), USD(5)));
             BEAST_EXPECT(
                 checkOffer(env, bob, eurOfferSeq, USD(5), EUR(5), lsfHybrid));
         }
