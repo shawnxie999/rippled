@@ -1746,12 +1746,62 @@ public:
 
         auto wsc = makeWSClient(env.app().config());
 
-        env(offer(alice, XRP(10), USD(10)),
-            domain(domainID),
-            txflags(tfHybrid));
+        env(offer(alice, XRP(10), USD(10)), domain(domainID));
         env.close();
 
-        // book_offers
+        auto checkBookOffers = [&](Json::Value const& jrr) {
+            BEAST_EXPECT(jrr[jss::offers].isArray());
+            BEAST_EXPECT(jrr[jss::offers].size() == 1);
+            auto const jrOffer = jrr[jss::offers][0u];
+            BEAST_EXPECT(jrOffer[sfAccount.fieldName] == alice.human());
+            BEAST_EXPECT(
+                jrOffer[sfBookDirectory.fieldName] ==
+                getBookDir(env, XRP, USD.issue(), domainID));
+            BEAST_EXPECT(jrOffer[sfBookNode.fieldName] == "0");
+            BEAST_EXPECT(jrOffer[jss::Flags] == 0);
+            BEAST_EXPECT(jrOffer[sfLedgerEntryType.fieldName] == jss::Offer);
+            BEAST_EXPECT(jrOffer[sfOwnerNode.fieldName] == "0");
+            BEAST_EXPECT(
+                jrOffer[jss::TakerGets] ==
+                USD(10).value().getJson(JsonOptions::none));
+            BEAST_EXPECT(
+                jrOffer[jss::TakerPays] ==
+                XRP(10).value().getJson(JsonOptions::none));
+            BEAST_EXPECT(
+                jrOffer[sfDomainID.jsonName].asString() == to_string(domainID));
+        };
+
+        // book_offers: open book doesn't return offer
+        {
+            Json::Value jvParams;
+            jvParams[jss::taker] = env.master.human();
+            jvParams[jss::taker_pays][jss::currency] = "XRP";
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::taker_gets][jss::currency] = "USD";
+            jvParams[jss::taker_gets][jss::issuer] = gw.human();
+
+            auto jv = wsc->invoke("book_offers", jvParams);
+            auto jrr = jv[jss::result];
+            BEAST_EXPECT(jrr[jss::offers].isArray());
+            BEAST_EXPECT(jrr[jss::offers].size() == 0);
+        }
+
+        auto checkSubBooks = [&](Json::Value const& jv) {
+            BEAST_EXPECT(
+                jv[jss::result].isMember(jss::offers) &&
+                jv[jss::result][jss::offers].size() == 1);
+            BEAST_EXPECT(
+                jv[jss::result][jss::offers][0u][jss::TakerGets] ==
+                USD(10).value().getJson(JsonOptions::none));
+            BEAST_EXPECT(
+                jv[jss::result][jss::offers][0u][jss::TakerPays] ==
+                XRP(10).value().getJson(JsonOptions::none));
+            BEAST_EXPECT(
+                jv[jss::result][jss::offers][0u][sfDomainID.jsonName]
+                    .asString() == to_string(domainID));
+        };
+
+        // book_offers: requesting domain book returns hybrid offer
         {
             Json::Value jvParams;
             jvParams[jss::taker] = env.master.human();
@@ -1763,7 +1813,72 @@ public:
 
             auto jv = wsc->invoke("book_offers", jvParams);
             auto jrr = jv[jss::result];
+            checkBookOffers(jrr);
+        }
 
+        // subscribe to domain book should return domain offer
+        {
+            Json::Value books;
+            books[jss::books] = Json::arrayValue;
+            {
+                auto& j = books[jss::books].append(Json::objectValue);
+                j[jss::snapshot] = true;
+                j[jss::taker_pays][jss::currency] = "XRP";
+                j[jss::taker_gets][jss::currency] = "USD";
+                j[jss::taker_gets][jss::issuer] = gw.human();
+                j[jss::domain] = to_string(domainID);
+            }
+
+            auto jv = wsc->invoke("subscribe", books);
+            if (!BEAST_EXPECT(jv[jss::status] == "success"))
+                return;
+            checkSubBooks(jv);
+        }
+
+        // subscribe to open book should return domain offer
+        {
+            Json::Value books;
+            books[jss::books] = Json::arrayValue;
+            {
+                auto& j = books[jss::books].append(Json::objectValue);
+                j[jss::snapshot] = true;
+                j[jss::taker_pays][jss::currency] = "XRP";
+                j[jss::taker_gets][jss::currency] = "USD";
+                j[jss::taker_gets][jss::issuer] = gw.human();
+            }
+
+            auto jv = wsc->invoke("subscribe", books);
+            if (!BEAST_EXPECT(jv[jss::status] == "success"))
+                return;
+            BEAST_EXPECT(
+                jv[jss::result].isMember(jss::offers) &&
+                jv[jss::result][jss::offers].size() == 0);
+        }
+    }
+
+    void
+    testTrackHybridOffer()
+    {
+        testcase("TrackDomainOffer");
+        using namespace jtx;
+
+        FeatureBitset const all{
+            jtx::supported_amendments() | featurePermissionedDomains |
+            featureCredentials | featurePermissionedDEX};
+
+        Env env(*this, all);
+        PermissionedDEX permDex(env);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            permDex;
+
+        auto wsc = makeWSClient(env.app().config());
+
+        env(offer(alice, XRP(10), USD(10)),
+            domain(domainID),
+            txflags(tfHybrid));
+        env.close();
+
+        auto checkBookOffers = [&](Json::Value const& jrr) {
             BEAST_EXPECT(jrr[jss::offers].isArray());
             BEAST_EXPECT(jrr[jss::offers].size() == 1);
             auto const jrOffer = jrr[jss::offers][0u];
@@ -1784,9 +1899,53 @@ public:
             BEAST_EXPECT(
                 jrOffer[sfDomainID.jsonName].asString() == to_string(domainID));
             BEAST_EXPECT(jrOffer[sfAdditionalBooks.jsonName].size() == 1);
+        };
+
+        // book_offers: open book returns hybrid offer
+        {
+            Json::Value jvParams;
+            jvParams[jss::taker] = env.master.human();
+            jvParams[jss::taker_pays][jss::currency] = "XRP";
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::taker_gets][jss::currency] = "USD";
+            jvParams[jss::taker_gets][jss::issuer] = gw.human();
+
+            auto jv = wsc->invoke("book_offers", jvParams);
+            auto jrr = jv[jss::result];
+            checkBookOffers(jrr);
         }
 
-        // subscribe books
+        auto checkSubBooks = [&](Json::Value const& jv) {
+            BEAST_EXPECT(
+                jv[jss::result].isMember(jss::offers) &&
+                jv[jss::result][jss::offers].size() == 1);
+            BEAST_EXPECT(
+                jv[jss::result][jss::offers][0u][jss::TakerGets] ==
+                USD(10).value().getJson(JsonOptions::none));
+            BEAST_EXPECT(
+                jv[jss::result][jss::offers][0u][jss::TakerPays] ==
+                XRP(10).value().getJson(JsonOptions::none));
+            BEAST_EXPECT(
+                jv[jss::result][jss::offers][0u][sfDomainID.jsonName]
+                    .asString() == to_string(domainID));
+        };
+
+        // book_offers: requesting domain book returns hybrid offer
+        {
+            Json::Value jvParams;
+            jvParams[jss::taker] = env.master.human();
+            jvParams[jss::taker_pays][jss::currency] = "XRP";
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::taker_gets][jss::currency] = "USD";
+            jvParams[jss::taker_gets][jss::issuer] = gw.human();
+            jvParams[jss::domain] = to_string(domainID);
+
+            auto jv = wsc->invoke("book_offers", jvParams);
+            auto jrr = jv[jss::result];
+            checkBookOffers(jrr);
+        }
+
+        // subscribe to domain book should return hybrid offer
         {
             Json::Value books;
             books[jss::books] = Json::arrayValue;
@@ -1802,39 +1961,47 @@ public:
             auto jv = wsc->invoke("subscribe", books);
             if (!BEAST_EXPECT(jv[jss::status] == "success"))
                 return;
-            BEAST_EXPECT(
-                jv[jss::result].isMember(jss::offers) &&
-                jv[jss::result][jss::offers].size() == 1);
-            BEAST_EXPECT(
-                jv[jss::result][jss::offers][0u][jss::TakerGets] ==
-                USD(10).value().getJson(JsonOptions::none));
-            BEAST_EXPECT(
-                jv[jss::result][jss::offers][0u][jss::TakerPays] ==
-                XRP(10).value().getJson(JsonOptions::none));
-            BEAST_EXPECT(
-                jv[jss::result][jss::offers][0u][sfDomainID.jsonName]
-                    .asString() == to_string(domainID));
+            checkSubBooks(jv);
+        }
+
+        // subscribe to open book should return hybrid offer
+        {
+            Json::Value books;
+            books[jss::books] = Json::arrayValue;
+            {
+                auto& j = books[jss::books].append(Json::objectValue);
+                j[jss::snapshot] = true;
+                j[jss::taker_pays][jss::currency] = "XRP";
+                j[jss::taker_gets][jss::currency] = "USD";
+                j[jss::taker_gets][jss::issuer] = gw.human();
+            }
+
+            auto jv = wsc->invoke("subscribe", books);
+            if (!BEAST_EXPECT(jv[jss::status] == "success"))
+                return;
+            checkSubBooks(jv);
         }
     }
 
     void
     run() override
     {
-        // testOneSideEmptyBook();
-        // testOneSideOffersInBook();
-        // testBothSidesEmptyBook();
-        // testBothSidesOffersInBook();
-        // testMultipleBooksOneSideEmptyBook();
-        // testMultipleBooksOneSideOffersInBook();
-        // testMultipleBooksBothSidesEmptyBook();
-        // testMultipleBooksBothSidesOffersInBook();
-        // testTrackOffers();
-        // testCrossingSingleBookOffer();
-        // testCrossingMultiBookOffer();
-        // testBookOfferErrors();
-        // testBookOfferLimits(true);
-        // testBookOfferLimits(false);
+        testOneSideEmptyBook();
+        testOneSideOffersInBook();
+        testBothSidesEmptyBook();
+        testBothSidesOffersInBook();
+        testMultipleBooksOneSideEmptyBook();
+        testMultipleBooksOneSideOffersInBook();
+        testMultipleBooksBothSidesEmptyBook();
+        testMultipleBooksBothSidesOffersInBook();
+        testTrackOffers();
+        testCrossingSingleBookOffer();
+        testCrossingMultiBookOffer();
+        testBookOfferErrors();
+        testBookOfferLimits(true);
+        testBookOfferLimits(false);
         testTrackDomainOffer();
+        testTrackHybridOffer();
     }
 };
 
