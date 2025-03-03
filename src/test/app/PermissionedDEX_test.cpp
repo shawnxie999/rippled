@@ -392,7 +392,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), 0, true));
 
-            auto const aliceOfferSeq{env.seq(bob)};
+            auto const aliceOfferSeq{env.seq(alice)};
             env(offer(alice, USD(10), XRP(10)), domain(domainID));
             env.close();
 
@@ -979,7 +979,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
             BEAST_EXPECT(ownerCount(env, bob) == 3);
 
-            auto const aliceOfferSeq{env.seq(bob)};
+            auto const aliceOfferSeq{env.seq(alice)};
             env(offer(alice, USD(10), XRP(10)), domain(domainID));
             env.close();
 
@@ -1006,13 +1006,73 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(checkOffer(
                 env, bob, bobOfferSeq, XRP(10), USD(10), lsfHybrid, true));
 
-            auto const aliceOfferSeq{env.seq(bob)};
+            auto const aliceOfferSeq{env.seq(alice)};
             env(offer(alice, USD(10), XRP(10)));
             env.close();
 
             BEAST_EXPECT(!offerExists(env, alice, aliceOfferSeq));
             BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
             BEAST_EXPECT(ownerCount(env, alice) == 2);
+        }
+
+        // apply - by default, hybrid offer tries to cross with offers in the
+        // domain book
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            auto const bobOfferSeq{env.seq(bob)};
+            env(offer(bob, XRP(10), USD(10)), domain(domainID));
+            env.close();
+
+            BEAST_EXPECT(
+                checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), 0, true));
+            BEAST_EXPECT(ownerCount(env, bob) == 3);
+
+            // hybrid offer auto crosses with domain offer
+            auto const aliceOfferSeq{env.seq(alice)};
+            env(offer(alice, USD(10), XRP(10)),
+                domain(domainID),
+                txflags(tfHybrid));
+            env.close();
+
+            BEAST_EXPECT(!offerExists(env, alice, aliceOfferSeq));
+            BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+        }
+
+        // apply - hybrid offer does not automatically cross with open offers
+        // because by default, it only tries to cross domain offers
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            auto const bobOfferSeq{env.seq(bob)};
+            env(offer(bob, XRP(10), USD(10)));
+            env.close();
+
+            BEAST_EXPECT(
+                checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), 0, false));
+            BEAST_EXPECT(ownerCount(env, bob) == 3);
+
+            // hybrid offer auto crosses with domain offer
+            auto const aliceOfferSeq{env.seq(alice)};
+            env(offer(alice, USD(10), XRP(10)),
+                domain(domainID),
+                txflags(tfHybrid));
+            env.close();
+
+            BEAST_EXPECT(offerExists(env, alice, aliceOfferSeq));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+            BEAST_EXPECT(
+                checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), 0, false));
+            BEAST_EXPECT(checkOffer(
+                env, alice, aliceOfferSeq, USD(10), XRP(10), lsfHybrid, true));
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
         }
     }
 
