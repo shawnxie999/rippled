@@ -224,6 +224,21 @@ checkPayment(
             rpcINVALID_PARAMS,
             "Cannot specify both 'tx_json.Paths' and 'build_path'");
 
+    std::optional<uint256> domain = std::nullopt;
+    if (tx_json.isMember(jss::domain))
+    {
+        uint256 num;
+        if (auto const s = tx_json[jss::domain].asString(); !num.parseHex(s))
+        {
+            return RPC::make_error(
+                rpcDOMAIN_MALFORMED, "Unable to parse 'domain'.");
+        }
+        else
+        {
+            domain = num;
+        }
+    }
+
     if (!tx_json.isMember(jss::Paths) && params.isMember(jss::build_path))
     {
         STAmount sendMax;
@@ -262,7 +277,7 @@ checkPayment(
                     sendMax.issue().account,
                     amount,
                     std::nullopt,
-                    std::nullopt,  // todo: should this support domain
+                    domain,
                     app);
                 if (pf.findPaths(app.config().PATH_SEARCH_OLD))
                 {
