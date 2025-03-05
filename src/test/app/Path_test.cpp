@@ -35,10 +35,12 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include "test/jtx/domain.h"
+#include "test/jtx/txflags.h"
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <optional>
+#include <string>
 #include <thread>
 namespace ripple {
 namespace test {
@@ -394,7 +396,9 @@ public:
     void
     path_find(bool const domainEnabled)
     {
-        testcase("path find");
+        testcase(
+            std::string("path find") +
+            (domainEnabled ? " with " : " without ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
@@ -427,7 +431,9 @@ public:
     xrp_to_xrp(bool const domainEnabled)
     {
         using namespace jtx;
-        testcase("XRP to XRP");
+        testcase(
+            std::string("XRP to XRP") +
+            (domainEnabled ? " with " : " without ") + "domain");
         Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob");
 
@@ -443,7 +449,9 @@ public:
     void
     path_find_consume_all(bool const domainEnabled)
     {
-        testcase("path find consume all");
+        testcase(
+            std::string("path find consume all") +
+            (domainEnabled ? " with " : " without ") + "domain");
         using namespace jtx;
 
         {
@@ -528,7 +536,9 @@ public:
     void
     alternative_path_consume_both(bool const domainEnabled)
     {
-        testcase("alternative path consume both");
+        testcase(
+            std::string("alternative path consume both") +
+            (domainEnabled ? " with " : " without ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
@@ -573,7 +583,9 @@ public:
     void
     alternative_paths_consume_best_transfer(bool const domainEnabled)
     {
-        testcase("alternative paths consume best transfer");
+        testcase(
+            std::string("alternative paths consume best transfer") +
+            (domainEnabled ? " with " : " without ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
@@ -647,7 +659,10 @@ public:
     alternative_paths_limit_returned_paths_to_best_quality(
         bool const domainEnabled)
     {
-        testcase("alternative paths - limit returned paths to best quality");
+        testcase(
+            std::string(
+                "alternative paths - limit returned paths to best quality") +
+            (domainEnabled ? " with " : " without ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
@@ -706,7 +721,9 @@ public:
     void
     issues_path_negative_issue(bool const domainEnabled)
     {
-        testcase("path negative: Issue #5");
+        testcase(
+            std::string("path negative: Issue #5") +
+            (domainEnabled ? " with " : " without ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob", "carol", "dan");
@@ -811,7 +828,9 @@ public:
     void
     via_offers_via_gateway(bool const domainEnabled)
     {
-        testcase("via gateway");
+        testcase(
+            std::string("via gateway") +
+            (domainEnabled ? " with " : " without ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
@@ -1029,7 +1048,9 @@ public:
     void
     path_find_01(bool const domainEnabled)
     {
-        testcase("Path Find: XRP -> XRP and XRP -> IOU");
+        testcase(
+            std::string("Path Find: XRP -> XRP and XRP -> IOU") +
+            (domainEnabled ? " with " : " without ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         Account A1{"A1"};
@@ -1134,7 +1155,9 @@ public:
     void
     path_find_02(bool const domainEnabled)
     {
-        testcase("Path Find: non-XRP -> XRP");
+        testcase(
+            std::string("Path Find: non-XRP -> XRP") +
+            (domainEnabled ? " with " : " without ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         Account A1{"A1"};
@@ -1180,7 +1203,10 @@ public:
     void
     path_find_04(bool const domainEnabled)
     {
-        testcase("Path Find: Bitstamp and SnapSwap, liquidity with no offers");
+        testcase(
+            std::string(
+                "Path Find: Bitstamp and SnapSwap, liquidity with no offers") +
+            (domainEnabled ? " with " : " without ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         Account A1{"A1"};
@@ -1294,7 +1320,9 @@ public:
     void
     path_find_05(bool const domainEnabled)
     {
-        testcase("Path Find: non-XRP -> non-XRP, same currency");
+        testcase(
+            std::string("Path Find: non-XRP -> non-XRP, same currency") +
+            (domainEnabled ? " with " : " without ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         Account A1{"A1"};
@@ -1472,7 +1500,9 @@ public:
     void
     path_find_06(bool const domainEnabled)
     {
-        testcase("Path Find: non-XRP -> non-XRP, same currency)");
+        testcase(
+            std::string("Path Find: non-XRP -> non-XRP, same currency)") +
+            (domainEnabled ? " with " : " without ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         Account A1{"A1"};
@@ -1525,7 +1555,10 @@ public:
     void
     receive_max(bool const domainEnabled)
     {
-        testcase("Receive max");
+        testcase(
+            std::string("Receive max ") +
+            (domainEnabled ? "with " : "without ") + "domain");
+
         using namespace jtx;
         auto const alice = Account("alice");
         auto const bob = Account("bob");
@@ -1681,6 +1714,218 @@ public:
     }
 
     void
+    hybrid_offer_path()
+    {
+        testcase("Hybrid offer path");
+        using namespace jtx;
+
+        // lambda that queries path finding without domain
+        auto testOffers = [&](auto func) {
+            Env env = pathTestEnv();
+            Account A1{"A1"};
+            Account A2{"A2"};
+            Account A3{"A3"};
+            Account A4{"A4"};
+            Account G1{"G1"};
+            Account G2{"G2"};
+            Account G3{"G3"};
+            Account G4{"G4"};
+            Account M1{"M1"};
+            Account M2{"M2"};
+
+            env.fund(XRP(1000), A1, A2, A3, G1, G2, G3, G4);
+            env.fund(XRP(10000), A4);
+            env.fund(XRP(11000), M1, M2);
+            env.close();
+
+            env.trust(G1["HKD"](2000), A1);
+            env.trust(G2["HKD"](2000), A2);
+            env.trust(G1["HKD"](2000), A3);
+            env.trust(G1["HKD"](100000), M1);
+            env.trust(G2["HKD"](100000), M1);
+            env.trust(G1["HKD"](100000), M2);
+            env.trust(G2["HKD"](100000), M2);
+            env.close();
+
+            env(pay(G1, A1, G1["HKD"](1000)));
+            env(pay(G2, A2, G2["HKD"](1000)));
+            env(pay(G1, A3, G1["HKD"](1000)));
+            env(pay(G1, M1, G1["HKD"](1200)));
+            env(pay(G2, M1, G2["HKD"](5000)));
+            env(pay(G1, M2, G1["HKD"](1200)));
+            env(pay(G2, M2, G2["HKD"](5000)));
+            env.close();
+
+            uint256 domainID =
+                setupDomain(env, {A1, A2, A3, A4, G1, G2, G3, G4, M1, M2});
+
+            func(env, M1, M2, G1, G2, domainID);
+
+            STPathSet st;
+            STAmount sa, da;
+
+            {
+                // A) Borrow or repay --
+                //  Source -> Destination (repay source issuer)
+                auto const& send_amt = G1["HKD"](10);
+                std::tie(st, sa, da) = find_paths(
+                    env, A1, G1, send_amt, std::nullopt, G1["HKD"].currency);
+                BEAST_EXPECT(st.empty());
+                BEAST_EXPECT(equal(da, send_amt));
+                BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+            }
+
+            {
+                // A2) Borrow or repay --
+                //  Source -> Destination (repay destination issuer)
+                auto const& send_amt = A1["HKD"](10);
+                std::tie(st, sa, da) = find_paths(
+                    env, A1, G1, send_amt, std::nullopt, G1["HKD"].currency);
+                BEAST_EXPECT(st.empty());
+                BEAST_EXPECT(equal(da, send_amt));
+                BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+            }
+
+            {
+                // B) Common gateway --
+                //  Source -> AC -> Destination
+                auto const& send_amt = A3["HKD"](10);
+                std::tie(st, sa, da) = find_paths(
+                    env, A1, A3, send_amt, std::nullopt, G1["HKD"].currency);
+                BEAST_EXPECT(equal(da, send_amt));
+                BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+                BEAST_EXPECT(same(st, stpath(G1)));
+            }
+
+            {
+                // C) Gateway to gateway --
+                //  Source -> OB -> Destination
+                auto const& send_amt = G2["HKD"](10);
+                std::tie(st, sa, da) = find_paths(
+                    env, G1, G2, send_amt, std::nullopt, G1["HKD"].currency);
+                BEAST_EXPECT(equal(da, send_amt));
+                BEAST_EXPECT(equal(sa, G1["HKD"](10)));
+                BEAST_EXPECT(same(
+                    st,
+                    stpath(IPE(G2["HKD"])),
+                    stpath(M1),
+                    stpath(M2),
+                    stpath(IPE(xrpIssue()), IPE(G2["HKD"]))));
+            }
+
+            {
+                // D) User to unlinked gateway via order book --
+                //  Source -> AC -> OB -> Destination
+                auto const& send_amt = G2["HKD"](10);
+                std::tie(st, sa, da) = find_paths(
+                    env, A1, G2, send_amt, std::nullopt, G1["HKD"].currency);
+                BEAST_EXPECT(equal(da, send_amt));
+                BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+                BEAST_EXPECT(same(
+                    st,
+                    stpath(G1, M1),
+                    stpath(G1, M2),
+                    stpath(G1, IPE(G2["HKD"])),
+                    stpath(G1, IPE(xrpIssue()), IPE(G2["HKD"]))));
+            }
+
+            {
+                // I4) XRP bridge" --
+                //  Source -> AC -> OB to XRP -> OB from XRP -> AC ->
+                //  Destination
+                auto const& send_amt = A2["HKD"](10);
+                std::tie(st, sa, da) = find_paths(
+                    env, A1, A2, send_amt, std::nullopt, G1["HKD"].currency);
+                BEAST_EXPECT(equal(da, send_amt));
+                BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+                BEAST_EXPECT(same(
+                    st,
+                    stpath(G1, M1, G2),
+                    stpath(G1, M2, G2),
+                    stpath(G1, IPE(G2["HKD"]), G2),
+                    stpath(G1, IPE(xrpIssue()), IPE(G2["HKD"]), G2)));
+            }
+        };
+
+        testOffers([&](Env& env,
+                       Account M1,
+                       Account M2,
+                       Account G1,
+                       Account G2,
+                       uint256 domainID) {
+            env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)),
+                domain(domainID),
+                txflags(tfHybrid));
+            env(offer(M2, XRP(10000), G2["HKD"](1000)));
+            env(offer(M2, G1["HKD"](1000), XRP(10000)));
+        });
+
+        testOffers([&](Env& env,
+                       Account M1,
+                       Account M2,
+                       Account G1,
+                       Account G2,
+                       uint256 domainID) {
+            env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)),
+                domain(domainID),
+                txflags(tfHybrid));
+            env(offer(M2, XRP(10000), G2["HKD"](1000)),
+                domain(domainID),
+                txflags(tfHybrid));
+            env(offer(M2, G1["HKD"](1000), XRP(10000)));
+        });
+
+        // the following tests exercise different combinations of open/hybrid
+        // offers to make sure that hybrid offers work in pathfinding for open
+        // order book
+
+        testOffers([&](Env& env,
+                       Account M1,
+                       Account M2,
+                       Account G1,
+                       Account G2,
+                       uint256 domainID) {
+            env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)),
+                domain(domainID),
+                txflags(tfHybrid));
+            env(offer(M2, XRP(10000), G2["HKD"](1000)),
+                domain(domainID),
+                txflags(tfHybrid));
+            env(offer(M2, G1["HKD"](1000), XRP(10000)),
+                domain(domainID),
+                txflags(tfHybrid));
+        });
+
+        testOffers([&](Env& env,
+                       Account M1,
+                       Account M2,
+                       Account G1,
+                       Account G2,
+                       uint256 domainID) {
+            env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)));
+            env(offer(M2, XRP(10000), G2["HKD"](1000)));
+            env(offer(M2, G1["HKD"](1000), XRP(10000)),
+                domain(domainID),
+                txflags(tfHybrid));
+        });
+
+        testOffers([&](Env& env,
+                       Account M1,
+                       Account M2,
+                       Account G1,
+                       Account G2,
+                       uint256 domainID) {
+            env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)));
+            env(offer(M2, XRP(10000), G2["HKD"](1000)),
+                domain(domainID),
+                txflags(tfHybrid));
+            env(offer(M2, G1["HKD"](1000), XRP(10000)),
+                domain(domainID),
+                txflags(tfHybrid));
+        });
+    }
+
+    void
     run() override
     {
         source_currencies_limit();
@@ -1721,6 +1966,8 @@ public:
             path_find_05(domainEnabled);
             path_find_06(domainEnabled);
         }
+
+        hybrid_offer_path();
     }
 };
 
