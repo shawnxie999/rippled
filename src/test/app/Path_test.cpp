@@ -1721,7 +1721,7 @@ public:
 
         // lambda that queries path finding without domain
         // `func` is a lambda param that creates different types of offers
-        auto testOffers = [&](auto func, bool const domainEnabled = false) {
+        auto testPathfind = [&](auto func, bool const domainEnabled = false) {
             Env env = pathTestEnv();
             Account A1{"A1"};
             Account A2{"A2"};
@@ -1889,12 +1889,12 @@ public:
         // offers to make sure that hybrid offers work in pathfinding for open
         // order book
         {
-            testOffers([&](Env& env,
-                           Account M1,
-                           Account M2,
-                           Account G1,
-                           Account G2,
-                           uint256 domainID) {
+            testPathfind([&](Env& env,
+                             Account M1,
+                             Account M2,
+                             Account G1,
+                             Account G2,
+                             uint256 domainID) {
                 env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)),
                     domain(domainID),
                     txflags(tfHybrid));
@@ -1902,12 +1902,12 @@ public:
                 env(offer(M2, G1["HKD"](1000), XRP(10000)));
             });
 
-            testOffers([&](Env& env,
-                           Account M1,
-                           Account M2,
-                           Account G1,
-                           Account G2,
-                           uint256 domainID) {
+            testPathfind([&](Env& env,
+                             Account M1,
+                             Account M2,
+                             Account G1,
+                             Account G2,
+                             uint256 domainID) {
                 env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)),
                     domain(domainID),
                     txflags(tfHybrid));
@@ -1917,12 +1917,12 @@ public:
                 env(offer(M2, G1["HKD"](1000), XRP(10000)));
             });
 
-            testOffers([&](Env& env,
-                           Account M1,
-                           Account M2,
-                           Account G1,
-                           Account G2,
-                           uint256 domainID) {
+            testPathfind([&](Env& env,
+                             Account M1,
+                             Account M2,
+                             Account G1,
+                             Account G2,
+                             uint256 domainID) {
                 env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)),
                     domain(domainID),
                     txflags(tfHybrid));
@@ -1934,12 +1934,12 @@ public:
                     txflags(tfHybrid));
             });
 
-            testOffers([&](Env& env,
-                           Account M1,
-                           Account M2,
-                           Account G1,
-                           Account G2,
-                           uint256 domainID) {
+            testPathfind([&](Env& env,
+                             Account M1,
+                             Account M2,
+                             Account G1,
+                             Account G2,
+                             uint256 domainID) {
                 env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)));
                 env(offer(M2, XRP(10000), G2["HKD"](1000)));
                 env(offer(M2, G1["HKD"](1000), XRP(10000)),
@@ -1947,12 +1947,12 @@ public:
                     txflags(tfHybrid));
             });
 
-            testOffers([&](Env& env,
-                           Account M1,
-                           Account M2,
-                           Account G1,
-                           Account G2,
-                           uint256 domainID) {
+            testPathfind([&](Env& env,
+                             Account M1,
+                             Account M2,
+                             Account G1,
+                             Account G2,
+                             uint256 domainID) {
                 env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)));
                 env(offer(M2, XRP(10000), G2["HKD"](1000)),
                     domain(domainID),
@@ -1967,7 +1967,7 @@ public:
         // offers to make sure that hybrid offers work in pathfinding for domain
         // order book
         {
-            testOffers(
+            testPathfind(
                 [&](Env& env,
                     Account M1,
                     Account M2,
@@ -1984,7 +1984,7 @@ public:
                 },
                 true);
 
-            testOffers(
+            testPathfind(
                 [&](Env& env,
                     Account M1,
                     Account M2,
@@ -2002,7 +2002,7 @@ public:
                 },
                 true);
 
-            testOffers(
+            testPathfind(
                 [&](Env& env,
                     Account M1,
                     Account M2,
@@ -2019,7 +2019,7 @@ public:
                 },
                 true);
 
-            testOffers(
+            testPathfind(
                 [&](Env& env,
                     Account M1,
                     Account M2,

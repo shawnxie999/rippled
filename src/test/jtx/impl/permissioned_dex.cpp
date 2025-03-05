@@ -41,25 +41,18 @@ PermissionedDEX::PermissionedDEX(Env& env)
     env.fund(XRP(100000), domainOwner, alice, bob, carol, gw);
     env.close();
 
-    // Set up trust lines
-    env.trust(USD(1000), domainOwner);
-    env.close();
-    env.trust(USD(1000), alice);
-    env.close();
-    env.trust(USD(1000), bob);
-    env.close();
-    env.trust(USD(1000), carol);
-    env.close();
+    auto setupTrustline = [&](Account const account) {
+        env.trust(USD(1000), account);
+        env.close();
 
-    // Issue payments
-    env(pay(gw, domainOwner, USD(100)));
-    env.close();
-    env(pay(gw, alice, USD(100)));
-    env.close();
-    env(pay(gw, bob, USD(100)));
-    env.close();
-    env(pay(gw, carol, USD(100)));
-    env.close();
+        env(pay(gw, account, USD(100)));
+        env.close();
+    };
+
+    for (auto const& account : {alice, bob, carol, domainOwner})
+    {
+        setupTrustline(account);
+    }
 
     pdomain::Credentials credentials{{domainOwner, credType}};
     env(pdomain::setTx(domainOwner, credentials));
@@ -67,29 +60,17 @@ PermissionedDEX::PermissionedDEX(Env& env)
     auto objects = pdomain::getObjects(domainOwner, env);
     domainID = objects.begin()->first;
 
-    // domain owner also issues a credential for alice
-    env(credentials::create(alice, domainOwner, credType));
-    env.close();
-    env(credentials::accept(alice, domainOwner, credType));
-    env.close();
+    auto setupDomain = [&](Account const account) {
+        env(credentials::create(account, domainOwner, credType));
+        env.close();
+        env(credentials::accept(account, domainOwner, credType));
+        env.close();
+    };
 
-    // domain owner also issues a credential for bob
-    env(credentials::create(bob, domainOwner, credType));
-    env.close();
-    env(credentials::accept(bob, domainOwner, credType));
-    env.close();
-
-    // domain owner also issues a credential for bob
-    env(credentials::create(carol, domainOwner, credType));
-    env.close();
-    env(credentials::accept(carol, domainOwner, credType));
-    env.close();
-
-    // domain owner also issues a credential for gw
-    env(credentials::create(gw, domainOwner, credType));
-    env.close();
-    env(credentials::accept(gw, domainOwner, credType));
-    env.close();
+    for (auto const& account : {alice, bob, carol, gw})
+    {
+        setupDomain(account);
+    }
 }
 
 }  // namespace jtx
