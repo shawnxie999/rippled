@@ -397,8 +397,8 @@ public:
     path_find(bool const domainEnabled)
     {
         testcase(
-            std::string("path find") +
-            (domainEnabled ? " with " : " without ") + "domain");
+            std::string("path find") + (domainEnabled ? " w/ " : " w/o ") +
+            "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
@@ -432,8 +432,8 @@ public:
     {
         using namespace jtx;
         testcase(
-            std::string("XRP to XRP") +
-            (domainEnabled ? " with " : " without ") + "domain");
+            std::string("XRP to XRP") + (domainEnabled ? " w/ " : " w/o ") +
+            "domain");
         Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob");
 
@@ -451,7 +451,7 @@ public:
     {
         testcase(
             std::string("path find consume all") +
-            (domainEnabled ? " with " : " without ") + "domain");
+            (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
 
         {
@@ -538,7 +538,7 @@ public:
     {
         testcase(
             std::string("alternative path consume both") +
-            (domainEnabled ? " with " : " without ") + "domain");
+            (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
@@ -585,7 +585,7 @@ public:
     {
         testcase(
             std::string("alternative paths consume best transfer") +
-            (domainEnabled ? " with " : " without ") + "domain");
+            (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
@@ -662,7 +662,7 @@ public:
         testcase(
             std::string(
                 "alternative paths - limit returned paths to best quality") +
-            (domainEnabled ? " with " : " without ") + "domain");
+            (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
@@ -723,7 +723,7 @@ public:
     {
         testcase(
             std::string("path negative: Issue #5") +
-            (domainEnabled ? " with " : " without ") + "domain");
+            (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob", "carol", "dan");
@@ -829,8 +829,8 @@ public:
     via_offers_via_gateway(bool const domainEnabled)
     {
         testcase(
-            std::string("via gateway") +
-            (domainEnabled ? " with " : " without ") + "domain");
+            std::string("via gateway") + (domainEnabled ? " w/ " : " w/o ") +
+            "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
@@ -1050,7 +1050,7 @@ public:
     {
         testcase(
             std::string("Path Find: XRP -> XRP and XRP -> IOU") +
-            (domainEnabled ? " with " : " without ") + "domain");
+            (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         Account A1{"A1"};
@@ -1157,7 +1157,7 @@ public:
     {
         testcase(
             std::string("Path Find: non-XRP -> XRP") +
-            (domainEnabled ? " with " : " without ") + "domain");
+            (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         Account A1{"A1"};
@@ -1206,7 +1206,7 @@ public:
         testcase(
             std::string(
                 "Path Find: Bitstamp and SnapSwap, liquidity with no offers") +
-            (domainEnabled ? " with " : " without ") + "domain");
+            (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         Account A1{"A1"};
@@ -1322,7 +1322,7 @@ public:
     {
         testcase(
             std::string("Path Find: non-XRP -> non-XRP, same currency") +
-            (domainEnabled ? " with " : " without ") + "domain");
+            (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         Account A1{"A1"};
@@ -1502,7 +1502,7 @@ public:
     {
         testcase(
             std::string("Path Find: non-XRP -> non-XRP, same currency)") +
-            (domainEnabled ? " with " : " without ") + "domain");
+            (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         Account A1{"A1"};
