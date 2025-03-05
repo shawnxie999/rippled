@@ -769,6 +769,33 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
         }
+
+        // sanity check: devin, who is part of the domain but doesn't have USD,
+        // can successfully make a payment using offer
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            env(offer(bob, XRP(10), USD(10)), domain(domainID));
+            env.close();
+
+            Account devin("devin");
+            env.fund(XRP(1000), devin);
+            env.close();
+
+            // domain owner also issues a credential for devin
+            env(credentials::create(devin, domainOwner, credType));
+            env.close();
+
+            env(credentials::accept(devin, domainOwner, credType));
+            env.close();
+
+            // successful payment because offer is consumed
+            env(pay(devin, alice, USD(10)), sendmax(XRP(10)), domain(domainID));
+            env.close();
+        }
     }
 
     void
