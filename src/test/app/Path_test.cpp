@@ -19,6 +19,7 @@
 
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/permissioned_dex.h>
 #include <xrpld/app/paths/AccountCurrencies.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/rpc/Context.h>
@@ -37,6 +38,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
+#include <optional>
 #include <thread>
 namespace ripple {
 namespace test {
@@ -390,7 +392,7 @@ public:
     }
 
     void
-    path_find()
+    path_find(bool const domainEnabled)
     {
         testcase("path find");
         using namespace jtx;
@@ -403,28 +405,43 @@ public:
         env(pay(gw, "alice", USD(70)));
         env(pay(gw, "bob", USD(50)));
 
+        std::optional<uint256> domainID;
+        if (domainEnabled)
+            domainID = setupDomain(env, {"alice", "bob", gw});
+
         STPathSet st;
         STAmount sa;
-        std::tie(st, sa, std::ignore) =
-            find_paths(env, "alice", "bob", Account("bob")["USD"](5));
+        std::tie(st, sa, std::ignore) = find_paths(
+            env,
+            "alice",
+            "bob",
+            Account("bob")["USD"](5),
+            std::nullopt,
+            std::nullopt,
+            domainID);
         BEAST_EXPECT(same(st, stpath("gateway")));
         BEAST_EXPECT(equal(sa, Account("alice")["USD"](5)));
     }
 
     void
-    xrp_to_xrp()
+    xrp_to_xrp(bool const domainEnabled)
     {
         using namespace jtx;
         testcase("XRP to XRP");
         Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob");
 
-        auto const result = find_paths(env, "alice", "bob", XRP(5));
+        std::optional<uint256> domainID;
+        if (domainEnabled)
+            domainID = setupDomain(env, {"alice", "bob"});
+
+        auto const result = find_paths(
+            env, "alice", "bob", XRP(5), std::nullopt, std::nullopt, domainID);
         BEAST_EXPECT(std::get<0>(result).empty());
     }
 
     void
-    path_find_consume_all()
+    path_find_consume_all(bool const domainEnabled)
     {
         testcase("path find consume all");
         using namespace jtx;
@@ -438,11 +455,22 @@ public:
             env.trust(Account("alice")["USD"](100), "dan");
             env.trust(Account("dan")["USD"](100), "edward");
 
+            std::optional<uint256> domainID;
+            if (domainEnabled)
+                domainID = setupDomain(
+                    env, {"alice", "bob", "carol", "dan", "edward"});
+
             STPathSet st;
             STAmount sa;
             STAmount da;
             std::tie(st, sa, da) = find_paths(
-                env, "alice", "edward", Account("edward")["USD"](-1));
+                env,
+                "alice",
+                "edward",
+                Account("edward")["USD"](-1),
+                std::nullopt,
+                std::nullopt,
+                domainID);
             BEAST_EXPECT(same(st, stpath("dan"), stpath("bob", "carol")));
             BEAST_EXPECT(equal(sa, Account("alice")["USD"](110)));
             BEAST_EXPECT(equal(da, Account("edward")["USD"](110)));
@@ -453,9 +481,24 @@ public:
             auto const gw = Account("gateway");
             auto const USD = gw["USD"];
             env.fund(XRP(10000), "alice", "bob", "carol", gw);
+            env.close();
             env.trust(USD(100), "bob", "carol");
+            env.close();
             env(pay(gw, "carol", USD(100)));
-            env(offer("carol", XRP(100), USD(100)));
+            env.close();
+
+            std::optional<uint256> domainID;
+            if (domainEnabled)
+            {
+                domainID =
+                    setupDomain(env, {"alice", "bob", "carol", "gateway"});
+                env(offer("carol", XRP(100), USD(100)), domain(*domainID));
+            }
+            else
+            {
+                env(offer("carol", XRP(100), USD(100)));
+            }
+            env.close();
 
             STPathSet st;
             STAmount sa;
@@ -465,21 +508,25 @@ public:
                 "alice",
                 "bob",
                 Account("bob")["AUD"](-1),
-                std::optional<STAmount>(XRP(100000000)));
+                std::optional<STAmount>(XRP(1000000)),
+                std::nullopt,
+                domainID);
             BEAST_EXPECT(st.empty());
             std::tie(st, sa, da) = find_paths(
                 env,
                 "alice",
                 "bob",
                 Account("bob")["USD"](-1),
-                std::optional<STAmount>(XRP(100000000)));
+                std::optional<STAmount>(XRP(1000000)),
+                std::nullopt,
+                domainID);
             BEAST_EXPECT(sa == XRP(100));
             BEAST_EXPECT(equal(da, Account("bob")["USD"](100)));
         }
     }
 
     void
-    alternative_path_consume_both()
+    alternative_path_consume_both(bool const domainEnabled)
     {
         testcase("alternative path consume both");
         using namespace jtx;
@@ -493,10 +540,26 @@ public:
         env.trust(gw2_USD(800), "alice");
         env.trust(USD(700), "bob");
         env.trust(gw2_USD(900), "bob");
-        env(pay(gw, "alice", USD(70)));
-        env(pay(gw2, "alice", gw2_USD(70)));
-        env(pay("alice", "bob", Account("bob")["USD"](140)),
-            paths(Account("alice")["USD"]));
+
+        std::optional<uint256> domainID;
+        if (domainEnabled)
+        {
+            domainID =
+                setupDomain(env, {"alice", "bob", "gateway", "gateway2"});
+            env(pay(gw, "alice", USD(70)), domain(*domainID));
+            env(pay(gw2, "alice", gw2_USD(70)), domain(*domainID));
+            env(pay("alice", "bob", Account("bob")["USD"](140)),
+                paths(Account("alice")["USD"]),
+                domain(*domainID));
+        }
+        else
+        {
+            env(pay(gw, "alice", USD(70)));
+            env(pay(gw2, "alice", gw2_USD(70)));
+            env(pay("alice", "bob", Account("bob")["USD"](140)),
+                paths(Account("alice")["USD"]));
+        }
+
         env.require(balance("alice", USD(0)));
         env.require(balance("alice", gw2_USD(0)));
         env.require(balance("bob", USD(70)));
@@ -508,7 +571,7 @@ public:
     }
 
     void
-    alternative_paths_consume_best_transfer()
+    alternative_paths_consume_best_transfer(bool const domainEnabled)
     {
         testcase("alternative paths consume best transfer");
         using namespace jtx;
@@ -523,9 +586,22 @@ public:
         env.trust(gw2_USD(800), "alice");
         env.trust(USD(700), "bob");
         env.trust(gw2_USD(900), "bob");
-        env(pay(gw, "alice", USD(70)));
-        env(pay(gw2, "alice", gw2_USD(70)));
-        env(pay("alice", "bob", USD(70)));
+
+        std::optional<uint256> domainID;
+        if (domainEnabled)
+        {
+            domainID =
+                setupDomain(env, {"alice", "bob", "gateway", "gateway2"});
+            env(pay(gw, "alice", USD(70)), domain(*domainID));
+            env(pay(gw2, "alice", gw2_USD(70)), domain(*domainID));
+            env(pay("alice", "bob", USD(70)), domain(*domainID));
+        }
+        else
+        {
+            env(pay(gw, "alice", USD(70)));
+            env(pay(gw2, "alice", gw2_USD(70)));
+            env(pay("alice", "bob", USD(70)));
+        }
         env.require(balance("alice", USD(0)));
         env.require(balance("alice", gw2_USD(70)));
         env.require(balance("bob", USD(70)));
@@ -568,7 +644,8 @@ public:
     }
 
     void
-    alternative_paths_limit_returned_paths_to_best_quality()
+    alternative_paths_limit_returned_paths_to_best_quality(
+        bool const domainEnabled)
     {
         testcase("alternative paths - limit returned paths to best quality");
         using namespace jtx;
@@ -578,21 +655,45 @@ public:
         auto const gw2 = Account("gateway2");
         auto const gw2_USD = gw2["USD"];
         env.fund(XRP(10000), "alice", "bob", "carol", "dan", gw, gw2);
+        env.close();
         env(rate("carol", 1.1));
+        env.close();
         env.trust(Account("carol")["USD"](800), "alice", "bob");
+        env.close();
         env.trust(Account("dan")["USD"](800), "alice", "bob");
+        env.close();
         env.trust(USD(800), "alice", "bob");
+        env.close();
         env.trust(gw2_USD(800), "alice", "bob");
+        env.close();
         env.trust(Account("alice")["USD"](800), "dan");
+        env.close();
         env.trust(Account("bob")["USD"](800), "dan");
+        env.close();
         env(pay(gw2, "alice", gw2_USD(100)));
+        env.close();
         env(pay("carol", "alice", Account("carol")["USD"](100)));
+        env.close();
         env(pay(gw, "alice", USD(100)));
+        env.close();
+
+        std::optional<uint256> domainID;
+        if (domainEnabled)
+        {
+            domainID =
+                setupDomain(env, {"alice", "bob", "carol", "dan", gw, gw2});
+        }
 
         STPathSet st;
         STAmount sa;
-        std::tie(st, sa, std::ignore) =
-            find_paths(env, "alice", "bob", Account("bob")["USD"](5));
+        std::tie(st, sa, std::ignore) = find_paths(
+            env,
+            "alice",
+            "bob",
+            Account("bob")["USD"](5),
+            std::nullopt,
+            std::nullopt,
+            domainID);
         BEAST_EXPECT(same(
             st,
             stpath("gateway"),
@@ -603,7 +704,7 @@ public:
     }
 
     void
-    issues_path_negative_issue()
+    issues_path_negative_issue(bool const domainEnabled)
     {
         testcase("path negative: Issue #5");
         using namespace jtx;
@@ -615,14 +716,35 @@ public:
         env(pay("bob", "carol", Account("bob")["USD"](75)));
         env.require(balance("bob", Account("carol")["USD"](-75)));
         env.require(balance("carol", Account("bob")["USD"](75)));
+        env.close();
 
-        auto result =
-            find_paths(env, "alice", "bob", Account("bob")["USD"](25));
+        std::optional<uint256> domainID;
+        if (domainEnabled)
+        {
+            domainID = setupDomain(env, {"alice", "bob", "carol", "dan"});
+        }
+
+        auto result = find_paths(
+            env,
+            "alice",
+            "bob",
+            Account("bob")["USD"](25),
+            std::nullopt,
+            std::nullopt,
+            domainID);
         BEAST_EXPECT(std::get<0>(result).empty());
 
         env(pay("alice", "bob", Account("alice")["USD"](25)), ter(tecPATH_DRY));
+        env.close();
 
-        result = find_paths(env, "alice", "bob", Account("alice")["USD"](25));
+        result = find_paths(
+            env,
+            "alice",
+            "bob",
+            Account("alice")["USD"](25),
+            std::nullopt,
+            std::nullopt,
+            domainID);
         BEAST_EXPECT(std::get<0>(result).empty());
 
         env.require(balance("alice", Account("bob")["USD"](0)));
@@ -687,7 +809,7 @@ public:
     // bob will hold gateway AUD
     // alice pays bob gateway AUD using XRP
     void
-    via_offers_via_gateway()
+    via_offers_via_gateway(bool const domainEnabled)
     {
         testcase("via gateway");
         using namespace jtx;
@@ -695,16 +817,45 @@ public:
         auto const gw = Account("gateway");
         auto const AUD = gw["AUD"];
         env.fund(XRP(10000), "alice", "bob", "carol", gw);
+        env.close();
         env(rate(gw, 1.1));
+        env.close();
         env.trust(AUD(100), "bob", "carol");
+        env.close();
         env(pay(gw, "carol", AUD(50)));
-        env(offer("carol", XRP(50), AUD(50)));
-        env(pay("alice", "bob", AUD(10)), sendmax(XRP(100)), paths(XRP));
+        env.close();
+
+        std::optional<uint256> domainID;
+        if (domainEnabled)
+        {
+            domainID = setupDomain(env, {"alice", "bob", "carol", gw});
+            env(offer("carol", XRP(50), AUD(50)), domain(*domainID));
+            env.close();
+            env(pay("alice", "bob", AUD(10)),
+                sendmax(XRP(100)),
+                paths(XRP),
+                domain(*domainID));
+            env.close();
+        }
+        else
+        {
+            env(offer("carol", XRP(50), AUD(50)));
+            env.close();
+            env(pay("alice", "bob", AUD(10)), sendmax(XRP(100)), paths(XRP));
+            env.close();
+        }
+
         env.require(balance("bob", AUD(10)));
         env.require(balance("carol", AUD(39)));
 
-        auto const result =
-            find_paths(env, "alice", "bob", Account("bob")["USD"](25));
+        auto const result = find_paths(
+            env,
+            "alice",
+            "bob",
+            Account("bob")["USD"](25),
+            std::nullopt,
+            std::nullopt,
+            domainID);
         BEAST_EXPECT(std::get<0>(result).empty());
     }
 
@@ -1372,7 +1523,7 @@ public:
     }
 
     void
-    receive_max()
+    receive_max(bool const domainEnabled)
     {
         testcase("Receive max");
         using namespace jtx;
@@ -1390,10 +1541,28 @@ public:
             env.close();
             env(pay(gw, charlie, USD(10)));
             env.close();
-            env(offer(charlie, XRP(10), USD(10)));
-            env.close();
-            auto [st, sa, da] =
-                find_paths(env, alice, bob, USD(-1), XRP(100).value());
+
+            std::optional<uint256> domainID;
+            if (domainEnabled)
+            {
+                domainID = setupDomain(env, {alice, bob, charlie, gw});
+                env(offer(charlie, XRP(10), USD(10)), domain(*domainID));
+                env.close();
+            }
+            else
+            {
+                env(offer(charlie, XRP(10), USD(10)));
+                env.close();
+            }
+
+            auto [st, sa, da] = find_paths(
+                env,
+                alice,
+                bob,
+                USD(-1),
+                XRP(100).value(),
+                std::nullopt,
+                domainID);
             BEAST_EXPECT(sa == XRP(10));
             BEAST_EXPECT(equal(da, USD(10)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
@@ -1413,10 +1582,28 @@ public:
             env.close();
             env(pay(gw, alice, USD(10)));
             env.close();
-            env(offer(charlie, USD(10), XRP(10)));
-            env.close();
-            auto [st, sa, da] =
-                find_paths(env, alice, bob, drops(-1), USD(100).value());
+
+            std::optional<uint256> domainID;
+            if (domainEnabled)
+            {
+                domainID = setupDomain(env, {alice, bob, charlie, gw});
+                env(offer(charlie, USD(10), XRP(10)), domain(*domainID));
+                env.close();
+            }
+            else
+            {
+                env(offer(charlie, USD(10), XRP(10)));
+                env.close();
+            }
+
+            auto [st, sa, da] = find_paths(
+                env,
+                alice,
+                bob,
+                drops(-1),
+                USD(100).value(),
+                std::nullopt,
+                domainID);
             BEAST_EXPECT(sa == USD(10));
             BEAST_EXPECT(equal(da, XRP(10)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
@@ -1500,32 +1687,34 @@ public:
         no_direct_path_no_intermediary_no_alternatives();
         direct_path_no_intermediary();
         payment_auto_path_find();
-        path_find();
-        path_find_consume_all();
-        alternative_path_consume_both();
-        alternative_paths_consume_best_transfer();
+        indirect_paths_path_find();
         alternative_paths_consume_best_transfer_first();
-        alternative_paths_limit_returned_paths_to_best_quality();
-        issues_path_negative_issue();
         issues_path_negative_ripple_client_issue_23_smaller();
         issues_path_negative_ripple_client_issue_23_larger();
-        via_offers_via_gateway();
-        indirect_paths_path_find();
         quality_paths_quality_set_and_test();
         trust_auto_clear_trust_normal_clear();
         trust_auto_clear_trust_auto_clear();
-        xrp_to_xrp();
-        receive_max();
         noripple_combinations();
 
-        // The following path_find_NN tests are data driven tests
-        // that were originally implemented in js/coffee and migrated
-        // here. The quantities and currencies used are taken directly from
-        // those legacy tests, which in some cases probably represented
-        // customer use cases.
-
-        for (bool const domainEnabled : {true, false})
+        for (bool const domainEnabled : {false, true})
         {
+            path_find(domainEnabled);
+            path_find_consume_all(domainEnabled);
+            alternative_path_consume_both(domainEnabled);
+            alternative_paths_consume_best_transfer(domainEnabled);
+            alternative_paths_limit_returned_paths_to_best_quality(
+                domainEnabled);
+            issues_path_negative_issue(domainEnabled);
+            via_offers_via_gateway(domainEnabled);
+            xrp_to_xrp(domainEnabled);
+            receive_max(domainEnabled);
+
+            // The following path_find_NN tests are data driven tests
+            // that were originally implemented in js/coffee and migrated
+            // here. The quantities and currencies used are taken directly from
+            // those legacy tests, which in some cases probably represented
+            // customer use cases.
+
             path_find_01(domainEnabled);
             path_find_02(domainEnabled);
             path_find_04(domainEnabled);
