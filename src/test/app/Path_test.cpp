@@ -1719,8 +1719,9 @@ public:
         testcase("Hybrid offer path");
         using namespace jtx;
 
-        // lambda that queries path finding without domain
-        // `func` is a lambda param that creates different types of offers
+        // test cases copied from path_find_05 and ensures path results for
+        // different combinations of open/domain/hybrid offers. `func` is a
+        // lambda param that creates different types of offers
         auto testPathfind = [&](auto func, bool const domainEnabled = false) {
             Env env = pathTestEnv();
             Account A1{"A1"};
