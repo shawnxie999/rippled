@@ -1543,4 +1543,64 @@ ValidPermissionedDomain::finalize(
         (sleStatus_[1] ? check(*sleStatus_[1], j) : true);
 }
 
+void
+ValidPermissionedDEX::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (before && before->getType() != ltOFFER)
+        return;
+    if (after && after->getType() != ltOFFER)
+        return;
+
+    if (!after->isFieldPresent(sfDomainID))
+        regularOfferSize_++;
+
+    if (after->isFlag(lsfHybrid) && !after->isFieldPresent(sfDomainID))
+        badHybrid_++;
+}
+
+bool
+ValidPermissionedDEX::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if ((tx.getTxnType() != ttPAYMENT && tx.getTxnType() != ttOFFER_CREATE) ||
+        result != tesSUCCESS)
+        return true;
+    if (!tx.isFieldPresent(sfDomainID))
+        return true;
+
+    if (tx.getTxnType() == ttPAYMENT && regularOfferSize_ > 0)
+    {
+        JLOG(j.fatal()) << "Invariant failed: permissioned dex payment"
+                           " consumed regular offers";
+        return false;
+    }
+
+    if (tx.getTxnType() == ttOFFER_CREATE)
+    {
+        if (badHybrid_ > 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: hybrid offer is malformed";
+            return false;
+        }
+
+        // domain offercreate can not create a regular offer, nor can it
+        // cross regular offers (even if its a hybrid offer)
+        if (regularOfferSize_ > 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Offer create created or "
+                               "modified regular offers";
+            return false;
+        }
+    }
+
+    return true;
+}
+
 }  // namespace ripple
