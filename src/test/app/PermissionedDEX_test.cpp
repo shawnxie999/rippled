@@ -608,6 +608,11 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 checkOffer(env, bob, regularOfferSeq, XRP(10), USD(10)));
 
+            auto const regularDirKey =
+                getDefaultOfferDirKey(env, bob, regularOfferSeq);
+            BEAST_EXPECT(regularDirKey);
+            BEAST_EXPECT(checkDirectorySize(env, *regularDirKey, 1));
+
             // if trying to make permissioned payment with a normal offer, it
             // fails
             env(pay(alice, carol, USD(10)),
@@ -642,6 +647,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             // domain directory is empty
             BEAST_EXPECT(checkDirectorySize(env, *domainDirKey, 0));
+            BEAST_EXPECT(checkDirectorySize(env, *regularDirKey, 1));
         }
 
         // test domain payment consuming two offers

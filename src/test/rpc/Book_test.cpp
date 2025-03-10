@@ -1835,7 +1835,7 @@ public:
             checkSubBooks(jv);
         }
 
-        // subscribe to open book should return domain offer
+        // subscribe to open book should not return domain offer
         {
             Json::Value books;
             books[jss::books] = Json::arrayValue;
@@ -1859,7 +1859,7 @@ public:
     void
     testTrackHybridOffer()
     {
-        testcase("TrackDomainOffer");
+        testcase("TrackHybridOffer");
         using namespace jtx;
 
         FeatureBitset const all{
