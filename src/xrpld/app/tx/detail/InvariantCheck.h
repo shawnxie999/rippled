@@ -618,9 +618,8 @@ public:
 
 class ValidPermissionedDEX
 {
-
-    std::size_t regularOfferSize_{0};
-    std::size_t badHybrid_{0};
+    std::size_t regularOffers_{0};
+    std::size_t badHybrids_{0};
 
 public:
     void

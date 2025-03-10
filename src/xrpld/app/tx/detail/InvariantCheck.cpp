@@ -1555,10 +1555,10 @@ ValidPermissionedDEX::visitEntry(
         return;
 
     if (!after->isFieldPresent(sfDomainID))
-        regularOfferSize_++;
+        regularOffers_++;
 
     if (after->isFlag(lsfHybrid) && !after->isFieldPresent(sfDomainID))
-        badHybrid_++;
+        badHybrids_++;
 }
 
 bool
@@ -1575,7 +1575,7 @@ ValidPermissionedDEX::finalize(
     if (!tx.isFieldPresent(sfDomainID))
         return true;
 
-    if (tx.getTxnType() == ttPAYMENT && regularOfferSize_ > 0)
+    if (tx.getTxnType() == ttPAYMENT && regularOffers_ > 0)
     {
         JLOG(j.fatal()) << "Invariant failed: permissioned dex payment"
                            " consumed regular offers";
@@ -1584,7 +1584,7 @@ ValidPermissionedDEX::finalize(
 
     if (tx.getTxnType() == ttOFFER_CREATE)
     {
-        if (badHybrid_ > 0)
+        if (badHybrids_ > 0)
         {
             JLOG(j.fatal()) << "Invariant failed: hybrid offer is malformed";
             return false;
@@ -1592,9 +1592,9 @@ ValidPermissionedDEX::finalize(
 
         // domain offercreate can not create a regular offer, nor can it
         // cross regular offers (even if its a hybrid offer)
-        if (regularOfferSize_ > 0)
+        if (regularOffers_ > 0)
         {
-            JLOG(j.fatal()) << "Invariant failed: Offer create created or "
+            JLOG(j.fatal()) << "Invariant failed: offercreate created or "
                                "modified regular offers";
             return false;
         }

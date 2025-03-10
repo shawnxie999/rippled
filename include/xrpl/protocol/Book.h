@@ -23,6 +23,7 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/Issue.h>
 #include <boost/utility/base_from_member.hpp>
+#include "xrpl/basics/base_uint.h"
 
 namespace ripple {
 
@@ -94,7 +95,16 @@ operator<=>(Book const& lhs, Book const& rhs)
         return c;
     if (auto const c{lhs.out <=> rhs.out}; c != 0)
         return c;
-    return *lhs.domain <=> *rhs.domain; //todo: if this is right
+
+    // Manually compare optionals
+    if (lhs.domain && rhs.domain)
+        return *lhs.domain <=> *rhs.domain;  // Compare values if both exist
+    if (!lhs.domain && rhs.domain)
+        return std::weak_ordering::less;  // Empty is considered less
+    if (lhs.domain && !rhs.domain)
+        return std::weak_ordering::greater;  // Non-empty is greater
+
+    return std::weak_ordering::equivalent;  // Both are empty
 }
 /** @} */
 
@@ -138,9 +148,11 @@ template <>
 struct hash<ripple::Book>
 {
 private:
-    using hasher = std::hash<ripple::Issue>;
+    using issue_hasher = std::hash<ripple::Issue>;
+    using uint256_hasher = ripple::uint256::hasher;
 
-    hasher m_hasher;
+    issue_hasher m_issue_hasher;
+    uint256_hasher m_uint256_hasher;
 
 public:
     explicit hash() = default;
@@ -151,8 +163,12 @@ public:
     value_type
     operator()(argument_type const& value) const
     {
-        value_type result(m_hasher(value.in));
-        boost::hash_combine(result, m_hasher(value.out));
+        value_type result(m_issue_hasher(value.in));
+        boost::hash_combine(result, m_issue_hasher(value.out));
+
+        if (value.domain)
+            boost::hash_combine(result, m_uint256_hasher(*value.domain));
+
         return result;
     }
 };
