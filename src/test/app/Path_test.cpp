@@ -530,6 +530,21 @@ public:
                 domainID);
             BEAST_EXPECT(sa == XRP(100));
             BEAST_EXPECT(equal(da, Account("bob")["USD"](100)));
+
+            // if domain is used, finding path in the open offerbook will return
+            // empty result
+            if (domainEnabled)
+            {
+                std::tie(st, sa, da) = find_paths(
+                    env,
+                    "alice",
+                    "bob",
+                    Account("bob")["USD"](-1),
+                    std::optional<STAmount>(XRP(1000000)),
+                    std::nullopt,
+                    std::nullopt);  // not specifying a domain
+                BEAST_EXPECT(st.empty());
+            }
         }
     }
 

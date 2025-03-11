@@ -249,7 +249,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env.close();
         }
 
-        // preclaim
+        // preclaim - someone outside of the domain cannot create domain offer
         {
             Env env(*this, features);
             PermissionedDEX permDex(env);
@@ -287,7 +287,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env.close();
         }
 
-        // preclaim: test expired cred
+        // preclaim - someone with expired cred cannot create domain offer
         {
             Env env(*this, features);
             PermissionedDEX permDex(env);
@@ -370,7 +370,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 checkOffer(env, bob, bobOfferSeq, USD(10), XRP(10), 0, true));
         }
 
-        // apply - offer cross
+        // apply - two domain offers cross with each other
         {
             Env env(*this, features);
             PermissionedDEX permDex(env);
@@ -436,7 +436,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
     {
         testcase("Payment");
 
-        // test preflight
+        // test preflight - without enabling featurePermissionedDEX amendment
         {
             Env env(*this, features - featurePermissionedDEX);
             PermissionedDEX permDex(env);
@@ -463,7 +463,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env.close();
         }
 
-        // preclaim: non-domain destination cannot accept
+        // preclaim - payment with non-domain destination fails
         {
             Env env(*this, features);
             PermissionedDEX permDex(env);
@@ -505,6 +505,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env(credentials::accept(devin, domainOwner, credType));
             env.close();
 
+            // devin can now receive payment after he is in domain
             env(pay(alice, devin, USD(10)),
                 path(~USD),
                 sendmax(XRP(10)),
@@ -512,7 +513,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env.close();
         }
 
-        // preclaim: non-domain sender cannot send
+        // preclaim - non-domain sender cannot send payment
         {
             Env env(*this, features);
             PermissionedDEX permDex(env);
@@ -531,7 +532,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env(pay(gw, devin, USD(100)));
             env.close();
 
-            // devin is not part of domain
+            // devin tries to send domain payment
             env(pay(devin, alice, USD(10)),
                 path(~USD),
                 sendmax(XRP(10)),
@@ -554,6 +555,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env(credentials::accept(devin, domainOwner, credType));
             env.close();
 
+            // devin can now send payment after he is in domain
             env(pay(devin, alice, USD(10)),
                 path(~USD),
                 sendmax(XRP(10)),
@@ -561,7 +563,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env.close();
         }
 
-        // preclaim: non-domain sender cannot send
+        // apply - domain owner can always send and receive domain payment
         {
             Env env(*this, features);
             PermissionedDEX permDex(env);
@@ -595,13 +597,14 @@ class PermissionedDEX_test : public beast::unit_test::suite
     {
         testcase("Book step");
 
-        // test domain payment consuming one offer
+        // test domain cross currency payment consuming one offer
         {
             Env env(*this, features);
             PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
                 permDex;
 
+            // create a regular offer without domain
             auto const regularOfferSeq{env.seq(bob)};
             env(offer(bob, XRP(10), USD(10)));
             env.close();
@@ -613,8 +616,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(regularDirKey);
             BEAST_EXPECT(checkDirectorySize(env, *regularDirKey, 1));
 
-            // if trying to make permissioned payment with a normal offer, it
-            // fails
+            // a domain payment cannot consume regular offers
             env(pay(alice, carol, USD(10)),
                 path(~USD),
                 sendmax(XRP(10)),
@@ -622,6 +624,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 ter(tecPATH_PARTIAL));
             env.close();
 
+            // create a domain offer
             auto const domainOfferSeq{env.seq(bob)};
             env(offer(bob, XRP(10), USD(10)), domain(domainID));
             env.close();
@@ -650,7 +653,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(checkDirectorySize(env, *regularDirKey, 1));
         }
 
-        // test domain payment consuming two offers
+        // test domain payment consuming two offers in the path
         {
             Env env(*this, features);
             PermissionedDEX permDex(env);
@@ -667,6 +670,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env(pay(gw, bob, EUR(100)));
             env.close();
 
+            // create XRP/USD domain offer
             auto const usdOfferSeq{env.seq(bob)};
             env(offer(bob, XRP(10), USD(10)), domain(domainID));
             env.close();
@@ -684,15 +688,15 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 checkOffer(env, bob, usdOfferSeq, XRP(10), USD(10), 0, true));
 
-            // bob creates a regular eur offer
+            // bob creates a regular USD/EUR offer
             auto const regularOfferSeq{env.seq(bob)};
             env(offer(bob, USD(10), EUR(10)));
             env.close();
             BEAST_EXPECT(
                 checkOffer(env, bob, regularOfferSeq, USD(10), EUR(10)));
 
-            // alice tries to pay again, and fails because the regular offer
-            // cannot be consumed
+            // alice tries to pay again, but still fails because the regular
+            // offer cannot be consumed
             env(pay(alice, carol, EUR(10)),
                 path(~USD, ~EUR),
                 sendmax(XRP(10)),
@@ -700,7 +704,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 ter(tecPATH_PARTIAL));
             env.close();
 
-            // bob creates a domain eur offer
+            // bob creates a domain USD/EUR offer
             auto const eurOfferSeq{env.seq(bob)};
             env(offer(bob, USD(10), EUR(10)), domain(domainID));
             env.close();
@@ -714,10 +718,12 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 domain(domainID));
             env.close();
 
-            BEAST_EXPECT(
-                checkOffer(env, bob, regularOfferSeq, USD(10), EUR(10)));
             BEAST_EXPECT(!offerExists(env, bob, usdOfferSeq));
             BEAST_EXPECT(!offerExists(env, bob, eurOfferSeq));
+
+            // regular offer is not consumed
+            BEAST_EXPECT(
+                checkOffer(env, bob, regularOfferSeq, USD(10), EUR(10)));
         }
 
         // domain payment cannot consume offer from another domain
@@ -727,7 +733,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
                 permDex;
 
-            // Fund accounts
+            // Fund devin and create USD trustline
             Account badDomainOwner("badDomainOwner");
             Account devin("devin");
             env.fund(XRP(1000), badDomainOwner, devin);
@@ -748,6 +754,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env.close();
             env(credentials::accept(devin, badDomainOwner, badCredType));
 
+            // devin creates a domain offer in another domain
             env(offer(devin, XRP(10), USD(10)), domain(badDomainID));
             env.close();
 
@@ -766,7 +773,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), 0, true));
 
-            // domain payment can't consume an offer from another domain
+            // domain payment now consumes from the right domain
             env(pay(alice, carol, USD(10)),
                 path(~USD),
                 sendmax(XRP(10)),
@@ -776,8 +783,9 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
         }
 
-        // sanity check: devin, who is part of the domain but doesn't have USD,
-        // can successfully make a payment using offer
+        // sanity check: devin, who is part of the domain but doesn't have a
+        // trustline with USD issuer, can successfully make a payment using
+        // offer
         {
             Env env(*this, features);
             PermissionedDEX permDex(env);
@@ -787,6 +795,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env(offer(bob, XRP(10), USD(10)), domain(domainID));
             env.close();
 
+            // fund devin but don't create a USD trustline with gateway
             Account devin("devin");
             env.fund(XRP(1000), devin);
             env.close();
@@ -829,8 +838,20 @@ class PermissionedDEX_test : public beast::unit_test::suite
         env.close();
 
         // alice can still ripple through bob even though he's not part
-        // of the domain
+        // of the domain, this is intentional
         env(pay(alice, carol, EURB(10)), paths(EURA), domain(domainID));
+        env.close();
+        env.require(balance(bob, EURA(10)), balance(carol, EURB(10)));
+
+        // carol sets no ripple on bob
+        env(trust(carol, bob["EUR"](0), bob, tfSetNoRipple));
+        env.close();
+
+        // payment no longer works because carol has no ripple
+        env(pay(alice, carol, EURB(5)),
+            paths(EURA),
+            domain(domainID),
+            ter(tecPATH_DRY));
         env.close();
         env.require(balance(bob, EURA(10)), balance(carol, EURB(10)));
     }
