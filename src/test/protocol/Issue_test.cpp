@@ -241,6 +241,120 @@ public:
         }
     }
 
+    template <class Set>
+    void
+    testIssueDomainSet()
+    {
+        Currency const c1(1);
+        AccountID const i1(1);
+        Currency const c2(2);
+        AccountID const i2(2);
+        Issue const a1(c1, i1);
+        Issue const a2(c2, i2);
+        uint256 const domain1{1};
+        uint256 const domain2{2};
+
+        Set c;
+
+        c.insert(std::make_pair(a1, domain1));
+        if (!BEAST_EXPECT(c.size() == 1))
+            return;
+        c.insert(std::make_pair(a2, domain1));
+        if (!BEAST_EXPECT(c.size() == 2))
+            return;
+        c.insert(std::make_pair(a2, domain2));
+        if (!BEAST_EXPECT(c.size() == 3))
+            return;
+
+        if (!BEAST_EXPECT(c.erase(std::make_pair(Issue(c1, i2), domain1)) == 0))
+            return;
+        if (!BEAST_EXPECT(c.erase(std::make_pair(a1, domain1)) == 1))
+            return;
+        if (!BEAST_EXPECT(c.erase(std::make_pair(a2, domain1)) == 1))
+            return;
+        if (!BEAST_EXPECT(c.erase(std::make_pair(a2, domain2)) == 1))
+            return;
+        if (!BEAST_EXPECT(c.empty()))
+            return;
+    }
+
+    template <class Map>
+    void
+    testIssueDomainMap()
+    {
+        Currency const c1(1);
+        AccountID const i1(1);
+        Currency const c2(2);
+        AccountID const i2(2);
+        Issue const a1(c1, i1);
+        Issue const a2(c2, i2);
+        uint256 const domain1{1};
+        uint256 const domain2{2};
+
+        Map c;
+
+        c.insert(std::make_pair(std::make_pair(a1, domain1), 1));
+        if (!BEAST_EXPECT(c.size() == 1))
+            return;
+        c.insert(std::make_pair(std::make_pair(a2, domain1), 2));
+        if (!BEAST_EXPECT(c.size() == 2))
+            return;
+        c.insert(std::make_pair(std::make_pair(a2, domain2), 2));
+        if (!BEAST_EXPECT(c.size() == 3))
+            return;
+
+        if (!BEAST_EXPECT(c.erase(std::make_pair(Issue(c1, i2), domain1)) == 0))
+            return;
+        if (!BEAST_EXPECT(c.erase(std::make_pair(a1, domain1)) == 1))
+            return;
+        if (!BEAST_EXPECT(c.erase(std::make_pair(a2, domain1)) == 1))
+            return;
+        if (!BEAST_EXPECT(c.erase(std::make_pair(a2, domain2)) == 1))
+            return;
+        if (!BEAST_EXPECT(c.empty()))
+            return;
+    }
+
+    void
+    testIssueDomainSets()
+    {
+        testcase("std::set <std::pair<Issue, Domain>>");
+        testIssueDomainSet<std::set<std::pair<Issue, Domain>>>();
+
+        testcase("std::set <std::pair<Issue, Domain>>");
+        testIssueDomainSet<std::set<std::pair<Issue, Domain>>>();
+
+        testcase("hash_set <std::pair<Issue, Domain>>");
+        testIssueDomainSet<hash_set<std::pair<Issue, Domain>>>();
+
+        testcase("hash_set <std::pair<Issue, Domain>>");
+        testIssueDomainSet<hash_set<std::pair<Issue, Domain>>>();
+    }
+
+    void
+    testIssueDomainMaps()
+    {
+        testcase("std::map <std::pair<Issue, Domain>, int>");
+        testIssueDomainMap<std::map<std::pair<Issue, Domain>, int>>();
+
+        testcase("std::map <std::pair<Issue, Domain>, int>");
+        testIssueDomainMap<std::map<std::pair<Issue, Domain>, int>>();
+
+#if RIPPLE_ASSETS_ENABLE_STD_HASH
+        testcase("hash_map <std::pair<Issue, Domain>, int>");
+        testIssueDomainMap<hash_map<std::pair<Issue, Domain>, int>>();
+
+        testcase("hash_map <std::pair<Issue, Domain>, int>");
+        testIssueDomainMap<hash_map<std::pair<Issue, Domain>, int>>();
+
+        testcase("hardened_hash_map <std::pair<Issue, Domain>, int>");
+        testIssueDomainMap<hardened_hash_map<std::pair<Issue, Domain>, int>>();
+
+        testcase("hardened_hash_map <std::pair<Issue, Domain>, int>");
+        testIssueDomainMap<hardened_hash_map<std::pair<Issue, Domain>, int>>();
+#endif
+    }
+
     void
     testIssueSets()
     {
@@ -821,6 +935,10 @@ public:
 
         testBookSets();
         testBookMaps();
+
+        // ---
+        testIssueDomainSets();
+        testIssueDomainMaps();
     }
 };
 
