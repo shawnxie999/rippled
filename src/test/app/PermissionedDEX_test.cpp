@@ -1142,6 +1142,9 @@ class PermissionedDEX_test : public beast::unit_test::suite
     {
         testcase("Hybrid invalid offer");
 
+        // bob has a hybrid offer and then he is removed from domain.
+        // in this case, the hybrid offer will be considered as unfunded even in
+        // a regular payment
         Env env(*this, features);
         PermissionedDEX permDex(env);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
@@ -1151,9 +1154,11 @@ class PermissionedDEX_test : public beast::unit_test::suite
         env(offer(bob, XRP(50), USD(50)), txflags(tfHybrid), domain(domainID));
         env.close();
 
+        // remove bob from domain
         env(credentials::deleteCred(domainOwner, bob, domainOwner, credType));
         env.close();
 
+        // hybrid offer can not be consumed in a domain payment
         env(pay(alice, carol, USD(5)),
             path(~USD),
             sendmax(XRP(5)),
@@ -1163,7 +1168,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
         BEAST_EXPECT(checkOffer(
             env, bob, hybridOfferSeq, XRP(50), USD(50), lsfHybrid, true));
 
-        // hybrid offer can't be consumed since bob is not in domain anymore
+        // hybrid offer can't be consumed even with a regular payment
         env(pay(alice, carol, USD(5)),
             path(~USD),
             sendmax(XRP(5)),
@@ -1366,6 +1371,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
             auto const sleOffer = env.le(keylet::offer(bob.id(), bobOfferSeq));
             BEAST_EXPECT(sleOffer);
             BEAST_EXPECT(sleOffer->getFieldH256(sfBookDirectory) == domainDir);
+            BEAST_EXPECT(
+                sleOffer->getFieldArray(sfAdditionalBooks).size() == 1);
             BEAST_EXPECT(
                 sleOffer->getFieldArray(sfAdditionalBooks)[0].getFieldH256(
                     sfBookDirectory) == openDir);
