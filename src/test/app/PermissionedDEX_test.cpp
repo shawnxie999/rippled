@@ -847,7 +847,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
         env(trust(carol, bob["EUR"](0), bob, tfSetNoRipple));
         env.close();
 
-        // payment no longer works because carol has no ripple
+        // payment no longer works because carol has no ripple on bob
         env(pay(alice, carol, EURB(5)),
             paths(EURA),
             domain(domainID),
@@ -861,17 +861,19 @@ class PermissionedDEX_test : public beast::unit_test::suite
     {
         testcase("Offer token issuer in domain");
 
+        // whether the issuer is in the domain should NOT affect whether an
+        // offer can be consumed in domain payment
         Env env(*this, features);
         PermissionedDEX permDex(env);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
             permDex;
 
-        // create an offer with usd as takergets
+        // create an xrp/usd offer with usd as takergets
         auto const bobOffer1Seq{env.seq(bob)};
         env(offer(bob, XRP(10), USD(10)), domain(domainID));
         env.close();
 
-        // create an offer with usd as takerpays
+        // create an usd/xrp offer with usd as takerpays
         auto const bobOffer2Seq{env.seq(bob)};
         env(offer(bob, USD(10), XRP(10)), domain(domainID), txflags(tfPassive));
         env.close();
@@ -885,7 +887,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         env(credentials::deleteCred(domainOwner, gw, domainOwner, credType));
         env.close();
 
-        // payment fails since gateway is not in domain
+        // payment succeeds even if issuer is not in domain
+        // xrp/usd offer is consumed
         env(pay(alice, carol, USD(10)),
             path(~USD),
             sendmax(XRP(10)),
@@ -893,6 +896,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         env.close();
         BEAST_EXPECT(!offerExists(env, bob, bobOffer1Seq));
 
+        // payment succeeds even if issuer is not in domain
+        // usd/xrp offer is consumed
         env(pay(alice, carol, XRP(10)),
             path(~XRP),
             sendmax(USD(10)),
@@ -906,6 +911,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
     {
         testcase("Remove unfunded offer");
 
+        // checking that an unfunded offer will be implictly removed by a
+        // successfuly payment tx
         Env env(*this, features);
         PermissionedDEX permDex(env);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
@@ -928,7 +935,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
         BEAST_EXPECT(domainDirKey);
         BEAST_EXPECT(checkDirectorySize(env, *domainDirKey, 2));
 
-        // remove alice from domain
+        // remove alice from domain and thus alice's offer becomes unfunded
         env(credentials::deleteCred(domainOwner, alice, domainOwner, credType));
         env.close();
 

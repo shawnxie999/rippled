@@ -22,6 +22,7 @@
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Issue.h>
 #include <map>
+#include <optional>
 #include <set>
 #include <sys/types.h>
 #include <typeinfo>
@@ -450,6 +451,7 @@ public:
             // Both Books have the same domain
             BEAST_EXPECT(Book(a2, a3, domain1) == Book(a2, a3, domain1));
             BEAST_EXPECT(Book(a2, a3, domain2) == Book(a2, a3, domain2));
+            BEAST_EXPECT(Book(a2, a3) == Book(a2, a3, std::nullopt));
 
             // Both Books have no domain
             BEAST_EXPECT(
@@ -549,6 +551,7 @@ public:
             hash(Book(a2, a4, domain1)) == hash(Book(a2, a4, domain1)));
         BEAST_EXPECT(
             hash(Book(a3, a4, domain1)) == hash(Book(a3, a4, domain1)));
+        BEAST_EXPECT(hash(Book(a1, a2)) == hash(Book(a1, a2, std::nullopt)));
 
         // Comparing Books with domain1 vs no domain
         BEAST_EXPECT(hash(Book(a1, a2)) != hash(Book(a1, a2, domain1)));
