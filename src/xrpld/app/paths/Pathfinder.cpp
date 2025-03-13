@@ -374,7 +374,7 @@ Pathfinder::getPathLiquidity(
             mDstAccount,
             mSrcAccount,
             pathSet,
-            mDomain,  // TODO: change to domain
+            mDomain,
             app_.logs(),
             &rcInput);
         // If we can't get even the minimum liquidity requested, we're done.
@@ -395,7 +395,7 @@ Pathfinder::getPathLiquidity(
                 mDstAccount,
                 mSrcAccount,
                 pathSet,
-                mDomain,  // TODO: change to domain
+                mDomain,
                 app_.logs(),
                 &rcInput);
 
@@ -435,7 +435,7 @@ Pathfinder::computePathRanks(
             mDstAccount,
             mSrcAccount,
             STPathSet(),
-            mDomain,  // TODO: change to domain
+            mDomain,
             app_.logs(),
             &rcInput);
 

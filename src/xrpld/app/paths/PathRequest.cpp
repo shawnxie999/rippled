@@ -596,7 +596,7 @@ PathRequest::findPaths(
             *raDstAccount,  // --> Account to deliver to.
             *raSrcAccount,  // --> Account sending from.
             ps,             // --> Path set.
-            domain,         // TODO: change to domain
+            domain,         // --> Domain.
             app_.logs(),
             &rcInput);
 
@@ -617,7 +617,7 @@ PathRequest::findPaths(
                 *raDstAccount,  // --> Account to deliver to.
                 *raSrcAccount,  // --> Account sending from.
                 ps,             // --> Path set.
-                domain,         // TODO: change to domain
+                domain,         // --> Domain.
                 app_.logs());
 
             if (rc.result() != tesSUCCESS)
