@@ -811,6 +811,98 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env(pay(devin, alice, USD(10)), sendmax(XRP(10)), domain(domainID));
             env.close();
         }
+
+        // offer becomes unfunded when offer owner's cred expires
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            // create devin account who is not part of the domain
+            Account devin("devin");
+            env.fund(XRP(1000), devin);
+            env.close();
+            env.trust(USD(1000), devin);
+            env.close();
+            env(pay(gw, devin, USD(100)));
+            env.close();
+
+            auto jv = credentials::create(devin, domainOwner, credType);
+            uint32_t const t = env.current()
+                                   ->info()
+                                   .parentCloseTime.time_since_epoch()
+                                   .count();
+            jv[sfExpiration.jsonName] = t + 20;
+            env(jv);
+
+            env(credentials::accept(devin, domainOwner, credType));
+            env.close();
+
+            // devin can still create offer while his cred is not expired
+            auto const offerSeq{env.seq(devin)};
+            env(offer(devin, XRP(10), USD(10)), domain(domainID));
+            env.close();
+
+            // devin's offer can still be consumed while his cred isn't expired
+            env(pay(alice, carol, USD(5)),
+                path(~USD),
+                sendmax(XRP(5)),
+                domain(domainID));
+            env.close();
+            BEAST_EXPECT(
+                checkOffer(env, devin, offerSeq, XRP(5), USD(5), 0, true));
+
+            // advance time
+            env.close();
+            env.close();
+
+            // devin's offer is unfunded now due to expired cred
+            env(pay(alice, carol, USD(5)),
+                path(~USD),
+                sendmax(XRP(5)),
+                domain(domainID),
+                ter(tecPATH_PARTIAL));
+            env.close();
+            BEAST_EXPECT(
+                checkOffer(env, devin, offerSeq, XRP(5), USD(5), 0, true));
+        }
+
+        // offer becomes unfunded when offer owner's cred is removed
+        {
+            Env env(*this, features);
+            PermissionedDEX permDex(env);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                permDex;
+
+            auto const offerSeq{env.seq(bob)};
+            env(offer(bob, XRP(10), USD(10)), domain(domainID));
+            env.close();
+
+            // bob's offer can still be consumed while his cred exists
+            env(pay(alice, carol, USD(5)),
+                path(~USD),
+                sendmax(XRP(5)),
+                domain(domainID));
+            env.close();
+            BEAST_EXPECT(
+                checkOffer(env, bob, offerSeq, XRP(5), USD(5), 0, true));
+
+            // remove bob's cred
+            env(credentials::deleteCred(
+                domainOwner, bob, domainOwner, credType));
+            env.close();
+
+            // bob's offer is unfunded now due to expired cred
+            env(pay(alice, carol, USD(5)),
+                path(~USD),
+                sendmax(XRP(5)),
+                domain(domainID),
+                ter(tecPATH_PARTIAL));
+            env.close();
+            BEAST_EXPECT(
+                checkOffer(env, bob, offerSeq, XRP(5), USD(5), 0, true));
+        }
     }
 
     void
