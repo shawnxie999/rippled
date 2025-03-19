@@ -1206,13 +1206,31 @@ public:
 
         STPathSet st;
         STAmount sa, da;
-
         auto const& send_amt = XRP(10);
-        std::tie(st, sa, da) = find_paths(
-            env, A1, A2, send_amt, std::nullopt, A2["ABC"].currency, domainID);
-        BEAST_EXPECT(equal(da, send_amt));
-        BEAST_EXPECT(equal(sa, A1["ABC"](1)));
-        BEAST_EXPECT(same(st, stpath(G3, IPE(xrpIssue()))));
+
+        {
+            std::tie(st, sa, da) = find_paths(
+                env,
+                A1,
+                A2,
+                send_amt,
+                std::nullopt,
+                A2["ABC"].currency,
+                domainID);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["ABC"](1)));
+            BEAST_EXPECT(same(st, stpath(G3, IPE(xrpIssue()))));
+        }
+
+        // domain offer will not be considered in pathfinding for non-domain
+        // paths
+        if (domainEnabled)
+        {
+            std::tie(st, sa, da) = find_paths(
+                env, A1, A2, send_amt, std::nullopt, A2["ABC"].currency);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(st.empty());
+        }
     }
 
     void
