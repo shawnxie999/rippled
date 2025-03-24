@@ -1122,9 +1122,8 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
 
     if (sle->isFlag(lsfHybrid))
     {
-        XRPL_ASSERT(
-            sle->isFieldPresent(sfDomainID),
-            "ripple::offerDelete : missing domainID");
+        if (!sle->isFieldPresent(sfDomainID))
+            Throw<std::logic_error>("Missing domainID on hybrid offer");
 
         auto const& additionalBookDirs = sle->getFieldArray(sfAdditionalBooks);
 
