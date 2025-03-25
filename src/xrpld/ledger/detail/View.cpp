@@ -1123,7 +1123,7 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
     if (sle->isFlag(lsfHybrid))
     {
         if (!sle->isFieldPresent(sfDomainID))
-            Throw<std::logic_error>("Missing domainID on hybrid offer");
+            return tefINTERNAL;
 
         auto const& additionalBookDirs = sle->getFieldArray(sfAdditionalBooks);
 
