@@ -349,7 +349,6 @@ UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement, OBJECT, 31)
 UNTYPED_SFIELD(sfPriceData,              OBJECT,    32)
 UNTYPED_SFIELD(sfCredential,             OBJECT,    33)
 
-
 // array of objects (common)
 // ARRAY/1 is reserved for end of array
 // sfSigningAccounts has never been used.

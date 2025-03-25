@@ -238,25 +238,20 @@ LEDGER_ENTRY(ltBRIDGE, 0x0069, Bridge, bridge, ({
 
     \sa keylet::offer
  */
-LEDGER_ENTRY(
-    ltOFFER,
-    0x006f,
-    Offer,
-    offer,
-    ({
-        {sfAccount, soeREQUIRED},
-        {sfSequence, soeREQUIRED},
-        {sfTakerPays, soeREQUIRED},
-        {sfTakerGets, soeREQUIRED},
-        {sfBookDirectory, soeREQUIRED},
-        {sfBookNode, soeREQUIRED},
-        {sfOwnerNode, soeREQUIRED},
-        {sfPreviousTxnID, soeREQUIRED},
-        {sfPreviousTxnLgrSeq, soeREQUIRED},
-        {sfExpiration, soeOPTIONAL},
-        {sfDomainID, soeOPTIONAL},
-        {sfAdditionalBooks, soeOPTIONAL},
-    }))
+LEDGER_ENTRY(ltOFFER, 0x006f, Offer, offer, ({
+    {sfAccount,              soeREQUIRED},
+    {sfSequence,             soeREQUIRED},
+    {sfTakerPays,            soeREQUIRED},
+    {sfTakerGets,            soeREQUIRED},
+    {sfBookDirectory,        soeREQUIRED},
+    {sfBookNode,             soeREQUIRED},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+    {sfExpiration,           soeOPTIONAL},
+    {sfDomainID,             soeOPTIONAL},
+    {sfAdditionalBooks,      soeOPTIONAL},
+}))
 
 /** A ledger object which describes a deposit preauthorization.
 
