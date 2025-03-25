@@ -855,7 +855,6 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         return !ammOffer || execOffer(*ammOffer);
     };
 
-    // todo: exlude domain from amm
     if (offers.step())
     {
         if (tryAMM(offers.tip().quality()))

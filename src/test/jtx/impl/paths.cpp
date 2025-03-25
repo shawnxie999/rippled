@@ -42,7 +42,7 @@ paths::operator()(Env& env, JTx& jt) const
         in_.account,
         amount,
         std::nullopt,
-        std::nullopt,  // todo: should support domain?
+        std::nullopt,
         env.app());
     if (!pf.findPaths(depth_))
         return;

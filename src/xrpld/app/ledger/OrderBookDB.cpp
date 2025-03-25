@@ -264,8 +264,7 @@ OrderBookDB::isBookToXRP(Issue const& issue, std::optional<Domain> domain)
 }
 
 BookListeners::pointer
-OrderBookDB::makeBookListeners(
-    Book const& book)  // todo: make sure the hashing works
+OrderBookDB::makeBookListeners(Book const& book)
 {
     std::lock_guard sl(mLock);
     auto ret = getBookListeners(book);
@@ -328,9 +327,7 @@ OrderBookDB::processTxn(
                         auto listeners = getBookListeners(
                             {data->getFieldAmount(sfTakerGets).issue(),
                              data->getFieldAmount(sfTakerPays).issue(),
-                             (*data)[~sfDomainID]});  // todo: make sure the
-                                                      // hashing works with
-                                                      // Book's hash_append
+                             (*data)[~sfDomainID]});
                         if (listeners)
                             listeners->publish(jvObj, havePublished);
                     }
