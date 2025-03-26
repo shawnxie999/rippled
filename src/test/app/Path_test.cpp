@@ -2080,7 +2080,7 @@ public:
     void
     amm_domain_path()
     {
-        testcase("AMM not used");
+        testcase("AMM not used in domain path");
         using namespace jtx;
         Env env = pathTestEnv();
         PermissionedDEX permDex(env);
