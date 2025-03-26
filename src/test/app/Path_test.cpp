@@ -42,6 +42,10 @@
 #include <optional>
 #include <string>
 #include <thread>
+
+#include <test/jtx/AMM.h>
+#include <test/jtx/AMMTest.h>
+
 namespace ripple {
 namespace test {
 
@@ -2074,6 +2078,33 @@ public:
     }
 
     void
+    amm_domain_path()
+    {
+        testcase("AMM not used");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        PermissionedDEX permDex(env);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            permDex;
+        AMM amm(env, alice, XRP(10), USD(50));
+
+        STPathSet st;
+        STAmount sa, da;
+
+        auto const& send_amt = XRP(1);
+
+        // doing pathfind with domain won't include amm
+        std::tie(st, sa, da) = find_paths(
+            env, bob, carol, send_amt, std::nullopt, USD.currency, domainID);
+        BEAST_EXPECT(st.empty());
+
+        // a non-domain pathfind returns amm in the path
+        std::tie(st, sa, da) =
+            find_paths(env, bob, carol, send_amt, std::nullopt, USD.currency);
+        BEAST_EXPECT(same(st, stpath(gw, IPE(xrpIssue()))));
+    }
+
+    void
     run() override
     {
         source_currencies_limit();
@@ -2116,6 +2147,7 @@ public:
         }
 
         hybrid_offer_path();
+        amm_domain_path();
     }
 };
 
