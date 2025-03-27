@@ -152,7 +152,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
     }
 
     uint256
-    getOfferDirKey(
+    getBookDirKey(
         Book const& book,
         STAmount const& takerPays,
         STAmount const& takerGets)
@@ -1446,8 +1446,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         Book domainBook{Issue(XRP), Issue(USD), domainID};
         Book openBook{Issue(XRP), Issue(USD)};
 
-        auto const domainDir = getOfferDirKey(domainBook, XRP(10), USD(10));
-        auto const openDir = getOfferDirKey(openBook, XRP(10), USD(10));
+        auto const domainDir = getBookDirKey(domainBook, XRP(10), USD(10));
+        auto const openDir = getBookDirKey(openBook, XRP(10), USD(10));
 
         size_t dirCnt = 100;
 
