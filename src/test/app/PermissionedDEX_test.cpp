@@ -194,19 +194,6 @@ class PermissionedDEX_test : public beast::unit_test::suite
         return dirCnt == dirSize;
     }
 
-    [[nodiscard]] bool
-    checkDirectorySizes(
-        Env const& env,
-        std::vector<std::pair<uint256, std::uint32_t>> const& dirSizes)
-    {
-        for (auto const& dirSize : dirSizes)
-        {
-            if (!checkDirectorySize(env, dirSize.first, dirSize.second))
-                return false;
-        }
-        return true;
-    }
-
     void
     testOfferCreate(FeatureBitset features)
     {
