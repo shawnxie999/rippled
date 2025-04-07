@@ -33,6 +33,16 @@ paths::operator()(Env& env, JTx& jt) const
     auto const from = env.lookup(jv[jss::Account].asString());
     auto const to = env.lookup(jv[jss::Destination].asString());
     auto const amount = amountFromJson(sfAmount, jv[jss::Amount]);
+
+    std::optional<uint256> domain;
+    if (jv.isMember(sfDomainID.jsonName))
+    {
+        uint256 num;
+        auto const s = jv[sfDomainID.jsonName].asString();
+        if (num.parseHex(s))
+            domain = num;
+    }
+
     Pathfinder pf(
         std::make_shared<RippleLineCache>(
             env.current(), env.app().journal("RippleLineCache")),
@@ -42,7 +52,7 @@ paths::operator()(Env& env, JTx& jt) const
         in_.account,
         amount,
         std::nullopt,
-        std::nullopt,
+        domain,
         env.app());
     if (!pf.findPaths(depth_))
         return;

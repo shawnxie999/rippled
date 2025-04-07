@@ -712,10 +712,23 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 checkOffer(env, bob, eurOfferSeq, USD(10), EUR(10), 0, true));
 
             // alice successfully consume two domain offers: xrp/usd and usd/eur
-            env(pay(alice, carol, EUR(10)),
-                path(~USD, ~EUR),
-                sendmax(XRP(10)),
-                domain(domainID));
+            env(pay(alice, carol, EUR(5)),
+                sendmax(XRP(5)),
+                domain(domainID),
+                path(~USD, ~EUR));
+            env.close();
+
+            BEAST_EXPECT(
+                checkOffer(env, bob, usdOfferSeq, XRP(5), USD(5), 0, true));
+            BEAST_EXPECT(
+                checkOffer(env, bob, eurOfferSeq, USD(5), EUR(5), 0, true));
+
+            // alice successfully consume two domain offers and deletes them
+            // we compute path this time using `paths`
+            env(pay(alice, carol, EUR(5)),
+                sendmax(XRP(5)),
+                domain(domainID),
+                paths(XRP));
             env.close();
 
             BEAST_EXPECT(!offerExists(env, bob, usdOfferSeq));
