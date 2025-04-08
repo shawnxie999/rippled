@@ -202,9 +202,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // test preflight
         {
             Env env(*this, features - featurePermissionedDEX);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             env(offer(bob, XRP(10), USD(10)),
                 domain(domainID),
@@ -221,9 +220,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // flowcross
         {
             Env env(*this, features - featureFlowCross);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             env(offer(bob, XRP(10), USD(10)),
                 domain(domainID),
@@ -239,9 +237,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // preclaim - someone outside of the domain cannot create domain offer
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             // create devin account who is not part of the domain
             Account devin("devin");
@@ -277,9 +274,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // preclaim - someone with expired cred cannot create domain offer
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             // create devin account who is not part of the domain
             Account devin("devin");
@@ -321,9 +317,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // domain
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             env(credentials::deleteCred(
                 domainOwner, gw, domainOwner, credType));
@@ -341,9 +336,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // domain
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             env(credentials::deleteCred(
                 domainOwner, gw, domainOwner, credType));
@@ -360,9 +354,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // apply - two domain offers cross with each other
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             auto const bobOfferSeq{env.seq(bob)};
             env(offer(bob, XRP(10), USD(10)), domain(domainID));
@@ -391,9 +384,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // apply - create lots of domain offers
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             std::vector<std::uint32_t> offerSeqs;
             offerSeqs.reserve(100);
@@ -426,9 +418,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // test preflight - without enabling featurePermissionedDEX amendment
         {
             Env env(*this, features - featurePermissionedDEX);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             env(pay(bob, alice, USD(10)),
                 path(~USD),
@@ -453,9 +444,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // preclaim - payment with non-domain destination fails
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             env(offer(bob, XRP(10), USD(10)), domain(domainID));
             env.close();
@@ -503,9 +493,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // preclaim - non-domain sender cannot send payment
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             env(offer(bob, XRP(10), USD(10)), domain(domainID));
             env.close();
@@ -553,9 +542,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // apply - domain owner can always send and receive domain payment
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             env(offer(bob, XRP(10), USD(10)), domain(domainID));
             env.close();
@@ -587,9 +575,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // test domain cross currency payment consuming one offer
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             // create a regular offer without domain
             auto const regularOfferSeq{env.seq(bob)};
@@ -643,9 +630,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // test domain payment consuming two offers in the path
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             auto const EUR = gw["EUR"];
             env.trust(EUR(1000), alice);
@@ -729,9 +715,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // domain payment cannot consume offer from another domain
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             // Fund devin and create USD trustline
             Account badDomainOwner("badDomainOwner");
@@ -788,9 +773,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // offer
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             env(offer(bob, XRP(10), USD(10)), domain(domainID));
             env.close();
@@ -815,9 +799,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // offer becomes unfunded when offer owner's cred expires
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             // create devin account who is not part of the domain
             Account devin("devin");
@@ -871,9 +854,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // offer becomes unfunded when offer owner's cred is removed
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             auto const offerSeq{env.seq(bob)};
             env(offer(bob, XRP(10), USD(10)), domain(domainID));
@@ -914,9 +896,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // payment. If the domain wishes to control who is allowed to ripple
         // through, they should set the rippling individually
         Env env(*this, features);
-        PermissionedDEX permDex(env);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-            permDex;
+            PermissionedDEX(env);
 
         auto const EURA = alice["EUR"];
         auto const EURB = bob["EUR"];
@@ -956,9 +937,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // whether the issuer is in the domain should NOT affect whether an
         // offer can be consumed in domain payment
         Env env(*this, features);
-        PermissionedDEX permDex(env);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-            permDex;
+            PermissionedDEX(env);
 
         // create an xrp/usd offer with usd as takergets
         auto const bobOffer1Seq{env.seq(bob)};
@@ -1006,9 +986,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // checking that an unfunded offer will be implictly removed by a
         // successfuly payment tx
         Env env(*this, features);
-        PermissionedDEX permDex(env);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-            permDex;
+            PermissionedDEX(env);
 
         auto const aliceOfferSeq{env.seq(alice)};
         env(offer(alice, XRP(100), USD(100)), domain(domainID));
@@ -1051,9 +1030,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         testcase("AMM not used");
 
         Env env(*this, features);
-        PermissionedDEX permDex(env);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-            permDex;
+            PermissionedDEX(env);
         AMM amm(env, alice, XRP(10), USD(50));
 
         // a domain payment isn't able to consume AMM
@@ -1080,9 +1058,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // test preflight - invalid hybrid flag
         {
             Env env(*this, features - featurePermissionedDEX);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             env(offer(bob, XRP(10), USD(10)),
                 domain(domainID),
@@ -1117,9 +1094,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // apply - domain offer can cross with hybrid
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             auto const bobOfferSeq{env.seq(bob)};
             env(offer(bob, XRP(10), USD(10)),
@@ -1144,9 +1120,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // apply - open offer can cross with hybrid
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             auto const bobOfferSeq{env.seq(bob)};
             env(offer(bob, XRP(10), USD(10)),
@@ -1172,9 +1147,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // domain book
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             auto const bobOfferSeq{env.seq(bob)};
             env(offer(bob, XRP(10), USD(10)), domain(domainID));
@@ -1200,9 +1174,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // because by default, it only tries to cross domain offers
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             auto const bobOfferSeq{env.seq(bob)};
             env(offer(bob, XRP(10), USD(10)));
@@ -1238,9 +1211,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // in this case, the hybrid offer will be considered as unfunded even in
         // a regular payment
         Env env(*this, features);
-        PermissionedDEX permDex(env);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-            permDex;
+            PermissionedDEX(env);
 
         auto const hybridOfferSeq{env.seq(bob)};
         env(offer(bob, XRP(50), USD(50)), txflags(tfHybrid), domain(domainID));
@@ -1293,9 +1265,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // both non domain and domain payments can consume hybrid offer
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             auto const hybridOfferSeq{env.seq(bob)};
             env(offer(bob, XRP(10), USD(10)),
@@ -1322,9 +1293,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // wrong domainID
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             // Fund accounts
             Account badDomainOwner("badDomainOwner");
@@ -1378,9 +1348,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // test domain payment consuming two offers w/ hybrid offer
         {
             Env env(*this, features);
-            PermissionedDEX permDex(env);
             auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                permDex;
+                PermissionedDEX(env);
 
             auto const EUR = gw["EUR"];
             env.trust(EUR(1000), alice);
@@ -1436,9 +1405,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
     testHybridOfferDirectories(FeatureBitset features)
     {
         Env env(*this, features);
-        PermissionedDEX permDex(env);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-            permDex;
+            PermissionedDEX(env);
 
         std::vector<std::uint32_t> offerSeqs;
         offerSeqs.reserve(100);
