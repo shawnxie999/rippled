@@ -1042,10 +1042,11 @@ class PermissionedDEX_test : public beast::unit_test::suite
             ter(tecPATH_PARTIAL));
         env.close();
 
-        // a non domain payment can
+        // a non domain payment can use AMM
         env(pay(bob, carol, USD(5)), path(~USD), sendmax(XRP(5)));
         env.close();
 
+        // USD amount in AMM is changed
         auto [xrp, usd, lpt] = amm.balances(XRP, USD);
         BEAST_EXPECT(usd == USD(45));
     }
@@ -1396,6 +1397,49 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             BEAST_EXPECT(
                 checkOffer(env, bob, usdOfferSeq, XRP(5), USD(5), 0, true));
+            BEAST_EXPECT(checkOffer(
+                env, bob, eurOfferSeq, USD(5), EUR(5), lsfHybrid, true));
+        }
+
+        // test regular payment using a regular offer and a hybrid offer
+        {
+            Env env(*this, features);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            auto const EUR = gw["EUR"];
+            env.trust(EUR(1000), alice);
+            env.close();
+            env.trust(EUR(1000), bob);
+            env.close();
+            env.trust(EUR(1000), carol);
+            env.close();
+            env(pay(gw, bob, EUR(100)));
+            env.close();
+
+            // bob creates a regular usd offer
+            auto const usdOfferSeq{env.seq(bob)};
+            env(offer(bob, XRP(10), USD(10)));
+            env.close();
+
+            BEAST_EXPECT(
+                checkOffer(env, bob, usdOfferSeq, XRP(10), USD(10), 0, false));
+
+            // bob creates a hybrid eur offer
+            auto const eurOfferSeq{env.seq(bob)};
+            env(offer(bob, USD(10), EUR(10)),
+                domain(domainID),
+                txflags(tfHybrid));
+            env.close();
+            BEAST_EXPECT(checkOffer(
+                env, bob, eurOfferSeq, USD(10), EUR(10), lsfHybrid, true));
+
+            // alice successfully consume two offers: xrp/usd and usd/eur
+            env(pay(alice, carol, EUR(5)), path(~USD, ~EUR), sendmax(XRP(5)));
+            env.close();
+
+            BEAST_EXPECT(
+                checkOffer(env, bob, usdOfferSeq, XRP(5), USD(5), 0, false));
             BEAST_EXPECT(checkOffer(
                 env, bob, eurOfferSeq, USD(5), EUR(5), lsfHybrid, true));
         }

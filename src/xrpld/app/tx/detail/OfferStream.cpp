@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/tx/detail/OfferStream.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
@@ -290,7 +291,7 @@ TOfferStreamBase<TIn, TOut>::step()
         }
 
         if (entry->isFieldPresent(sfDomainID) &&
-            !offerInDomain(
+            !permissionedDEX::offerInDomain(
                 view_, entry->key(), entry->getFieldH256(sfDomainID)))
         {
             JLOG(j_.trace())
