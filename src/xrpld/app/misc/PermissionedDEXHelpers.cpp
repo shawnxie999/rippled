@@ -49,7 +49,7 @@ accountInDomain(
             if (!sleCred->isFlag(lsfAccepted))
                 return false;
 
-            return !credentials::isExpired(
+            return !credentials::checkExpired(
                 sleCred, view.info().parentCloseTime);
         });
 

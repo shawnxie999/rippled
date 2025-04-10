@@ -23,12 +23,14 @@
 namespace ripple {
 namespace permissionedDEX {
 
+// Check if an account is in a permissioned domain
 [[nodiscard]] bool
 accountInDomain(
     ReadView const& view,
     AccountID const& account,
     uint256 const& domainID);
 
+// Check if an offer is in the permissioned domain
 [[nodiscard]] bool
 offerInDomain(
     ReadView const& view,
