@@ -620,6 +620,7 @@ class ValidPermissionedDEX
 {
     std::size_t regularOffers_{0};
     std::size_t badHybrids_{0};
+    std::vector<uint256> domains_;
 
 public:
     void

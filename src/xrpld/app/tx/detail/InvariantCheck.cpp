@@ -1554,7 +1554,9 @@ ValidPermissionedDEX::visitEntry(
     if (after && after->getType() != ltOFFER)
         return;
 
-    if (!after->isFieldPresent(sfDomainID))
+    if (after->isFieldPresent(sfDomainID))
+        domains_.emplace_back(after->getFieldH256(sfDomainID));
+    else
         regularOffers_++;
 
     if (after->isFlag(lsfHybrid) && !after->isFieldPresent(sfDomainID))
@@ -1574,6 +1576,24 @@ ValidPermissionedDEX::finalize(
         return true;
     if (!tx.isFieldPresent(sfDomainID))
         return true;
+
+    auto const domain = tx.getFieldH256(sfDomainID);
+
+    if (!view.exists(keylet::permissionedDomain(domain)))
+    {
+        JLOG(j.fatal()) << "Invariant failed: domain doesn't exist";
+        return false;
+    }
+
+    for (auto const d : domains_)
+    {
+        if (d != domain)
+        {
+            JLOG(j.fatal()) << "Invariant failed: permissioned dex payment"
+                               " consumed wrong domains";
+            return false;
+        }
+    }
 
     if (tx.getTxnType() == ttPAYMENT && regularOffers_ > 0)
     {
