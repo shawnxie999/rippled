@@ -1549,22 +1549,27 @@ ValidPermissionedDEX::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
-    if (before && before->getType() != ltOFFER)
-        return;
-    if (after && after->getType() != ltOFFER)
-        return;
+    if (after && after->getType() == ltDIR_NODE)
+    {
+        if (after->isFieldPresent(sfDomainID))
+            domains_.insert(after->getFieldH256(sfDomainID));
+    }
 
-    if (after->isFieldPresent(sfDomainID))
-        domains_.emplace_back(after->getFieldH256(sfDomainID));
-    else
-        regularOffers_++;
+    if (after && after->getType() == ltOFFER)
+    {
+        if (after->isFieldPresent(sfDomainID))
+            domains_.insert(after->getFieldH256(sfDomainID));
+        else
+            regularOffers_++;
 
-    // if a hybrid offer is missing domain or additional book, there's
-    // something wrong
-    if (after->isFlag(lsfHybrid) &&
-        (!after->isFieldPresent(sfDomainID) ||
-         !after->isFieldPresent(sfAdditionalBooks)))
-        badHybrids_++;
+        // if a hybrid offer is missing domain or additional book, there's
+        // something wrong
+        if (after->isFlag(lsfHybrid) &&
+            (!after->isFieldPresent(sfDomainID) ||
+             !after->isFieldPresent(sfAdditionalBooks) ||
+             after->getFieldArray(sfAdditionalBooks).size() > 1))
+            badHybrids_++;
+    }
 }
 
 bool

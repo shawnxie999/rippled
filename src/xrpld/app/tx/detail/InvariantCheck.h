@@ -28,6 +28,7 @@
 
 #include <cstdint>
 #include <tuple>
+#include <unordered_set>
 
 namespace ripple {
 
@@ -620,7 +621,7 @@ class ValidPermissionedDEX
 {
     std::size_t regularOffers_{0};
     std::size_t badHybrids_{0};
-    std::vector<uint256> domains_;
+    std::unordered_set<uint256> domains_;
 
 public:
     void
