@@ -47,9 +47,34 @@
 #include <vector>
 namespace ripple {
 namespace test {
+using namespace jtx;
 
 class TrustlineAuth_test : public jtx::AMMTest
 {
+    [[nodiscard]] bool
+    offerExists(Env const& env, Account const& account, std::uint32_t offerSeq)
+    {
+        return static_cast<bool>(env.le(keylet::offer(account.id(), offerSeq)));
+    }
+
+    [[nodiscard]] bool
+    checkOffer(
+        Env const& env,
+        Account const& account,
+        std::uint32_t offerSeq,
+        STAmount const& takerPays,
+        STAmount const& takerGets)
+    {
+        auto const sle = env.le(keylet::offer(account.id(), offerSeq));
+        if (!sle)
+            return false;
+        if (sle->getFieldAmount(sfTakerGets) != takerGets)
+            return false;
+        if (sle->getFieldAmount(sfTakerPays) != takerPays)
+            return false;
+        return true;
+    }
+
     void
     testUnauthLPTokenRippling(FeatureBitset features)
     {
@@ -62,7 +87,6 @@ class TrustlineAuth_test : public jtx::AMMTest
         Env env(*this, features - featureAMMClawback);
         env.fund(XRP(1000), gw, alice, carol, bob);
         env(fset(gw, asfRequireAuth));
-        env(rate(gw, 1.25));
         env.close();
 
         // gateway authorizes alice
@@ -83,10 +107,10 @@ class TrustlineAuth_test : public jtx::AMMTest
         authAndFund(bob, "BTC");
         authAndFund(carol, "USD");
 
-        AMM ammAlice(env, alice, USD(20'000), BTC(0.5));
+        AMM ammAlice(env, alice, USD(20'000), BTC(10'000));
 
         // bob single side deposits with BTC
-        ammAlice.deposit(bob, BTC(10));
+        ammAlice.deposit(bob, BTC(1000));
 
         // carol single side deposits with USD
         ammAlice.deposit(carol, USD(2000));
@@ -94,9 +118,9 @@ class TrustlineAuth_test : public jtx::AMMTest
         // increase limit for lptoken lines so that they can transfer lptokens
         // to each other
         auto const lpIssue = ammAlice.lptIssue();
-        env.trust(STAmount{lpIssue, 500}, alice);
-        env.trust(STAmount{lpIssue, 500}, bob);
-        env.trust(STAmount{lpIssue, 500}, carol);
+        env.trust(STAmount{lpIssue, 50000000}, alice);
+        env.trust(STAmount{lpIssue, 50000000}, bob);
+        env.trust(STAmount{lpIssue, 50000000}, carol);
         env.close();
 
         env.enableFeature(featureAMMClawback);
@@ -168,6 +192,192 @@ class TrustlineAuth_test : public jtx::AMMTest
         executeLPTokenPayments(tesSUCCESS);
     }
 
+    void
+    testUnauthLPTokenOffers(FeatureBitset features)
+    {
+        testcase("Unauthorized LPToken offers");
+
+        using namespace jtx;
+
+        // temporarily disable AMMClawback to allow single side deposit without
+        // owning one of the assets
+        // temporarily disable fixEnforceTrustlineAuth
+        // to allow creation of unauthorized offers
+        Env env(*this, features - featureAMMClawback - fixEnforceTrustlineAuth);
+        env.fund(XRP(1000), gw, alice, carol, bob);
+        env(fset(gw, asfRequireAuth));
+        env.close();
+
+        // gateway authorizes account
+        auto authAndFund = [&](Account const& account,
+                               std::string const currency) {
+            env(trust(gw, account[currency](100'000)), txflags(tfSetfAuth));
+            env(trust(account, gw[currency](100'000)));
+            env.close();
+            env(pay(gw, account, gw[currency](30'000)));
+            env.close();
+        };
+
+        // carol has BTC line but not USD line
+        // bob has USD line but not BTC line
+        // alice has both USD and BTC line
+        authAndFund(alice, "BTC");
+        authAndFund(alice, "USD");
+        authAndFund(bob, "BTC");
+        authAndFund(carol, "USD");
+
+        AMM ammAlice(env, alice, USD(20'000), BTC(10'000));
+
+        // bob single side deposits with BTC
+        ammAlice.deposit(bob, BTC(1000));
+
+        // carol single side deposits with USD
+        ammAlice.deposit(carol, USD(2000));
+
+        // increase limit for lptoken lines so that they can transfer lptokens
+        // to each other
+        auto const lpIssue = ammAlice.lptIssue();
+        env.trust(STAmount{lpIssue, 50000000}, alice);
+        env.trust(STAmount{lpIssue, 50000000}, bob);
+        env.trust(STAmount{lpIssue, 50000000}, carol);
+        env.close();
+
+        env.enableFeature(featureAMMClawback);
+        env.close();
+
+        auto carolOfferSeq{env.seq(carol)};
+        env(offer(carol, XRP(10), STAmount{lpIssue, 10}), txflags(tfPassive));
+        env.close();
+        BEAST_EXPECT(checkOffer(
+            env, carol, carolOfferSeq, XRP(10), STAmount{lpIssue, 10}));
+
+        auto bobOfferSeq{env.seq(bob)};
+        env(offer(bob, STAmount{lpIssue, 10}, XRP(5)), txflags(tfPassive));
+        env.close();
+        BEAST_EXPECT(
+            checkOffer(env, bob, bobOfferSeq, STAmount{lpIssue, 10}, XRP(5)));
+
+        bool enforceLineAuth = features[fixEnforceTrustlineAuth];
+        if (enforceLineAuth)
+        {
+            env.enableFeature(fixEnforceTrustlineAuth);
+            env.close();
+        }
+
+        auto const checkOfferCrossing = [&]() {
+            if (!enforceLineAuth)
+            {
+                auto aliceOfferSeq{env.seq(alice)};
+                env(offer(alice, STAmount{lpIssue, 10}, XRP(10)));
+                env.close();
+
+                // alice's offer crossed with carol's even though carol's
+                // offer is unfunded
+                BEAST_EXPECT(!offerExists(env, carol, carolOfferSeq));
+                BEAST_EXPECT(!offerExists(env, alice, aliceOfferSeq));
+
+                aliceOfferSeq = env.seq(alice);
+                env(offer(alice, XRP(5), STAmount{lpIssue, 10}));
+                env.close();
+
+                // alice's offer crossed with bob's even though bob's offer
+                // is unfunded
+                BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
+                BEAST_EXPECT(!offerExists(env, alice, aliceOfferSeq));
+            }
+            else
+            {
+                BEAST_EXPECT(checkOffer(
+                    env, carol, carolOfferSeq, XRP(10), STAmount{lpIssue, 10}));
+
+                auto aliceOfferSeq{env.seq(alice)};
+                env(offer(alice, STAmount{lpIssue, 10}, XRP(10)));
+                env.close();
+
+                // unfunded offer is removed
+                BEAST_EXPECT(!offerExists(env, carol, carolOfferSeq));
+                BEAST_EXPECT(checkOffer(
+                    env, alice, aliceOfferSeq, STAmount{lpIssue, 10}, XRP(10)));
+
+                aliceOfferSeq = env.seq(alice);
+                env(offer(alice, XRP(5), STAmount{lpIssue, 10}));
+                env.close();
+
+                // unfunded offer is removed
+                BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
+                BEAST_EXPECT(checkOffer(
+                    env, alice, aliceOfferSeq, XRP(5), STAmount{lpIssue, 10}));
+            }
+        };
+
+        // Test when LPT holder doesn't own a trustline for an asset associated
+        // with the LPToken
+        checkOfferCrossing();
+
+        // bob and carol create trustlines for the assets that they are
+        // missing.
+        // HOWEVER, they are still unauthorized!
+        env(trust(bob, gw["USD"](100'000)));
+        env(trust(carol, gw["BTC"](100'000)));
+        env.close();
+
+        // Recreate offers for bob and carol if fixEnforceTrustlineAuth is
+        // disabled, since these two offers have been consumed by the
+        // previous test
+        if (!enforceLineAuth)
+        {
+            carolOfferSeq = env.seq(carol);
+            env(offer(carol, XRP(10), STAmount{lpIssue, 10}),
+                txflags(tfPassive));
+            env.close();
+            BEAST_EXPECT(checkOffer(
+                env, carol, carolOfferSeq, XRP(10), STAmount{lpIssue, 10}));
+
+            bobOfferSeq = env.seq(bob);
+            env(offer(bob, STAmount{lpIssue, 10}, XRP(5)), txflags(tfPassive));
+            env.close();
+            BEAST_EXPECT(checkOffer(
+                env, bob, bobOfferSeq, STAmount{lpIssue, 10}, XRP(5)));
+        }
+
+        // Test when LPT holder has an "unauthorized" trustline for an asset
+        // associated with the LPToken
+        checkOfferCrossing();
+
+        // // Test when LPT holder has an "unauthorized" trustline for an asset
+        // // associated with the LPToken
+        // {
+        //     // With fixEnforceTrustlineAuth, payments fail if the LPToken
+        //     // holder does not have a trustline of one of the assets
+        //     auto code = enforceLineAuth ? ter(tecNO_AUTH) : ter(tesSUCCESS);
+
+        //     env(pay(bob, alice, STAmount{lpIssue, 10}),
+        //         txflags(tfPartialPayment),
+        //         sendmax(XRP(10)),
+        //         code);
+        //     env.close();
+
+        //     env(pay(carol, alice, XRP(5)),
+        //         txflags(tfPartialPayment),
+        //         sendmax(STAmount{lpIssue, 10}),
+        //         code);
+        //     env.close();
+
+        //     if (enforceLineAuth)
+        //     {
+        //         // with fixEnforceTrustlineAuth, offers fails to be consumed
+        //         // since they are unfunded
+        //         BEAST_EXPECT(offerExists(env, carol, carolOfferSeq));
+        //         BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+        //     }
+        //     else
+        //     {
+        //         BEAST_EXPECT(!offerExists(env, carol, carolOfferSeq));
+        //         BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
+        //     }
+        // }
+    }
+
 public:
     void
     run() override
@@ -178,6 +388,9 @@ public:
         for (auto const features : {all, all - fixEnforceTrustlineAuth})
         {
             testUnauthLPTokenRippling(features);
+            testUnauthLPTokenOffers(features);
+
+            // TODO: add tests for AMM with MPTs after it is supported
         }
     }
 };
