@@ -893,6 +893,13 @@ sharesToAssetsWithdraw(
 bool
 after(NetClock::time_point now, std::uint32_t mark);
 
+TER
+checkLPTokenAuthorization(
+    ReadView const& view,
+    AccountID const& src,
+    AccountID const& dst,
+    Currency const& currency);
+
 }  // namespace ripple
 
 #endif

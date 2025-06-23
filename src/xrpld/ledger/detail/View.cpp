@@ -2893,7 +2893,7 @@ rippleUnlockEscrowMPT(
             JLOG(j.error())
                 << "rippleUnlockEscrowMPT: MPToken not found for " << receiver;
             return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
-        }  // LCOV_EXCL_STOP
+        }                                // LCOV_EXCL_STOP
 
         auto current = sle->getFieldU64(sfMPTAmount);
         auto delta = amount.mpt().value();
@@ -2984,6 +2984,65 @@ bool
 after(NetClock::time_point now, std::uint32_t mark)
 {
     return now.time_since_epoch().count() > mark;
+}
+
+TER
+checkLPTokenAuthorization(
+    ReadView const& view,
+    AccountID const& src,
+    AccountID const& dst,
+    Currency const& currency)
+{
+    auto const checkAuth = [&view](AccountID const& acct) -> TER {
+        if (auto const sleAcct = view.read(keylet::account(acct));
+            sleAcct && sleAcct->isFieldPresent(sfAMMID))
+        {
+            auto const sleAmm = view.read(keylet::amm((*sleAcct)[sfAMMID]));
+            if (!sleAmm)
+                return tecINTERNAL;
+
+            auto const asset1 = (*sleAmm)[sfAsset];
+            if (!isXRP(asset1))
+            {
+            }
+            return tesSUCCESS;
+        }
+    };
+
+    // if (auto const sleDst = view.read(keylet::account(dst));
+    //     sleDst && sleDst->isFieldPresent(sfAMMID))
+    // {
+    //     auto const sleAmm = view.read(keylet::amm((*sleDst)[sfAMMID]));
+    //     if (!sleAmm)
+    //         return tecINTERNAL;
+
+    //     if (auto const ter = checkRequireAuth(view, (*sleAmm)[sfAsset], src);
+    //         ter != tesSUCCESS)
+    //         return ter;
+
+    //     if (auto const ter = checkRequireAuth(view, (*sleAmm)[sfAsset2],
+    //     src);
+    //         ter != tesSUCCESS)
+    //         return ter;
+    // }
+    // else if (auto const sleSrc = view.read(keylet::account(src));
+    //          sleSrc && sleSrc->isFieldPresent(sfAMMID))
+    // {
+    //     auto const sleAmm = view.read(keylet::amm((*sleSrc)[sfAMMID]));
+    //     if (!sleAmm)
+    //         return tecINTERNAL;
+
+    //     if (auto const ter = checkRequireAuth(view, (*sleAmm)[sfAsset], dst);
+    //         ter != tesSUCCESS)
+    //         return ter;
+
+    //     if (auto const ter = checkRequireAuth(view, (*sleAmm)[sfAsset2],
+    //     dst);
+    //         ter != tesSUCCESS)
+    //         return ter;
+    // }
+
+    return tesSUCCESS;
 }
 
 }  // namespace ripple
