@@ -896,9 +896,8 @@ after(NetClock::time_point now, std::uint32_t mark);
 TER
 checkLPTokenAuthorization(
     ReadView const& view,
-    AccountID const& src,
-    AccountID const& dst,
-    Currency const& currency);
+    AccountID const& acct,
+    uint256 const& ammID);
 
 }  // namespace ripple
 

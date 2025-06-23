@@ -29,6 +29,8 @@
 
 #include <boost/container/flat_set.hpp>
 
+#include "xrpl/protocol/TER.h"
+
 #include <numeric>
 #include <sstream>
 
@@ -906,9 +908,36 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
     // pure issue/redeem can't be frozen
     if (!(ctx.isLast && ctx.isFirst))
     {
-        auto const ter = checkFreeze(ctx.view, src_, dst_, currency_);
-        if (ter != tesSUCCESS)
+        if (TER const& ter = checkFreeze(ctx.view, src_, dst_, currency_);
+            ter != tesSUCCESS)
             return ter;
+
+        // if LPToken is transferred, check the account is authorized for both
+        // assets in the pool
+        if (ctx.view.rules().enabled(fixEnforceTrustlineAuth))
+        {
+            auto const sleDst = ctx.view.read(keylet::account(dst_));
+
+            if (sleDst->isFieldPresent(sfAMMID) &&
+                sleSrc->isFieldPresent(sfAMMID))
+                return temBAD_PATH;
+
+            if (sleDst->isFieldPresent(sfAMMID))
+            {
+                if (auto const ter = checkLPTokenAuthorization(
+                        ctx.view, src_, sleDst->getFieldH256(sfAMMID));
+                    !isTesSuccess(ter))
+                    return ter;
+            }
+
+            if (sleSrc->isFieldPresent(sfAMMID))
+            {
+                if (auto const ter = checkLPTokenAuthorization(
+                        ctx.view, dst_, sleSrc->getFieldH256(sfAMMID));
+                    !isTesSuccess(ter))
+                    return ter;
+            }
+        }
     }
 
     // If previous step was a direct step then we need to check

@@ -37,6 +37,8 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/st.h>
 
+#include "xrpl/basics/base_uint.h"
+
 #include <type_traits>
 #include <variant>
 
@@ -433,6 +435,26 @@ accountHolds(
                             account,
                             (*sleAmm)[sfAsset].get<Issue>(),
                             (*sleAmm)[sfAsset2].get<Issue>()))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            // check if the account is authorized to own both assets for the
+            // lptoken.
+            if (view.rules().enabled(fixEnforceTrustlineAuth))
+            {
+                auto const sleIssuer = view.read(keylet::account(issuer));
+                if (!sleIssuer)
+                {
+                    return false;  // LCOV_EXCL_LINE
+                }
+                else if (sleIssuer->isFieldPresent(sfAMMID))
+                {
+                    if (checkLPTokenAuthorization(
+                            view, account, sleIssuer->getFieldH256(sfAMMID)) !=
+                        tesSUCCESS)
                     {
                         return false;
                     }
@@ -2989,58 +3011,32 @@ after(NetClock::time_point now, std::uint32_t mark)
 TER
 checkLPTokenAuthorization(
     ReadView const& view,
-    AccountID const& src,
-    AccountID const& dst,
-    Currency const& currency)
+    AccountID const& acct,
+    uint256 const& ammID)
 {
-    auto const checkAuth = [&view](AccountID const& acct) -> TER {
-        if (auto const sleAcct = view.read(keylet::account(acct));
-            sleAcct && sleAcct->isFieldPresent(sfAMMID))
-        {
-            auto const sleAmm = view.read(keylet::amm((*sleAcct)[sfAMMID]));
-            if (!sleAmm)
-                return tecINTERNAL;
+    auto const sleAcct = view.read(keylet::account(acct));
+    if (sleAcct && sleAcct->isFieldPresent(sfAMMID))
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            auto const asset1 = (*sleAmm)[sfAsset];
-            if (!isXRP(asset1))
-            {
-            }
+    auto const sleAmm = view.read(keylet::amm(ammID));
+    if (!sleAmm)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const checkAsset = [&view, &acct](Asset const& asset) -> TER {
+        if (isXRP(asset))
             return tesSUCCESS;
-        }
+
+        if (asset.holds<Issue>())
+            return requireAuth(view, asset.get<Issue>(), acct);
+
+        return requireAuth(
+            view, asset.get<MPTIssue>(), acct, MPTAuthType::StrongAuth);
     };
 
-    // if (auto const sleDst = view.read(keylet::account(dst));
-    //     sleDst && sleDst->isFieldPresent(sfAMMID))
-    // {
-    //     auto const sleAmm = view.read(keylet::amm((*sleDst)[sfAMMID]));
-    //     if (!sleAmm)
-    //         return tecINTERNAL;
-
-    //     if (auto const ter = checkRequireAuth(view, (*sleAmm)[sfAsset], src);
-    //         ter != tesSUCCESS)
-    //         return ter;
-
-    //     if (auto const ter = checkRequireAuth(view, (*sleAmm)[sfAsset2],
-    //     src);
-    //         ter != tesSUCCESS)
-    //         return ter;
-    // }
-    // else if (auto const sleSrc = view.read(keylet::account(src));
-    //          sleSrc && sleSrc->isFieldPresent(sfAMMID))
-    // {
-    //     auto const sleAmm = view.read(keylet::amm((*sleSrc)[sfAMMID]));
-    //     if (!sleAmm)
-    //         return tecINTERNAL;
-
-    //     if (auto const ter = checkRequireAuth(view, (*sleAmm)[sfAsset], dst);
-    //         ter != tesSUCCESS)
-    //         return ter;
-
-    //     if (auto const ter = checkRequireAuth(view, (*sleAmm)[sfAsset2],
-    //     dst);
-    //         ter != tesSUCCESS)
-    //         return ter;
-    // }
+    if (TER const& res = checkAsset((*sleAmm)[sfAsset]); !isTesSuccess(res))
+        return res;
+    if (TER const& res = checkAsset((*sleAmm)[sfAsset2]); !isTesSuccess(res))
+        return res;
 
     return tesSUCCESS;
 }

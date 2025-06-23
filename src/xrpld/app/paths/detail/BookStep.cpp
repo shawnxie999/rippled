@@ -758,6 +758,16 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 strandSrc_, strandDst_, offer, ofrQ, offers, offerAttempted))
             return true;
 
+        auto const removeOffer = [&]() {
+            // Offer owner not authorized to hold IOU from issuer.
+            // Remove this offer even if no crossing occurs.
+            if (auto const key = offer.key())
+                offers.permRmOffer(*key);
+            if (!offerAttempted)
+                // Change quality only if no previous offers were tried.
+                ofrQ = std::nullopt;
+        };
+
         // Make sure offer owner has authorization to own IOUs from issuer.
         // An account can always own XRP or their own IOUs.
         if (flowCross && (!isXRP(offer.issueIn().currency)) &&
@@ -777,16 +787,45 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
                 if (!line || (((*line)[sfFlags] & authFlag) == 0))
                 {
-                    // Offer owner not authorized to hold IOU from issuer.
-                    // Remove this offer even if no crossing occurs.
-                    if (auto const key = offer.key())
-                        offers.permRmOffer(*key);
-                    if (!offerAttempted)
-                        // Change quality only if no previous offers were tried.
-                        ofrQ = std::nullopt;
-                    // Returning true causes offers.step() to delete the offer.
+                    removeOffer();
+                    // Returning true causes offers.step() to delete the
+                    // offer.
                     return true;
                 }
+            }
+        }
+
+        if (sb.rules().enabled(fixEnforceTrustlineAuth))
+        {
+            bool badAuth = false;
+
+            if (auto const sleAcct =
+                    afView.read(keylet::account(offer.issueIn().account));
+                sleAcct->isFieldPresent(sfAMMID) &&
+                offer.owner() != offer.issueIn().account)
+            {
+                if (auto const ter = checkLPTokenAuthorization(
+                        afView, offer.owner(), sleAcct->getFieldH256(sfAMMID));
+                    !isTesSuccess(ter))
+                    badAuth = true;
+            }
+
+            if (auto const sleAcct =
+                    afView.read(keylet::account(offer.issueOut().account));
+                sleAcct->isFieldPresent(sfAMMID) &&
+                offer.owner() != offer.issueOut().account)
+            {
+                if (auto const ter = checkLPTokenAuthorization(
+                        afView, offer.owner(), sleAcct->getFieldH256(sfAMMID));
+                    !isTesSuccess(ter))
+                    badAuth = true;
+            }
+
+            if (badAuth)
+            {
+                removeOffer();
+                // Returning true causes offers.step() to delete the offer.
+                return true;
             }
         }
 
