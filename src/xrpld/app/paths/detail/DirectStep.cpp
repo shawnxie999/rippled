@@ -905,22 +905,21 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         return terNO_ACCOUNT;
     }
 
-    // pure issue/redeem can't be frozen
     if (!(ctx.isLast && ctx.isFirst))
     {
+        // pure issue/redeem can't be frozen
         if (TER const& ter = checkFreeze(ctx.view, src_, dst_, currency_);
             ter != tesSUCCESS)
             return ter;
 
-        // if LPToken is transferred, check the account is authorized for both
-        // assets in the pool
+        // not possible for an AMM account to be part of pure issue/redeem
         if (ctx.view.rules().enabled(fixEnforceTrustlineAuth))
         {
             auto const sleDst = ctx.view.read(keylet::account(dst_));
 
             if (sleDst->isFieldPresent(sfAMMID) &&
                 sleSrc->isFieldPresent(sfAMMID))
-                return temBAD_PATH;
+                return temBAD_PATH;  // LCOV_EXCL_LINE
 
             if (sleDst->isFieldPresent(sfAMMID))
             {

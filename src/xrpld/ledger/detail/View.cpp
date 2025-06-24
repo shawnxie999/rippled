@@ -3022,20 +3022,13 @@ checkLPTokenAuthorization(
     if (!sleAmm)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const checkAsset = [&view, &acct](Asset const& asset) -> TER {
-        if (isXRP(asset))
-            return tesSUCCESS;
-
-        if (asset.holds<Issue>())
-            return requireAuth(view, asset.get<Issue>(), acct);
-
-        return requireAuth(
-            view, asset.get<MPTIssue>(), acct, MPTAuthType::StrongAuth);
-    };
-
-    if (TER const& res = checkAsset((*sleAmm)[sfAsset]); !isTesSuccess(res))
+    if (TER const& res = requireAuth(
+            view, (*sleAmm)[sfAsset], acct, MPTAuthType::StrongAuth);
+        !isTesSuccess(res))
         return res;
-    if (TER const& res = checkAsset((*sleAmm)[sfAsset2]); !isTesSuccess(res))
+    if (TER const& res = requireAuth(
+            view, (*sleAmm)[sfAsset2], acct, MPTAuthType::StrongAuth);
+        !isTesSuccess(res))
         return res;
 
     return tesSUCCESS;
