@@ -1331,7 +1331,13 @@ ValidClawback::finalize(
             STAmount const& amount = tx.getFieldAmount(sfAmount);
             AccountID const& holder = amount.getIssuer();
             STAmount const holderBalance = accountHolds(
-                view, holder, amount.getCurrency(), issuer, fhIGNORE_FREEZE, j);
+                view,
+                holder,
+                amount.getCurrency(),
+                issuer,
+                fhIGNORE_FREEZE,
+                ahIGNORE_AUTH,
+                j);
 
             if (holderBalance.signum() < 0)
             {
@@ -1842,6 +1848,7 @@ ValidAMM::finalizeCreate(
             tx[sfAmount].get<Issue>(),
             tx[sfAmount2].get<Issue>(),
             fhIGNORE_FREEZE,
+            ahIGNORE_AUTH,
             j);
         // Create invariant:
         // sqrt(amount * amount2) == LPTokens
@@ -1907,6 +1914,7 @@ ValidAMM::generalInvariant(
         tx[sfAsset].get<Issue>(),
         tx[sfAsset2].get<Issue>(),
         fhIGNORE_FREEZE,
+        ahIGNORE_AUTH,
         j);
     // Deposit and Withdrawal invariant:
     // sqrt(amount * amount2) >= LPTokens

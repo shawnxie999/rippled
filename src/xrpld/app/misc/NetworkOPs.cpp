@@ -72,6 +72,8 @@
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/steady_timer.hpp>
 
+#include "xrpld/ledger/View.h"
+
 #include <algorithm>
 #include <exception>
 #include <mutex>
@@ -3313,6 +3315,7 @@ NetworkOPsImp::transJson(
                 account,
                 amount,
                 fhIGNORE_FREEZE,
+                ahIGNORE_AUTH,
                 app_.journal("View"));
             jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }
@@ -4529,6 +4532,7 @@ NetworkOPsImp::getBookPage(
                             book.out.currency,
                             book.out.account,
                             fhZERO_IF_FROZEN,
+                            ahZERO_IF_UNAUTHORIZED,
                             viewJ);
 
                         if (saOwnerFunds < beast::zero)
@@ -4679,7 +4683,8 @@ NetworkOPsImp::getBookPage(
                         uOfferOwnerID,
                         book.out.currency,
                         book.out.account,
-                        fhZERO_IF_FROZEN);
+                        fhZERO_IF_FROZEN,
+                        ahZERO_IF_UNAUTHORIZED);
 
                     if (saOwnerFunds.isNegative())
                     {

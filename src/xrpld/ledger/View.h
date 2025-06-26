@@ -237,6 +237,7 @@ accountHolds(
     Currency const& currency,
     AccountID const& issuer,
     FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
     beast::Journal j);
 
 [[nodiscard]] STAmount
@@ -245,6 +246,7 @@ accountHolds(
     AccountID const& account,
     Issue const& issue,
     FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
     beast::Journal j);
 
 [[nodiscard]] STAmount
@@ -276,6 +278,7 @@ accountFunds(
     AccountID const& id,
     STAmount const& saDefault,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     beast::Journal j);
 
 // Return the account's liquid (not reserved) XRP.  Generally prefer

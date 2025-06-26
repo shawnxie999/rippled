@@ -30,6 +30,7 @@
 #include <boost/container/flat_set.hpp>
 
 #include "xrpl/protocol/TER.h"
+#include "xrpld/ledger/View.h"
 
 #include <numeric>
 #include <sstream>
@@ -477,8 +478,8 @@ template <class TDerived>
 std::pair<IOUAmount, DebtDirection>
 DirectStepI<TDerived>::maxPaymentFlow(ReadView const& sb) const
 {
-    auto const srcOwed = toAmount<IOUAmount>(
-        accountHolds(sb, src_, currency_, dst_, fhIGNORE_FREEZE, j_));
+    auto const srcOwed = toAmount<IOUAmount>(accountHolds(
+        sb, src_, currency_, dst_, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_));
 
     if (srcOwed.signum() > 0)
         return {srcOwed, DebtDirection::redeems};
@@ -497,8 +498,8 @@ DirectStepI<TDerived>::debtDirection(ReadView const& sb, StrandDirection dir)
     if (dir == StrandDirection::forward && cache_)
         return cache_->srcDebtDir;
 
-    auto const srcOwed =
-        accountHolds(sb, src_, currency_, dst_, fhIGNORE_FREEZE, j_);
+    auto const srcOwed = accountHolds(
+        sb, src_, currency_, dst_, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
     return srcOwed.signum() > 0 ? DebtDirection::redeems
                                 : DebtDirection::issues;
 }
@@ -908,7 +909,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
     if (!(ctx.isLast && ctx.isFirst))
     {
         // pure issue/redeem can't be frozen
-        if (TER const& ter = checkFreeze(ctx.view, src_, dst_, currency_);
+        if (TER const ter = checkFreeze(ctx.view, src_, dst_, currency_);
             ter != tesSUCCESS)
             return ter;
 
@@ -923,7 +924,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
 
             if (sleDst->isFieldPresent(sfAMMID))
             {
-                if (auto const ter = checkLPTokenAuthorization(
+                if (TER const ter = checkLPTokenAuthorization(
                         ctx.view, src_, sleDst->getFieldH256(sfAMMID));
                     !isTesSuccess(ter))
                     return ter;
@@ -931,12 +932,22 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
 
             if (sleSrc->isFieldPresent(sfAMMID))
             {
-                if (auto const ter = checkLPTokenAuthorization(
+                if (TER const ter = checkLPTokenAuthorization(
                         ctx.view, dst_, sleSrc->getFieldH256(sfAMMID));
                     !isTesSuccess(ter))
                     return ter;
             }
         }
+    }
+
+    if (ctx.view.rules().enabled(fixEnforceTrustlineAuth))
+    {
+        if (TER const ter = requireAuth(ctx.view, Issue{currency_, src_}, dst_);
+            ter == tecNO_AUTH)
+            return ter;
+        if (TER const ter = requireAuth(ctx.view, Issue{currency_, dst_}, src_);
+            ter == tecNO_AUTH)
+            return ter;
     }
 
     // If previous step was a direct step then we need to check
@@ -965,8 +976,8 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
                 return temBAD_PATH_LOOP;
             }
 
-            // This is OK if the previous step is a book step that outputs this
-            // issue
+            // This is OK if the previous step is a book step that outputs
+            // this issue
             if (auto book = ctx.prevStep->bookStepBook())
             {
                 if (book->out != srcIssue)

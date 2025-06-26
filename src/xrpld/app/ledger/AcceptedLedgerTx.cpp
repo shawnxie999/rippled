@@ -24,6 +24,8 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
+#include "xrpld/ledger/View.h"
+
 namespace ripple {
 
 AcceptedLedgerTx::AcceptedLedgerTx(
@@ -70,6 +72,7 @@ AcceptedLedgerTx::AcceptedLedgerTx(
                 account,
                 amount,
                 fhIGNORE_FREEZE,
+                ahIGNORE_AUTH,
                 beast::Journal{beast::Journal::getNullSink()});
             mJson[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }

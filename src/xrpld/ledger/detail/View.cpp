@@ -391,6 +391,7 @@ accountHolds(
     Currency const& currency,
     AccountID const& issuer,
     FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
     beast::Journal j)
 {
     STAmount amount;
@@ -441,9 +442,8 @@ accountHolds(
                 }
             }
 
-            // check if the account is authorized to own both assets for the
-            // lptoken.
-            if (view.rules().enabled(fixEnforceTrustlineAuth))
+            if (view.rules().enabled(fixEnforceTrustlineAuth) &&
+                zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
             {
                 auto const sleIssuer = view.read(keylet::account(issuer));
                 if (!sleIssuer)
@@ -452,12 +452,21 @@ accountHolds(
                 }
                 else if (sleIssuer->isFieldPresent(sfAMMID))
                 {
+                    // check if the account is authorized to own both assets for
+                    // the lptoken
                     if (checkLPTokenAuthorization(
                             view, account, sleIssuer->getFieldH256(sfAMMID)) !=
                         tesSUCCESS)
                     {
                         return false;
                     }
+                }
+                // if the amm account is the issuer, we don't need to check auth
+                else if (
+                    requireAuth(view, Issue{currency, issuer}, account) !=
+                    tesSUCCESS)
+                {
+                    return false;
                 }
             }
         }
@@ -493,10 +502,17 @@ accountHolds(
     AccountID const& account,
     Issue const& issue,
     FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
     beast::Journal j)
 {
     return accountHolds(
-        view, account, issue.currency, issue.account, zeroIfFrozen, j);
+        view,
+        account,
+        issue.currency,
+        issue.account,
+        zeroIfFrozen,
+        zeroIfUnauthorized,
+        j);
 }
 
 STAmount
@@ -563,7 +579,8 @@ accountHolds(
                               std::remove_cvref_t<decltype(value)>,
                               Issue>)
             {
-                return accountHolds(view, account, value, zeroIfFrozen, j);
+                return accountHolds(
+                    view, account, value, zeroIfFrozen, zeroIfUnauthorized, j);
             }
             return accountHolds(
                 view, account, value, zeroIfFrozen, zeroIfUnauthorized, j);
@@ -577,6 +594,7 @@ accountFunds(
     AccountID const& id,
     STAmount const& saDefault,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     beast::Journal j)
 {
     if (!saDefault.native() && saDefault.getIssuer() == id)
@@ -588,6 +606,7 @@ accountFunds(
         saDefault.getCurrency(),
         saDefault.getIssuer(),
         freezeHandling,
+        authHandling,
         j);
 }
 
