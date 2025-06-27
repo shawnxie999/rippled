@@ -41,6 +41,7 @@
 #include <boost/regex.hpp>
 
 #include "xrpl/protocol/TER.h"
+#include "xrpl/protocol/TxFlags.h"
 
 #include <chrono>
 #include <tuple>
@@ -485,6 +486,8 @@ class TrustlineAuth_test : public jtx::AMMTest
 
         using namespace test::jtx;
 
+        // disable fixEnforceNFTokenTrustlineV2 amendment to allow creation of
+        // unauthorized funds
         Env env(*this, features - fixEnforceNFTokenTrustlineV2);
 
         auto const USD{gw["USD"]};
@@ -496,8 +499,14 @@ class TrustlineAuth_test : public jtx::AMMTest
         auto const limit = USD(10000);
 
         env(trust(alice, limit));
+        env.close();
         env(trust(gw, limit, alice, tfSetfAuth));
+        env.close();
         env(pay(gw, alice, USD(1000)));
+        env.close();
+
+        env(trust(bob, USD(100'000)));
+        env.close();
 
         auto const [nftID, _] = mintAndOfferNFT(env, bob, drops(1));
         auto const buyIdx = keylet::nftoffer(alice, env.seq(alice)).key;
@@ -505,13 +514,102 @@ class TrustlineAuth_test : public jtx::AMMTest
         // It should be possible to create a buy offer even if NFT owner is
         // not authorized
         env(token::createOffer(alice, nftID, USD(10)), token::owner(bob));
-
-        // Old behavior: it is possible to sell tokens and receive IOUs
-        // without the authorization
+        env.close();
         env(token::acceptBuyOffer(bob, buyIdx));
         env.close();
 
+        // bob has unauthorized funds
         BEAST_EXPECT(env.balance(bob, USD) == USD(10));
+
+        if (features[fixEnforceTrustlineAuth])
+        {
+            env(pay(bob, alice, USD(1)), ter(tecNO_AUTH));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, USD) == USD(10));
+
+            env(pay(alice, bob, USD(2)), ter(tecNO_AUTH));
+            env.close();
+
+            BEAST_EXPECT(env.balance(bob, USD) == USD(10));
+        }
+        else
+        {
+            env(pay(bob, alice, USD(1)));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, USD) == USD(9));
+
+            env(pay(alice, bob, USD(2)));
+            env.close();
+
+            BEAST_EXPECT(env.balance(bob, USD) == USD(11));
+        }
+    }
+
+    void
+    testAMM(FeatureBitset features)
+    {
+        testcase("test");
+
+        using namespace test::jtx;
+
+        Env env(*this, features - featureAMMClawback);
+        env.fund(XRP(1000), gw, alice, carol, bob);
+        env(fset(gw, asfRequireAuth));
+        env.close();
+
+        // gateway authorizes alice
+        auto authAndFund = [&](Account const& account,
+                               std::string const currency) {
+            env(trust(gw, account[currency](100'000)), txflags(tfSetfAuth));
+            env(trust(account, gw[currency](100'000)));
+            env.close();
+            env(pay(gw, account, gw[currency](30'000)));
+            env.close();
+        };
+
+        // carol has BTC line but not USD line
+        // bob has USD line but not BTC line
+        // alice has both USD and BTC line
+        authAndFund(alice, "BTC");
+        authAndFund(alice, "USD");
+        authAndFund(bob, "BTC");
+        authAndFund(carol, "USD");
+
+        AMM ammAlice(env, alice, USD(20'000), BTC(10'000));
+
+        // bob single side deposits with BTC
+        ammAlice.deposit(bob, BTC(1000));
+
+        // carol single side deposits with USD
+        ammAlice.deposit(carol, USD(2000));
+
+        // increase limit for lptoken lines so that they can transfer lptokens
+        // to each other
+        auto const lpIssue = ammAlice.lptIssue();
+        env.trust(STAmount{lpIssue, 50000000}, alice);
+        env.trust(STAmount{lpIssue, 50000000}, bob);
+        env.trust(STAmount{lpIssue, 50000000}, carol);
+        env.close();
+
+        env.enableFeature(featureAMMClawback);
+        env.close();
+
+        env(trust(bob, gw["USD"](100'000)));
+        env(trust(carol, gw["BTC"](100'000)));
+        env.close();
+
+        env(trust(gw, bob["USD"](100'000)), txflags(tfSetfAuth));
+        env.close();
+        env(trust(gw, carol["BTC"](100'000)), txflags(tfSetfAuth));
+        env.close();
+
+        env(trust(gw, bob["USD"](100'000)), txflags(tfSetFreeze));
+        env.close();
+        env(trust(gw, carol["BTC"](100'000)), txflags(tfSetFreeze));
+        env.close();
+
+        ammAlice.withdraw(bob, USD(10));
+        env.close();
     }
 
 public:
@@ -531,6 +629,8 @@ public:
 
             // TODO: add tests for AMM with MPTs after it is supported
         }
+
+        //  testAMM(all - fixEnforceTrustlineAuth);
     }
 };
 
