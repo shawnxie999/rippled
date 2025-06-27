@@ -808,10 +808,18 @@ AMMDeposit::singleDeposit(
 {
     if (view.rules().enabled(fixEnforceTrustlineAuth))
     {
-        // amountBalance might be 0. which will throw exception in lpTokensOut
-        // because of dividing by zero
+        // amountBalance is calculated by `accountHolds`, which has the
+        // possibility of returning zero. amountBalance is passed into
+        // `lpTokensOut` as a denominator, which would throw an exception if
+        // the value is zero.
+        //
+        //  Even though it should not happen and it's checked here
+        //  defensively, we'd like to catch this early on if it does occur.
+
+        // LCOV_EXCL_START
         if (amountBalance == beast::zero)
             return {tecAMM_INVALID_TOKENS, STAmount{}};
+        // LCOV_EXCL_STOP
     }
 
     auto const tokens = adjustLPTokensOut(

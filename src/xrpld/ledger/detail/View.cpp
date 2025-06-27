@@ -446,7 +446,8 @@ accountHolds(
                 zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
             {
                 auto const sleIssuer = view.read(keylet::account(issuer));
-                if (!sleIssuer)
+                auto const sleAccount = view.read(keylet::account(account));
+                if (!sleIssuer || !sleAccount)
                 {
                     return false;  // LCOV_EXCL_LINE
                 }
@@ -461,10 +462,11 @@ accountHolds(
                         return false;
                     }
                 }
-                // if the amm account is the issuer, we don't need to check auth
+                // if either one is the amm account, we don't need to check auth
                 else if (
+                    !sleAccount->isFieldPresent(sfAMMID) &&
                     requireAuth(view, Issue{currency, issuer}, account) !=
-                    tesSUCCESS)
+                        tesSUCCESS)
                 {
                     return false;
                 }

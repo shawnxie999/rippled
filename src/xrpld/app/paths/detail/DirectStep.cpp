@@ -906,6 +906,12 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         return terNO_ACCOUNT;
     }
 
+    auto const sleDst = ctx.view.read(keylet::account(dst_));
+    if (!sleDst && ctx.view.rules().enabled(fixEnforceTrustlineAuth))
+    {
+        return terNO_ACCOUNT;  // LCOV_EXCL_LINE
+    }
+
     if (!(ctx.isLast && ctx.isFirst))
     {
         // pure issue/redeem can't be frozen
@@ -916,8 +922,6 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         // not possible for an AMM account to be part of pure issue/redeem
         if (ctx.view.rules().enabled(fixEnforceTrustlineAuth))
         {
-            auto const sleDst = ctx.view.read(keylet::account(dst_));
-
             if (sleDst->isFieldPresent(sfAMMID) &&
                 sleSrc->isFieldPresent(sfAMMID))
                 return temBAD_PATH;  // LCOV_EXCL_LINE
@@ -940,8 +944,12 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         }
     }
 
-    if (ctx.view.rules().enabled(fixEnforceTrustlineAuth))
+    // we don't check for amm account since they won't have auth
+    if (ctx.view.rules().enabled(fixEnforceTrustlineAuth) &&
+        !sleDst->isFieldPresent(sfAMMID) && !sleSrc->isFieldPresent(sfAMMID))
     {
+        // only fail if the error code is tecNO_AUTH. In some cases, it is still
+        // allowed for the account to not own a trustline.
         if (TER const ter = requireAuth(ctx.view, Issue{currency_, src_}, dst_);
             ter == tecNO_AUTH)
             return ter;

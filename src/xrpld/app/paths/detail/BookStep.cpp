@@ -773,25 +773,13 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         if (flowCross && (!isXRP(offer.issueIn().currency)) &&
             (offer.owner() != offer.issueIn().account))
         {
-            auto const& issuerID = offer.issueIn().account;
-            auto const issuer = afView.read(keylet::account(issuerID));
-            if (issuer && ((*issuer)[sfFlags] & lsfRequireAuth))
+            if (requireAuth(afView, offer.issueIn(), offer.owner()) !=
+                tesSUCCESS)
             {
-                // Issuer requires authorization.  See if offer owner has that.
-                auto const& ownerID = offer.owner();
-                auto const authFlag =
-                    issuerID > ownerID ? lsfHighAuth : lsfLowAuth;
-
-                auto const line = afView.read(
-                    keylet::line(ownerID, issuerID, offer.issueIn().currency));
-
-                if (!line || (((*line)[sfFlags] & authFlag) == 0))
-                {
-                    removeOffer();
-                    // Returning true causes offers.step() to delete the
-                    // offer.
-                    return true;
-                }
+                removeOffer();
+                // Returning true causes offers.step() to delete the
+                // offer.
+                return true;
             }
         }
 
@@ -822,6 +810,12 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                         afView, offer.owner(), sleAcct->getFieldH256(sfAMMID));
                     !isTesSuccess(ter))
                     badAuth = true;  // LCOV_EXCL_LINE
+            }
+
+            if (requireAuth(afView, offer.issueOut(), offer.owner()) !=
+                tesSUCCESS)
+            {
+                badAuth = true;
             }
 
             if (badAuth)

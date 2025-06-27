@@ -545,73 +545,6 @@ class TrustlineAuth_test : public jtx::AMMTest
         }
     }
 
-    void
-    testAMM(FeatureBitset features)
-    {
-        testcase("test");
-
-        using namespace test::jtx;
-
-        Env env(*this, features - featureAMMClawback);
-        env.fund(XRP(1000), gw, alice, carol, bob);
-        env(fset(gw, asfRequireAuth));
-        env.close();
-
-        // gateway authorizes alice
-        auto authAndFund = [&](Account const& account,
-                               std::string const currency) {
-            env(trust(gw, account[currency](100'000)), txflags(tfSetfAuth));
-            env(trust(account, gw[currency](100'000)));
-            env.close();
-            env(pay(gw, account, gw[currency](30'000)));
-            env.close();
-        };
-
-        // carol has BTC line but not USD line
-        // bob has USD line but not BTC line
-        // alice has both USD and BTC line
-        authAndFund(alice, "BTC");
-        authAndFund(alice, "USD");
-        authAndFund(bob, "BTC");
-        authAndFund(carol, "USD");
-
-        AMM ammAlice(env, alice, USD(20'000), BTC(10'000));
-
-        // bob single side deposits with BTC
-        ammAlice.deposit(bob, BTC(1000));
-
-        // carol single side deposits with USD
-        ammAlice.deposit(carol, USD(2000));
-
-        // increase limit for lptoken lines so that they can transfer lptokens
-        // to each other
-        auto const lpIssue = ammAlice.lptIssue();
-        env.trust(STAmount{lpIssue, 50000000}, alice);
-        env.trust(STAmount{lpIssue, 50000000}, bob);
-        env.trust(STAmount{lpIssue, 50000000}, carol);
-        env.close();
-
-        env.enableFeature(featureAMMClawback);
-        env.close();
-
-        env(trust(bob, gw["USD"](100'000)));
-        env(trust(carol, gw["BTC"](100'000)));
-        env.close();
-
-        env(trust(gw, bob["USD"](100'000)), txflags(tfSetfAuth));
-        env.close();
-        env(trust(gw, carol["BTC"](100'000)), txflags(tfSetfAuth));
-        env.close();
-
-        env(trust(gw, bob["USD"](100'000)), txflags(tfSetFreeze));
-        env.close();
-        env(trust(gw, carol["BTC"](100'000)), txflags(tfSetFreeze));
-        env.close();
-
-        ammAlice.withdraw(bob, USD(10));
-        env.close();
-    }
-
 public:
     void
     run() override
@@ -624,13 +557,10 @@ public:
             testLPTokenDirectStep(features);
             testLPTokenBookStep(features);
             testLPTokenOfferCreate(features);
-
             testDirectStep(features);
 
             // TODO: add tests for AMM with MPTs after it is supported
         }
-
-        //  testAMM(all - fixEnforceTrustlineAuth);
     }
 };
 
