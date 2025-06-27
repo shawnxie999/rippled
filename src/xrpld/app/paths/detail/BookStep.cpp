@@ -798,24 +798,30 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                     badAuth = true;
             }
 
-            // This is theoretically a defensive check since
+            // Following is theoretically defensive check since
             // TOfferStreamBase::step() already checks for the auth of the
             // selling asset when it calls accountFundsHelper
-            if (auto const sleAcct =
-                    afView.read(keylet::account(offer.issueOut().account));
-                sleAcct && sleAcct->isFieldPresent(sfAMMID) &&
-                offer.owner() != offer.issueOut().account)
             {
-                if (auto const ter = checkLPTokenAuthorization(
-                        afView, offer.owner(), sleAcct->getFieldH256(sfAMMID));
-                    !isTesSuccess(ter))
-                    badAuth = true;  // LCOV_EXCL_LINE
-            }
+                // LCOV_EXCL_START
+                if (auto const sleAcct =
+                        afView.read(keylet::account(offer.issueOut().account));
+                    sleAcct && sleAcct->isFieldPresent(sfAMMID) &&
+                    offer.owner() != offer.issueOut().account)
+                {
+                    if (auto const ter = checkLPTokenAuthorization(
+                            afView,
+                            offer.owner(),
+                            sleAcct->getFieldH256(sfAMMID));
+                        !isTesSuccess(ter))
+                        badAuth = true;
+                }
 
-            if (requireAuth(afView, offer.issueOut(), offer.owner()) !=
-                tesSUCCESS)
-            {
-                badAuth = true;
+                if (requireAuth(afView, offer.issueOut(), offer.owner()) !=
+                    tesSUCCESS)
+                {
+                    badAuth = true;
+                }
+                // LCOV_EXCL_STOP
             }
 
             if (badAuth)

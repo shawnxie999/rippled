@@ -462,9 +462,10 @@ accountHolds(
                         return false;
                     }
                 }
+
                 // if either one is the amm account, we don't need to check auth
-                else if (
-                    !sleAccount->isFieldPresent(sfAMMID) &&
+                if (!sleAccount->isFieldPresent(sfAMMID) &&
+                    !sleIssuer->isFieldPresent(sfAMMID) &&
                     requireAuth(view, Issue{currency, issuer}, account) !=
                         tesSUCCESS)
                 {

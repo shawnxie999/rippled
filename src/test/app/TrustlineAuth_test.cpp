@@ -545,6 +545,101 @@ class TrustlineAuth_test : public jtx::AMMTest
         }
     }
 
+    void
+    testBookStep(FeatureBitset features)
+    {
+        testcase("Book step");
+
+        using namespace test::jtx;
+
+        // disable fixEnforceNFTokenTrustlineV2 amendment to allow creation of
+        // unauthorized funds
+        Env env(*this, features - fixEnforceNFTokenTrustlineV2);
+
+        auto const USD{gw["USD"]};
+
+        env.fund(XRP(10000), gw, alice, bob);
+        env(fset(gw, asfRequireAuth));
+        env.close();
+
+        auto const limit = USD(10000);
+
+        env(trust(alice, limit));
+        env.close();
+        env(trust(gw, limit, alice, tfSetfAuth));
+        env.close();
+        env(pay(gw, alice, USD(1000)));
+        env.close();
+
+        env(trust(bob, USD(100'000)));
+        env.close();
+
+        auto const [nftID, _] = mintAndOfferNFT(env, bob, drops(1));
+        auto const buyIdx = keylet::nftoffer(alice, env.seq(alice)).key;
+
+        // It should be possible to create a buy offer even if NFT owner is
+        // not authorized
+        env(token::createOffer(alice, nftID, USD(10)), token::owner(bob));
+        env.close();
+        env(token::acceptBuyOffer(bob, buyIdx));
+        env.close();
+
+        // bob has unauthorized funds
+        BEAST_EXPECT(env.balance(bob, USD) == USD(10));
+
+        if (features[fixEnforceTrustlineAuth])
+        {
+            // disable temporarily to create unauthorized offer
+            env.disableFeature(fixEnforceTrustlineAuth);
+            env.close();
+
+            BEAST_EXPECT(env.balance(bob, USD) == USD(10));
+            BEAST_EXPECT(env.balance(alice, USD) == USD(990));
+
+            // creating an offer where bob is selling unauthorized USD
+            auto const bobOfferSeq{env.seq(bob)};
+            env(offer(bob, XRP(10), USD(10)));
+            env.close();
+            BEAST_EXPECT(checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10)));
+
+            // enable it again
+            env.enableFeature(fixEnforceTrustlineAuth);
+            env.close();
+
+            // alice creates an offer that would remove bob's unfunded offer
+            auto const aliceOfferSeq{env.seq(alice)};
+            env(offer(alice, USD(10), XRP(10)));
+            env.close();
+
+            // bob's unfunded offer is removed and he still has 10 USD
+            BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
+            BEAST_EXPECT(
+                checkOffer(env, alice, aliceOfferSeq, USD(10), XRP(10)));
+            BEAST_EXPECT(env.balance(bob, USD) == USD(10));
+            BEAST_EXPECT(env.balance(alice, USD) == USD(990));
+        }
+        else
+        {
+            BEAST_EXPECT(env.balance(bob, USD) == USD(10));
+            BEAST_EXPECT(env.balance(alice, USD) == USD(990));
+
+            auto const bobOfferSeq{env.seq(bob)};
+            env(offer(bob, XRP(10), USD(10)));
+            env.close();
+            BEAST_EXPECT(checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10)));
+
+            // alice's offer can consume bob's unfunded offer
+            auto const aliceOfferSeq{env.seq(alice)};
+            env(offer(alice, USD(10), XRP(10)));
+            env.close();
+
+            BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
+            BEAST_EXPECT(!offerExists(env, alice, aliceOfferSeq));
+            BEAST_EXPECT(env.balance(bob, USD) == USD(0));
+            BEAST_EXPECT(env.balance(alice, USD) == USD(1000));
+        }
+    }
+
 public:
     void
     run() override
@@ -558,6 +653,7 @@ public:
             testLPTokenBookStep(features);
             testLPTokenOfferCreate(features);
             testDirectStep(features);
+            testBookStep(features);
 
             // TODO: add tests for AMM with MPTs after it is supported
         }
