@@ -2059,7 +2059,7 @@ ValidAuth::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (!getCurrentTransactionRules()->enabled(fixEnforceTrustlineAuth))
+    if (!view.rules().enabled(fixEnforceTrustlineAuth))
         return true;
 
     if (bad_)
