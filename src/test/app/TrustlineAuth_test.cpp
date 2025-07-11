@@ -488,7 +488,9 @@ class TrustlineAuth_test : public jtx::AMMTest
 
         // disable fixEnforceNFTokenTrustlineV2 amendment to allow creation of
         // unauthorized funds
-        Env env(*this, features - fixEnforceNFTokenTrustlineV2);
+        Env env(
+            *this,
+            features - fixEnforceNFTokenTrustlineV2 - fixEnforceTrustlineAuth);
 
         auto const USD{gw["USD"]};
 
@@ -523,6 +525,8 @@ class TrustlineAuth_test : public jtx::AMMTest
 
         if (features[fixEnforceTrustlineAuth])
         {
+            env.enableFeature(fixEnforceTrustlineAuth);
+            env.close();
             env(pay(bob, alice, USD(1)), ter(tecNO_AUTH));
             env.close();
             BEAST_EXPECT(env.balance(bob, USD) == USD(10));
@@ -554,7 +558,9 @@ class TrustlineAuth_test : public jtx::AMMTest
 
         // disable fixEnforceNFTokenTrustlineV2 amendment to allow creation of
         // unauthorized funds
-        Env env(*this, features - fixEnforceNFTokenTrustlineV2);
+        Env env(
+            *this,
+            features - fixEnforceNFTokenTrustlineV2 - fixEnforceTrustlineAuth);
 
         auto const USD{gw["USD"]};
 
@@ -589,10 +595,6 @@ class TrustlineAuth_test : public jtx::AMMTest
 
         if (features[fixEnforceTrustlineAuth])
         {
-            // disable temporarily to create unauthorized offer
-            env.disableFeature(fixEnforceTrustlineAuth);
-            env.close();
-
             BEAST_EXPECT(env.balance(bob, USD) == USD(10));
             BEAST_EXPECT(env.balance(alice, USD) == USD(990));
 
