@@ -21,7 +21,7 @@
 
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 
-#include "xrpl/protocol/TER.h"
+#include <xrpl/protocol/TER.h>
 
 namespace ripple {
 
