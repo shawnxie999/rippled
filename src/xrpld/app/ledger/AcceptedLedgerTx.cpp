@@ -25,7 +25,6 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
-
 namespace ripple {
 
 AcceptedLedgerTx::AcceptedLedgerTx(
