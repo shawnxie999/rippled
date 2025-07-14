@@ -441,36 +441,38 @@ accountHolds(
                     }
                 }
             }
+        }
 
-            if (view.rules().enabled(fixEnforceTrustlineAuth) &&
-                zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
+        if (view.rules().enabled(fixEnforceTrustlineAuth) &&
+            zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
+        {
+            auto const sleIssuer = view.read(keylet::account(issuer));
+            auto const sleAccount = view.read(keylet::account(account));
+            if (!sleIssuer || !sleAccount)
             {
-                auto const sleIssuer = view.read(keylet::account(issuer));
-                auto const sleAccount = view.read(keylet::account(account));
-                if (!sleIssuer || !sleAccount)
-                {
-                    return false;  // LCOV_EXCL_LINE
-                }
-                else if (sleIssuer->isFieldPresent(sfAMMID))
-                {
-                    // check if the account is authorized to own both assets for
-                    // the lptoken
-                    if (checkLPTokenAuthorization(
-                            view, account, sleIssuer->getFieldH256(sfAMMID)) !=
-                        tesSUCCESS)
-                    {
-                        return false;
-                    }
-                }
-
-                // if either one is the amm account, we don't need to check auth
-                if (!sleAccount->isFieldPresent(sfAMMID) &&
-                    !sleIssuer->isFieldPresent(sfAMMID) &&
-                    requireAuth(view, Issue{currency, issuer}, account) !=
-                        tesSUCCESS)
+                return false;  // LCOV_EXCL_LINE
+            }
+            else if (sleIssuer->isFieldPresent(sfAMMID))
+            {
+                // check if the account is authorized to own both assets for
+                // the lptoken
+                if (checkLPTokenAuthorization(
+                        view, account, sleIssuer->getFieldH256(sfAMMID)) !=
+                    tesSUCCESS)
                 {
                     return false;
                 }
+            }
+
+            // skip pseudo accounts
+            if (isPseudoAccount(sleAccount) || isPseudoAccount(sleIssuer))
+                return true;
+
+            // if either one is the amm account, we don't need to check auth
+            if (requireAuth(view, Issue{currency, issuer}, account) !=
+                tesSUCCESS)
+            {
+                return false;
             }
         }
 

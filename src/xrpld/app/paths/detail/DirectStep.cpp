@@ -946,7 +946,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
 
     // we don't check for amm account since they won't have auth
     if (ctx.view.rules().enabled(fixEnforceTrustlineAuth) &&
-        !sleDst->isFieldPresent(sfAMMID) && !sleSrc->isFieldPresent(sfAMMID))
+        !isPseudoAccount(sleDst) && !isPseudoAccount(sleSrc))
     {
         // only fail if the error code is tecNO_AUTH. In some cases, it is still
         // allowed for the account to not own a trustline.

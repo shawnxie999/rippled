@@ -2069,6 +2069,12 @@ ValidAuth::finalize(
     }
     for (auto const& [low, high, cur] : line_)
     {
+        auto const sleHigh = view.read(keylet::account(high));
+        auto const sleLow = view.read(keylet::account(low));
+
+        if (isPseudoAccount(sleHigh) || isPseudoAccount(sleLow))
+            return true;
+
         if (requireAuth(view, Issue{cur, low}, high) != tesSUCCESS)
         {
             JLOG(j.fatal()) << "Invariant failed: high account has no auth";

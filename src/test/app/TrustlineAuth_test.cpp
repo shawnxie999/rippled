@@ -42,6 +42,7 @@
 
 #include "xrpl/protocol/TER.h"
 #include "xrpl/protocol/TxFlags.h"
+#include "xrpld/ledger/View.h"
 
 #include <chrono>
 #include <tuple>
@@ -527,6 +528,26 @@ class TrustlineAuth_test : public jtx::AMMTest
         {
             env.enableFeature(fixEnforceTrustlineAuth);
             env.close();
+
+            auto const test = accountHolds(
+                *env.closed(),
+                bob,
+                USD.currency,
+                gw,
+                fhIGNORE_FREEZE,
+                ahZERO_IF_UNAUTHORIZED,
+                env.journal);
+            BEAST_EXPECT(
+                USD(0) ==
+                accountHolds(
+                    *env.closed(),
+                    bob,
+                    USD.currency,
+                    gw,
+                    fhIGNORE_FREEZE,
+                    ahZERO_IF_UNAUTHORIZED,
+                    env.journal));
+
             env(pay(bob, alice, USD(1)), ter(tecNO_AUTH));
             env.close();
             BEAST_EXPECT(env.balance(bob, USD) == USD(10));
@@ -538,6 +559,17 @@ class TrustlineAuth_test : public jtx::AMMTest
         }
         else
         {
+            BEAST_EXPECT(
+                USD(10) ==
+                accountHolds(
+                    *env.closed(),
+                    bob,
+                    USD.currency,
+                    gw,
+                    fhIGNORE_FREEZE,
+                    ahZERO_IF_UNAUTHORIZED,
+                    env.journal));
+
             env(pay(bob, alice, USD(1)));
             env.close();
             BEAST_EXPECT(env.balance(bob, USD) == USD(9));
