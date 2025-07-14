@@ -2073,7 +2073,7 @@ ValidAuth::finalize(
         auto const sleLow = view.read(keylet::account(low));
 
         if (isPseudoAccount(sleHigh) || isPseudoAccount(sleLow))
-            return true;
+            continue;
 
         if (requireAuth(view, Issue{cur, low}, high) != tesSUCCESS)
         {
