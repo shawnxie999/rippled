@@ -22,6 +22,7 @@
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/tx/detail/CreateOffer.h>
 #include <xrpld/ledger/PaymentSandbox.h>
+#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/WrappedSink.h>
@@ -30,8 +31,6 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/st.h>
-
-#include "xrpld/ledger/View.h"
 
 namespace ripple {
 TxConsequences

@@ -28,8 +28,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
-
-#include "xrpl/protocol/TER.h"
+#include <xrpl/protocol/TER.h>
 
 #include <optional>
 

@@ -43,6 +43,7 @@
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/consensus/Consensus.h>
 #include <xrpld/consensus/ConsensusParms.h>
+#include <xrpld/ledger/View.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
@@ -72,8 +73,6 @@
 
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/steady_timer.hpp>
-
-#include "xrpld/ledger/View.h"
 
 #include <algorithm>
 #include <exception>

@@ -24,6 +24,7 @@
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
@@ -36,8 +37,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/st.h>
-
-#include "xrpl/basics/base_uint.h"
 
 #include <type_traits>
 #include <variant>

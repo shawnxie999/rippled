@@ -21,12 +21,11 @@
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/tx/detail/AMMWithdraw.h>
 #include <xrpld/ledger/Sandbox.h>
+#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/TxFlags.h>
-
-#include "xrpld/ledger/View.h"
 
 namespace ripple {
 

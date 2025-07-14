@@ -21,9 +21,8 @@
 
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-
-#include "xrpl/protocol/Feature.h"
-#include "xrpl/protocol/TER.h"
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TER.h>
 
 namespace ripple {
 

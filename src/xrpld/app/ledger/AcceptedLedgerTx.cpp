@@ -18,13 +18,13 @@
 //==============================================================================
 
 #include <xrpld/app/ledger/AcceptedLedgerTx.h>
+#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
-#include "xrpld/ledger/View.h"
 
 namespace ripple {
 
