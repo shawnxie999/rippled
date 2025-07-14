@@ -529,14 +529,6 @@ class TrustlineAuth_test : public jtx::AMMTest
             env.enableFeature(fixEnforceTrustlineAuth);
             env.close();
 
-            auto const test = accountHolds(
-                *env.closed(),
-                bob,
-                USD.currency,
-                gw,
-                fhIGNORE_FREEZE,
-                ahZERO_IF_UNAUTHORIZED,
-                env.journal);
             BEAST_EXPECT(
                 USD(0) ==
                 accountHolds(
