@@ -20,6 +20,7 @@
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/sendmax.h>
 
@@ -671,7 +672,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
 
         for (auto const features : {all, all - fixEnforceTrustlineAuth})
         {

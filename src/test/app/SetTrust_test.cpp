@@ -19,10 +19,10 @@
 
 #include <test/jtx.h>
 
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 
@@ -653,7 +653,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        auto const sa = supported_amendments();
+        auto const sa = testable_amendments();
         testWithFeats(sa - disallowIncoming - fixEnforceTrustlineAuth);
         testWithFeats(sa - fixEnforceTrustlineAuth);
         testWithFeats(sa);

@@ -743,7 +743,6 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     FlowOfferStream<TIn, TOut> offers(
         sb, afView, book_, sb.parentCloseTime(), counter, j_);
 
-    bool const flowCross = afView.rules().enabled(featureFlowCross);
     bool offerAttempted = false;
     std::optional<Quality> ofrQ;
     auto execOffer = [&](auto& offer) {
@@ -770,8 +769,8 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
         // Make sure offer owner has authorization to own IOUs from issuer.
         // An account can always own XRP or their own IOUs.
-        if (flowCross && (!isXRP(offer.issueIn().currency)) &&
-            (offer.owner() != offer.issueIn().account))
+        if (!isXRP(offer.issueIn().currency) &&
+            offer.owner() != offer.issueIn().account)
         {
             if (requireAuth(afView, offer.issueIn(), offer.owner()) !=
                 tesSUCCESS)
