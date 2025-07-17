@@ -467,7 +467,6 @@ accountHolds(
             if (isPseudoAccount(sleAccount) || isPseudoAccount(sleIssuer))
                 return true;
 
-            // if either one is the amm account, we don't need to check auth
             if (requireAuth(view, Issue{currency, issuer}, account) !=
                 tesSUCCESS)
             {

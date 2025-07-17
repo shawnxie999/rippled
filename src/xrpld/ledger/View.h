@@ -896,6 +896,8 @@ sharesToAssetsWithdraw(
 bool
 after(NetClock::time_point now, std::uint32_t mark);
 
+// Checks the authorizations of an account for the two assets
+// associated with a LP
 TER
 checkLPTokenAuthorization(
     ReadView const& view,

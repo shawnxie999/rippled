@@ -706,7 +706,7 @@ private:
 
 class ValidAuth
 {
-    hash_set<std::tuple<AccountID, AccountID, Currency>> line_;
+    hash_set<std::tuple<AccountID, AccountID, Currency>> lines_;
     bool bad_ = false;
 
 public:

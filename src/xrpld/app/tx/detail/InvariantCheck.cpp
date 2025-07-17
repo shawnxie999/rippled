@@ -2047,7 +2047,7 @@ ValidAuth::visitEntry(
         if (highIssuer == lowIssuer)
             bad_ = true;
 
-        line_.emplace(std::make_tuple(lowIssuer, highIssuer, currency));
+        lines_.emplace(std::make_tuple(lowIssuer, highIssuer, currency));
     }
 }
 
@@ -2067,7 +2067,8 @@ ValidAuth::finalize(
         JLOG(j.fatal()) << "Invariant failed: account trustline to itself";
         return false;
     }
-    for (auto const& [low, high, cur] : line_)
+
+    for (auto const& [low, high, cur] : lines_)
     {
         auto const sleHigh = view.read(keylet::account(high));
         auto const sleLow = view.read(keylet::account(low));
