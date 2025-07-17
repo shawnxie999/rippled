@@ -22,13 +22,12 @@
 
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/ledger/View.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/jss.h>
-
-#include "xrpld/ledger/View.h"
 
 namespace ripple {
 namespace test {
