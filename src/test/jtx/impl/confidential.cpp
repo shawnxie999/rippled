@@ -35,8 +35,8 @@ convert(
     jtx::Account const& account,
     std::uint64_t const amount,
     std::optional<std::string> holderPk,
-    Slice holderEncAmt,
-    Slice issuerEncAmt,
+    std::string holderEncAmt,
+    std::string issuerEncAmt,
     std::string zkp)
 {
     Json::Value jv;
@@ -48,8 +48,8 @@ convert(
     if (holderPk)
         jv[sfHolderElGamalPublicKey.jsonName] = holderPk.value();
 
-    jv[sfHolderEncryptedAmount.jsonName] = strHex(holderEncAmt);
-    jv[sfIssuerEncryptedAmount.jsonName] = strHex(issuerEncAmt);
+    jv[sfHolderEncryptedAmount.jsonName] = (holderEncAmt);
+    jv[sfIssuerEncryptedAmount.jsonName] = (issuerEncAmt);
     jv[sfZKProof.jsonName] = zkp;
     return jv;
 }

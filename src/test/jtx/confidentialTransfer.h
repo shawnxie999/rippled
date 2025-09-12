@@ -34,8 +34,8 @@ convert(
     jtx::Account const& account,
     std::uint64_t const amount,
     std::optional<std::string> holderPk,
-    Slice holderEncAmt,
-    Slice issuerEncAmt,
+    std::string holderEncAmt,
+    std::string issuerEncAmt,
     std::string zkp);
 
 }  // namespace jtx
