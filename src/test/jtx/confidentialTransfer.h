@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,32 +17,29 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_CONFIDENTIALCONVERT_H_INCLUDED
-#define RIPPLE_TX_CONFIDENTIALCONVERT_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_CONFIDENTIALTRANSFER_H_INCLUDED
+#define RIPPLE_TEST_JTX_CONFIDENTIALTRANSFER_H_INCLUDED
 
-#include <xrpld/app/tx/detail/Transactor.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/owners.h>
 
 namespace ripple {
+namespace test {
+namespace jtx {
 
-class ConfidentialConvert : public Transactor
-{
-public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+Json::Value
+convert(
+    MPTID const mptId,
+    jtx::Account const& account,
+    std::uint64_t const amount,
+    std::optional<std::string> holderPk,
+    Slice holderEncAmt,
+    Slice issuerEncAmt,
+    std::string zkp);
 
-    explicit ConfidentialConvert(ApplyContext& ctx) : Transactor(ctx)
-    {
-    }
-
-    static NotTEC
-    preflight(PreflightContext const& ctx);
-
-    static TER
-    preclaim(PreclaimContext const& ctx);
-
-    TER
-    doApply() override;
-};
-
+}  // namespace jtx
+}  // namespace test
 }  // namespace ripple
 
 #endif

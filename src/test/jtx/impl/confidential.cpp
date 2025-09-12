@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,32 +17,44 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_CONFIDENTIALCONVERT_H_INCLUDED
-#define RIPPLE_TX_CONFIDENTIALCONVERT_H_INCLUDED
+#include <test/jtx/confidentialTransfer.h>
 
-#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
+
+#include <atomic>
+#include <cstdint>
 
 namespace ripple {
+namespace test {
+namespace jtx {
 
-class ConfidentialConvert : public Transactor
+Json::Value
+convert(
+    MPTID const mptId,
+    jtx::Account const& account,
+    std::uint64_t const amount,
+    std::optional<std::string> holderPk,
+    Slice holderEncAmt,
+    Slice issuerEncAmt,
+    std::string zkp)
 {
-public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::ConfidentialConvert;
+    jv[sfMPTokenIssuanceID] = to_string(mptId);
+    jv[jss::Account] = account.human();
+    jv[sfMPTAmount.jsonName] = std::to_string(amount);
 
-    explicit ConfidentialConvert(ApplyContext& ctx) : Transactor(ctx)
-    {
-    }
+    if (holderPk)
+        jv[sfHolderElGamalPublicKey.jsonName] = holderPk.value();
 
-    static NotTEC
-    preflight(PreflightContext const& ctx);
+    jv[sfHolderEncryptedAmount.jsonName] = strHex(holderEncAmt);
+    jv[sfIssuerEncryptedAmount.jsonName] = strHex(issuerEncAmt);
+    jv[sfZKProof.jsonName] = zkp;
+    return jv;
+}
 
-    static TER
-    preclaim(PreclaimContext const& ctx);
+}  // namespace jtx
 
-    TER
-    doApply() override;
-};
-
+}  // namespace test
 }  // namespace ripple
-
-#endif

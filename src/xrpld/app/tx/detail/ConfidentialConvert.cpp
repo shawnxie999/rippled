@@ -42,6 +42,11 @@ ConfidentialConvert::preflight(PreflightContext const& ctx)
     if (MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer() == ctx.tx[sfAccount])
         return temMALFORMED;
 
+    if (ctx.tx[sfHolderEncryptedAmount].length() !=
+            ecGamalEncryptedTotalLength ||
+        ctx.tx[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
+        return temMALFORMED;
+
     return preflight2(ctx);
 }
 
@@ -105,6 +110,12 @@ ConfidentialConvert::doApply()
         (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0) +
         amtToConvert;
     auto const holderPk = (*sleMptoken)[sfHolderElGamalPublicKey];
+
+    Slice const holderEc = ctx_.tx[sfHolderEncryptedAmount];
+    std::pair<Slice, Slice> holderEcPair = {
+        Slice{holderEc.data(), ecGamalEncryptedLength},
+        Slice{
+            holderEc.data() + ecGamalEncryptedLength, ecGamalEncryptedLength}};
 
     // todo: add sfHolderEncryptedAmount to  sfConfidentialBalanceSpending
     // add sfIssuerEncryptedAmount to  sfIssuerEncryptedBalance
