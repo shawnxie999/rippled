@@ -32,6 +32,7 @@
 #include <xrpld/app/tx/detail/CashCheck.h>
 #include <xrpld/app/tx/detail/Change.h>
 #include <xrpld/app/tx/detail/Clawback.h>
+#include <xrpld/app/tx/detail/ConfidentialConvert.h>
 #include <xrpld/app/tx/detail/CreateCheck.h>
 #include <xrpld/app/tx/detail/CreateOffer.h>
 #include <xrpld/app/tx/detail/CreateTicket.h>
@@ -77,7 +78,6 @@
 namespace ripple {
 
 namespace {
-
 struct UnknownTxnType : std::exception
 {
     TxType txnType;
