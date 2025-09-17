@@ -33,8 +33,11 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/detail/secp256k1.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/st.h>
+
+#include <secp256k1.h>
 
 #include <type_traits>
 #include <variant>
@@ -1395,8 +1398,10 @@ trustCreate(
         bSetHigh ? sfHighLimit : sfLowLimit, saLimit);
     sleRippleState->setFieldAmount(
         bSetHigh ? sfLowLimit : sfHighLimit,
-        STAmount(Issue{
-            saBalance.getCurrency(), bSetDst ? uSrcAccountID : uDstAccountID}));
+        STAmount(
+            Issue{
+                saBalance.getCurrency(),
+                bSetDst ? uSrcAccountID : uDstAccountID}));
 
     if (uQualityIn)
         sleRippleState->setFieldU32(
@@ -3151,6 +3156,59 @@ bool
 after(NetClock::time_point now, std::uint32_t mark)
 {
     return now.time_since_epoch().count() > mark;
+}
+
+TER
+homomorphicAdd(
+    Slice const& a_c1,
+    Slice const& a_c2,
+    Slice const& b_c1,
+    Slice const& b_c2,
+    Slice& out_c1,
+    Slice& out_c2)
+{
+    if (a_c1.length() != ecGamalEncryptedLength ||
+        a_c2.length() != ecGamalEncryptedLength ||
+        b_c1.length() != ecGamalEncryptedLength ||
+        b_c2.length() != ecGamalEncryptedLength)
+        return tecINTERNAL;
+
+    secp256k1_pubkey a_c1_parsed;
+    secp256k1_pubkey a_c2_parsed;
+    secp256k1_pubkey b_c1_parsed;
+    secp256k1_pubkey b_c2_parsed;
+
+    // convert 33-byte component into 64-byte secp256k1_pubkey
+    auto parsePubKey = [](Slice const& slice, secp256k1_pubkey& out) {
+        return secp256k1_ec_pubkey_parse(
+            secp256k1Context(),
+            &out,
+            reinterpret_cast<unsigned char const*>(slice.data()),
+            slice.length());
+    };
+
+    if (parsePubKey(a_c1, a_c1_parsed) != 1 ||
+        parsePubKey(a_c2, a_c2_parsed) != 1 ||
+        parsePubKey(b_c1, b_c1_parsed) != 1 ||
+        parsePubKey(b_c2, b_c2_parsed) != 1)
+    {
+        return tecINTERNAL;
+    }
+
+    secp256k1_pubkey sum_c1;
+    secp256k1_pubkey sum_c2;
+
+    if (secp256k1_elgamal_add(
+            secp256k1Context(),
+            &sum_c1,
+            &sum_c2,
+            a_c1_parsed,
+            a_c2_parsed,
+            b_c1_parsed,
+            b_c2_parsed) != 1)
+        return tecINTERNAL;
+
+    return tesSUCCESS;
 }
 
 }  // namespace ripple
