@@ -20,6 +20,7 @@
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/ConfidentialConvert.h>
 
+#include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -81,6 +82,7 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     // todo: check zkproof
+    // use CB_S_version with hashed transction context ID
 
     return tesSUCCESS;
 }
@@ -112,14 +114,49 @@ ConfidentialConvert::doApply()
     auto const holderPk = (*sleMptoken)[sfHolderElGamalPublicKey];
 
     Slice const holderEc = ctx_.tx[sfHolderEncryptedAmount];
-    std::pair<Slice, Slice> holderEcPair = {
-        Slice{holderEc.data(), ecGamalEncryptedLength},
-        Slice{
-            holderEc.data() + ecGamalEncryptedLength, ecGamalEncryptedLength}};
+    Slice const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];
 
-    // todo: add sfHolderEncryptedAmount to  sfConfidentialBalanceSpending
-    // add sfIssuerEncryptedAmount to  sfIssuerEncryptedBalance
-    // todo: verify proof
+    // todo: we should check sfConfidentialBalanceSpending depending on if we
+    // encrypt zero amount
+    if (sleMptoken->isFieldPresent(sfIssuerEncryptedBalance) &&
+        sleMptoken->isFieldPresent(sfConfidentialBalanceInbox))
+    {
+        // homomorphically add holder's encrypted balance
+        {
+            Buffer sum(64);
+            if (TER const ter = homomorphicAdd(
+                    holderEc, (*sleMptoken)[sfConfidentialBalanceInbox], sum);
+                isTesSuccess(ter))
+                return tecINTERNAL;
+
+            (*sleMptoken)[sfConfidentialBalanceInbox] = sum;
+        }
+
+        // homomorphically add issuer's encrypted balance
+        {
+            Buffer sum(64);
+            if (TER const ter = homomorphicAdd(
+                    issuerEc, (*sleMptoken)[sfIssuerEncryptedBalance], sum);
+                isTesSuccess(ter))
+                return tecINTERNAL;
+
+            (*sleMptoken)[sfIssuerEncryptedBalance] = sum;
+        }
+    }
+    else if (
+        !sleMptoken->isFieldPresent(sfIssuerEncryptedBalance) &&
+        !sleMptoken->isFieldPresent(sfConfidentialBalanceInbox))
+    {
+        (*sleMptoken)[sfConfidentialBalanceInbox] = holderEc;
+        (*sleMptoken)[sfIssuerEncryptedBalance] = issuerEc;
+        // todo: we should Enc a zero amount for sfConfidentialBalanceSpending?
+    }
+    else
+    {
+        // both sfIssuerEncryptedBalance and sfConfidentialBalanceInbox should
+        // exist together
+        return tecINTERNAL;
+    }
 
     view().update(sleIssuance);
     view().update(sleMptoken);
