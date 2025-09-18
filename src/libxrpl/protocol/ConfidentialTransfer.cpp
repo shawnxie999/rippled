@@ -78,7 +78,7 @@ homomorphicAdd(Slice const& a, Slice const& b, Buffer& out)
     secp256k1_pubkey b_c1;
     secp256k1_pubkey b_c2;
 
-    if (!makeEcPair(a, a_c1, a_c2) || !!makeEcPair(b, b_c1, b_c2))
+    if (!makeEcPair(a, a_c1, a_c2) || !makeEcPair(b, b_c1, b_c2))
         return tecINTERNAL;
 
     secp256k1_pubkey sum_c1;
