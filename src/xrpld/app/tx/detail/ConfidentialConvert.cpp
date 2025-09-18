@@ -123,7 +123,7 @@ ConfidentialConvert::doApply()
     {
         // homomorphically add holder's encrypted balance
         {
-            Buffer sum(64);
+            Buffer sum(ecGamalEncryptedTotalLength);
             if (TER const ter = homomorphicAdd(
                     holderEc, (*sleMptoken)[sfConfidentialBalanceInbox], sum);
                 isTesSuccess(ter))
@@ -134,7 +134,7 @@ ConfidentialConvert::doApply()
 
         // homomorphically add issuer's encrypted balance
         {
-            Buffer sum(64);
+            Buffer sum(ecGamalEncryptedTotalLength);
             if (TER const ter = homomorphicAdd(
                     issuerEc, (*sleMptoken)[sfIssuerEncryptedBalance], sum);
                 isTesSuccess(ter))
