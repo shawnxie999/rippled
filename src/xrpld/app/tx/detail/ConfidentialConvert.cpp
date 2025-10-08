@@ -45,6 +45,9 @@ ConfidentialConvert::preflight(PreflightContext const& ctx)
         ctx.tx[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
         return temMALFORMED;
 
+    if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
+        return temMALFORMED;
+
     return tesSUCCESS;
 }
 
@@ -58,6 +61,10 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         return tecOBJECT_NOT_FOUND;
 
     if (sleIssuance->isFlag(lsfMPTNoConfidentialTransfer))
+        return tecNO_PERMISSION;
+
+    // issuer has not uploaded their pub key yet
+    if (!sleIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
         return tecNO_PERMISSION;
 
     auto const sleMptoken = ctx.view.read(
@@ -78,8 +85,32 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         ctx.tx.isFieldPresent(sfHolderElGamalPublicKey))
         return tecNO_PERMISSION;
 
-    // todo: check zkproof
-    // use CB_S_version with hashed transction context ID
+    auto const holderPubKey = ctx.tx.isFieldPresent(sfHolderElGamalPublicKey)
+        ? ctx.tx[sfHolderElGamalPublicKey]
+        : (*sleMptoken)[sfHolderElGamalPublicKey];
+
+    // todo: check zkproof/well formed
+
+    // check equality proof
+    auto checkEqualityProof = [&](auto const& encryptedAmount,
+                                  auto const& pubKey) -> TER {
+        return proveEquality(
+            ctx.tx[sfZKProof],
+            encryptedAmount,
+            pubKey,
+            ctx.tx[sfMPTAmount],
+            ctx.tx.getTransactionID(),
+            (*sleMptoken)[~sfConfidentialBalanceVersion].value_or(0));
+    };
+
+    if (!isTesSuccess(checkEqualityProof(
+            ctx.tx[sfHolderEncryptedAmount], holderPubKey)) ||
+        !isTesSuccess(checkEqualityProof(
+            ctx.tx[sfIssuerEncryptedAmount],
+            (*sleIssuance)[sfIssuerElGamalPublicKey])))
+    {
+        return tecBAD_PROOF;
+    }
 
     return tesSUCCESS;
 }
@@ -108,7 +139,6 @@ ConfidentialConvert::doApply()
     (*sleIssuance)[sfConfidentialOutstandingAmount] =
         (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0) +
         amtToConvert;
-    auto const holderPk = (*sleMptoken)[sfHolderElGamalPublicKey];
 
     Slice const holderEc = ctx_.tx[sfHolderEncryptedAmount];
     Slice const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];
@@ -146,7 +176,9 @@ ConfidentialConvert::doApply()
     {
         (*sleMptoken)[sfConfidentialBalanceInbox] = holderEc;
         (*sleMptoken)[sfIssuerEncryptedBalance] = issuerEc;
-        // todo: we should Enc a zero amount for sfConfidentialBalanceSpending?
+        (*sleMptoken)[sfConfidentialBalanceVersion] = 0;
+        // todo: we should encrypted a zero amount for
+        // sfConfidentialBalanceSpending?
     }
     else
     {

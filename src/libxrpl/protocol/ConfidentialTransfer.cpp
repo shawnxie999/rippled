@@ -23,8 +23,6 @@
 
 namespace ripple {
 
-// breaks a 66-byte encrypted amount into two 33-byte components
-// then parses each 33-byte component into 64-byte secp256k1_pubkey format
 bool
 makeEcPair(Slice const& buffer, secp256k1_pubkey& out1, secp256k1_pubkey& out2)
 {
@@ -45,7 +43,6 @@ makeEcPair(Slice const& buffer, secp256k1_pubkey& out1, secp256k1_pubkey& out2)
     return ret1 == 1 && ret2 == 1;
 }
 
-// serialize two secp256k1_pubkey components back into compressed 66-byte form
 bool
 serializeEcPair(
     secp256k1_pubkey const& in1,
@@ -92,6 +89,47 @@ homomorphicAdd(Slice const& a, Slice const& b, Buffer& out)
 
     if (!serializeEcPair(sum_c1, sum_c2, out))
         return tecINTERNAL;
+
+    return tesSUCCESS;
+}
+
+TER
+proveEquality(
+    Slice const& proof,
+    Slice const& encAmt,  // encrypted amount
+    Slice const& pubkey,
+    uint64_t const amount,
+    uint256 const& txHash,  // Transaction context data
+    std::uint32_t const spendVersion)
+{
+    if (proof.length() != ecEqualityProofLength)
+        return tecINTERNAL;
+
+    secp256k1_pubkey c1;
+    secp256k1_pubkey c2;
+
+    if (!makeEcPair(encAmt, c1, c2))
+        return tecINTERNAL;
+
+    // todo: might need to change how its hashed
+    Serializer s;
+    s.addRaw(txHash.data(), txHash.bytes);
+    s.add32(spendVersion);
+    auto const txContextId = s.getSHA512Half();
+
+    // todo: support equality
+    // if (secp256k1_equality_verify(
+    //         secp256k1Context(),
+    //         reinterpret_cast<unsigned char const*>(proof.data()),
+    //         proof.length(),  // Length of the proof byte array (98 bytes)
+    //         &c1,
+    //         &c2,
+    //         reinterpret_cast<unsigned char const*>(pubkey.data()),
+    //         amount,
+    //         txContextId.data(),  // Transaction context data
+    //         txContextId.bytes    // Length of context data
+    //         ) != 1)
+    //     return tecBAD_PROOF;
 
     return tesSUCCESS;
 }

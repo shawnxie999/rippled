@@ -35,8 +35,29 @@
 
 namespace ripple {
 
+// breaks a 66-byte encrypted amount into two 33-byte components
+// then parses each 33-byte component into 64-byte secp256k1_pubkey format
+bool
+makeEcPair(Slice const& buffer, secp256k1_pubkey& out1, secp256k1_pubkey& out2);
+
+// serialize two secp256k1_pubkey components back into compressed 66-byte form
+bool
+serializeEcPair(
+    secp256k1_pubkey const& in1,
+    secp256k1_pubkey const& in2,
+    Buffer& buffer);
+
 TER
 homomorphicAdd(Slice const& a, Slice const& b, Buffer& out);
+
+TER
+proveEquality(
+    Slice const& proof,
+    Slice const& encAmt,  // encrypted amount
+    Slice const& pubkey,
+    uint64_t const amount,
+    uint256 const& txHash,  // Transaction context data
+    std::uint32_t const spendVersion);
 
 }  // namespace ripple
 
