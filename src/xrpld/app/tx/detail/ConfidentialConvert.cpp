@@ -22,11 +22,10 @@
 
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-
-#include "xrpl/protocol/Indexes.h"
-#include "xrpl/protocol/TER.h"
 
 namespace ripple {
 
@@ -72,6 +71,7 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
 
+    // we stil allow conversion of zero amount
     if ((*sleMptoken)[~sfMPTAmount].value_or(0) < ctx.tx[sfMPTAmount])
         return tecINSUFFICIENT_FUNDS;
 
