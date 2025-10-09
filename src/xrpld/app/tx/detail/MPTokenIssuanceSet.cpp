@@ -137,6 +137,15 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         }
     }
 
+    if (!ctx.rules.enabled(featureConfidentialTransfer) &&
+        ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey))
+        return temMALFORMED;
+
+    if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) && holderID)
+        return temMALFORMED;
+
+    // todo: check pubkey length
+
     return tesSUCCESS;
 }
 
@@ -264,6 +273,13 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
+    // cannot update public key
+    if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) &&
+        sleMptIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
+    {
+        return tecNO_PERMISSION;
+    }
+
     return tesSUCCESS;
 }
 
@@ -349,6 +365,16 @@ MPTokenIssuanceSet::doApply()
             if (sle->isFieldPresent(sfDomainID))
                 sle->makeFieldAbsent(sfDomainID);
         }
+    }
+
+    if (auto const pubKey = ctx_.tx[~sfIssuerElGamalPublicKey])
+    {
+        // This is enforced in preflight.
+        XRPL_ASSERT(
+            sle->getType() == ltMPTOKEN_ISSUANCE,
+            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+
+        sle->setFieldVL(sfIssuerElGamalPublicKey, *pubKey);
     }
 
     view().update(sle);

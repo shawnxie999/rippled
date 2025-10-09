@@ -145,6 +145,22 @@ struct MPTSet
     std::optional<std::string> metadata = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
     std::optional<uint256> domainID = std::nullopt;
+    std::optional<std::string> pubKey = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+struct MPTConvert
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<std::uint64_t> amt = std::nullopt;
+    std::optional<std::string> proof = std::nullopt;
+    std::optional<std::string> holderPubKey = std::nullopt;
+    std::optional<std::string> holderEncryptedAmt = std::nullopt;
+    std::optional<std::string> issuerEncryptedAmt = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -171,6 +187,9 @@ public:
     void
     set(MPTSet const& set = {});
 
+    void
+    convert(MPTConvert const& arg = MPTConvert{});
+
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;
 
@@ -180,6 +199,9 @@ public:
 
     [[nodiscard]] bool
     checkMPTokenOutstandingAmount(std::int64_t expectedAmount) const;
+
+    [[nodiscard]] bool
+    checkIssuanceConfidentialBalance(std::int64_t expectedAmount) const;
 
     [[nodiscard]] bool
     checkFlags(
@@ -233,6 +255,9 @@ public:
 
     std::int64_t
     getBalance(Account const& account) const;
+
+    std::int64_t
+    getIssuanceConfidentialBalance() const;
 
     MPT
     operator[](std::string const& name);

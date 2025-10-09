@@ -248,6 +248,8 @@ MPTTester::set(MPTSet const& arg)
         jv[sfTransferFee] = *arg.transferFee;
     if (arg.metadata)
         jv[sfMPTokenMetadata] = strHex(*arg.metadata);
+    if (arg.pubKey)
+        jv[sfIssuerElGamalPublicKey] = *arg.pubKey;
     if (submit(arg, jv) == tesSUCCESS && (arg.flags || arg.mutableFlags))
     {
         auto require = [&](std::optional<Account> const& holder,
@@ -344,6 +346,15 @@ MPTTester::checkMPTokenOutstandingAmount(std::int64_t expectedAmount) const
 {
     return forObject([&](SLEP const& sle) {
         return expectedAmount == (*sle)[sfOutstandingAmount];
+    });
+}
+
+[[nodiscard]] bool
+MPTTester::checkIssuanceConfidentialBalance(std::int64_t expectedAmount) const
+{
+    return forObject([&](SLEP const& sle) {
+        return expectedAmount ==
+            (*sle)[~sfConfidentialOutstandingAmount].value_or(0);
     });
 }
 
@@ -492,6 +503,18 @@ MPTTester::getBalance(Account const& account) const
     return 0;
 }
 
+std::int64_t
+MPTTester::getIssuanceConfidentialBalance() const
+{
+    if (!id_)
+        Throw<std::runtime_error>("MPT has not been created");
+
+    if (auto const sle = env_.le(keylet::mptIssuance(*id_)))
+        return (*sle)[~sfConfidentialOutstandingAmount].value_or(0);
+
+    return 0;
+}
+
 std::uint32_t
 MPTTester::getFlags(std::optional<Account> const& holder) const
 {
@@ -510,6 +533,50 @@ MPT
 MPTTester::operator[](std::string const& name)
 {
     return MPT(name, issuanceID());
+}
+
+void
+MPTTester::convert(MPTConvert const& arg)
+{
+    Json::Value jv;
+    if (arg.account)
+        jv[sfAccount] = arg.account->human();
+    else
+        Throw<std::runtime_error>("Account not specified");
+
+    jv[jss::TransactionType] = jss::ConfidentialConvert;
+    if (arg.id)
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+
+    if (arg.amt)
+        jv[sfMPTAmount.jsonName] = std::to_string(*arg.amt);
+    if (arg.holderPubKey)
+        jv[sfHolderElGamalPublicKey.jsonName] = *arg.holderPubKey;
+    if (arg.holderEncryptedAmt)
+        jv[sfHolderEncryptedAmount.jsonName] = *arg.holderEncryptedAmt;
+    if (arg.holderEncryptedAmt)
+        jv[sfIssuerEncryptedAmount.jsonName] = *arg.issuerEncryptedAmt;
+    if (arg.proof)
+        jv[sfZKProof.jsonName] = *arg.proof;
+
+    auto const holderAmt = getBalance(*arg.account);
+    auto const prevConfidentialOutstanding = getIssuanceConfidentialBalance();
+    if (submit(arg, jv) == tesSUCCESS)
+    {
+        auto const curConfidentialOutstanding =
+            getIssuanceConfidentialBalance();
+        env_.require(mptbalance(*this, *arg.account, holderAmt - *arg.amt));
+        env_.require(requireAny([&]() -> bool {
+            return prevConfidentialOutstanding + *arg.amt ==
+                curConfidentialOutstanding;
+        }));
+    }
 }
 
 }  // namespace jtx

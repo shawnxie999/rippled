@@ -71,7 +71,7 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
 
-    // we stil allow conversion of zero amount
+    // we still allow conversion of zero amount
     if ((*sleMptoken)[~sfMPTAmount].value_or(0) < ctx.tx[sfMPTAmount])
         return tecINSUFFICIENT_FUNDS;
 

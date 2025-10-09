@@ -60,7 +60,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             "D6E5F4B3A2C1D0B9E8A7F6C5D4B3A2E1F0B9C8D7A6E5F4B3A2C1D0B9E8A7F6B5A"
             "4";
         env(convert(mptAlice.issuanceID(), bob, 10, "123", data, data, "1243"));
-
+        mptAlice.set({.account = alice, .pubKey = "123"});
+        mptAlice.convert(
+            {.account = bob,
+             .amt = 10,
+             .proof = "123",
+             .holderPubKey = "123",
+             .holderEncryptedAmt = data,
+             .issuerEncryptedAmt = data});
         env.close();
     }
 
