@@ -115,6 +115,7 @@ TYPED_SFIELD(sfFirstNFTokenSequence,     UINT32,    50)
 TYPED_SFIELD(sfOracleDocumentID,         UINT32,    51)
 TYPED_SFIELD(sfPermissionValue,          UINT32,    52)
 TYPED_SFIELD(sfMutableFlags,             UINT32,    53)
+TYPED_SFIELD(sfConfidentialBalanceVersion, UINT32,  54)
 
 // 64-bit integers (common)
 TYPED_SFIELD(sfIndexNext,                UINT64,     1)
@@ -147,7 +148,6 @@ TYPED_SFIELD(sfIssuerNode,               UINT64,    27)
 TYPED_SFIELD(sfSubjectNode,              UINT64,    28)
 TYPED_SFIELD(sfLockedAmount,             UINT64,    29, SField::sMD_BaseTen|SField::sMD_Default)
 TYPED_SFIELD(sfConfidentialOutstandingAmount, UINT64, 30, SField::sMD_BaseTen|SField::sMD_Default)
-TYPED_SFIELD(sfConfidentialBalanceVersion, UINT64,  31, SField::sMD_BaseTen|SField::sMD_Default)
 
 // 128-bit
 TYPED_SFIELD(sfEmailHash,                UINT128,    1)
