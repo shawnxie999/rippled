@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/ConfidentialMergeInbox.h>
 
 #include <xrpl/protocol/ConfidentialTransfer.h>
@@ -79,7 +78,7 @@ ConfidentialMergeInbox::doApply()
     // todo: encrypted inbox with zero balance
     //  (*sleMptoken)[sfConfidentialBalanceInbox] = encrypted(0);
 
-    // it's fine if it reaches max uint64, it just resets to 0
+    // it's fine if it reaches max uint32, it just resets to 0
     (*sleMptoken)[sfConfidentialBalanceVersion] =
         (*sleMptoken)[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
 
