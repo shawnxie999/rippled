@@ -173,6 +173,12 @@ class MPTTester
     bool close_;
 
 public:
+    enum EncBalanceOptions {
+        ISSUER_ENCRYPTED_BALANCE,
+        HOLDER_ENCRYPTED_INBOX,
+        HOLDER_ENCRYPTED_SPENDING,
+    };
+
     MPTTester(Env& env, Account const& issuer, MPTInit const& constr = {});
 
     void
@@ -259,8 +265,16 @@ public:
     std::int64_t
     getIssuanceConfidentialBalance() const;
 
+    Slice
+    getEncryptedBalance(
+        Account const& account,
+        EncBalanceOptions option = HOLDER_ENCRYPTED_INBOX) const;
+
     MPT
     operator[](std::string const& name);
+
+    bool
+    printMPT(Account const& holder_) const;
 
 private:
     using SLEP = std::shared_ptr<SLE const>;

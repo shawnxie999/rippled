@@ -35,6 +35,49 @@
 
 namespace ripple {
 
+SECP256K1_API int
+secp256k1_elgamal_generate_keypair(
+    secp256k1_context const* ctx,
+    unsigned char* privkey,
+    secp256k1_pubkey* pubkey);
+
+SECP256K1_API int
+secp256k1_elgamal_encrypt(
+    secp256k1_context const* ctx,
+    secp256k1_pubkey* c1,
+    secp256k1_pubkey* c2,
+    secp256k1_pubkey const* pubkey_Q,
+    uint64_t amount,
+    unsigned char const* blinding_factor);
+
+SECP256K1_API int
+secp256k1_elgamal_decrypt(
+    secp256k1_context const* ctx,
+    uint64_t* amount,
+    secp256k1_pubkey const* c1,
+    secp256k1_pubkey const* c2,
+    unsigned char const* privkey);
+
+SECP256K1_API int
+secp256k1_elgamal_add(
+    secp256k1_context const* ctx,
+    secp256k1_pubkey* sum_c1,
+    secp256k1_pubkey* sum_c2,
+    secp256k1_pubkey const* a_c1,
+    secp256k1_pubkey const* a_c2,
+    secp256k1_pubkey const* b_c1,
+    secp256k1_pubkey const* b_c2);
+
+SECP256K1_API int
+secp256k1_elgamal_subtract(
+    secp256k1_context const* ctx,
+    secp256k1_pubkey* diff_c1,
+    secp256k1_pubkey* diff_c2,
+    secp256k1_pubkey const* a_c1,
+    secp256k1_pubkey const* a_c2,
+    secp256k1_pubkey const* b_c1,
+    secp256k1_pubkey const* b_c2);
+
 // breaks a 66-byte encrypted amount into two 33-byte components
 // then parses each 33-byte component into 64-byte secp256k1_pubkey format
 bool

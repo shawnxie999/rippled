@@ -78,6 +78,15 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfDomainID) && ctx.tx.isFieldPresent(sfHolder))
         return temMALFORMED;
 
+    if (!ctx.rules.enabled(featureConfidentialTransfer) &&
+        ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey))
+        return temDISABLED;
+
+    if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) &&
+        ctx.tx.isFieldPresent(sfHolder))
+        return temMALFORMED;
+    // todo: check pubkey length
+
     auto const txFlags = ctx.tx.getFlags();
 
     // fails if both flags are set
@@ -90,10 +99,12 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         return temMALFORMED;
 
     if (ctx.rules.enabled(featureSingleAssetVault) ||
-        ctx.rules.enabled(featureDynamicMPT))
+        ctx.rules.enabled(featureDynamicMPT) ||
+        ctx.rules.enabled(featureConfidentialTransfer))
     {
         // Is this transaction actually changing anything ?
-        if (txFlags == 0 && !ctx.tx.isFieldPresent(sfDomainID) && !isMutate)
+        if (txFlags == 0 && !ctx.tx.isFieldPresent(sfDomainID) &&
+            !ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) && !isMutate)
             return temMALFORMED;
     }
 
@@ -136,15 +147,6 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
                 return temMALFORMED;
         }
     }
-
-    if (!ctx.rules.enabled(featureConfidentialTransfer) &&
-        ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey))
-        return temMALFORMED;
-
-    if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) && holderID)
-        return temMALFORMED;
-
-    // todo: check pubkey length
 
     return tesSUCCESS;
 }

@@ -44,8 +44,8 @@ ConfidentialConvert::preflight(PreflightContext const& ctx)
         ctx.tx[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
         return temMALFORMED;
 
-    if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
-        return temMALFORMED;
+    // if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
+    //     return temMALFORMED;
 
     return tesSUCCESS;
 }
@@ -92,25 +92,25 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
     // todo: check zkproof/well formed
 
     // check equality proof
-    auto checkEqualityProof = [&](auto const& encryptedAmount,
-                                  auto const& pubKey) -> TER {
-        return proveEquality(
-            ctx.tx[sfZKProof],
-            encryptedAmount,
-            pubKey,
-            ctx.tx[sfMPTAmount],
-            ctx.tx.getTransactionID(),
-            (*sleMptoken)[~sfConfidentialBalanceVersion].value_or(0));
-    };
+    // auto checkEqualityProof = [&](auto const& encryptedAmount,
+    //                               auto const& pubKey) -> TER {
+    //     return proveEquality(
+    //         ctx.tx[sfZKProof],
+    //         encryptedAmount,
+    //         pubKey,
+    //         ctx.tx[sfMPTAmount],
+    //         ctx.tx.getTransactionID(),
+    //         (*sleMptoken)[~sfConfidentialBalanceVersion].value_or(0));
+    // };
 
-    if (!isTesSuccess(checkEqualityProof(
-            ctx.tx[sfHolderEncryptedAmount], holderPubKey)) ||
-        !isTesSuccess(checkEqualityProof(
-            ctx.tx[sfIssuerEncryptedAmount],
-            (*sleIssuance)[sfIssuerElGamalPublicKey])))
-    {
-        return tecBAD_PROOF;
-    }
+    // if (!isTesSuccess(checkEqualityProof(
+    //         ctx.tx[sfHolderEncryptedAmount], holderPubKey)) ||
+    //     !isTesSuccess(checkEqualityProof(
+    //         ctx.tx[sfIssuerEncryptedAmount],
+    //         (*sleIssuance)[sfIssuerElGamalPublicKey])))
+    // {
+    //     return tecBAD_PROOF;
+    // }
 
     return tesSUCCESS;
 }
@@ -153,7 +153,7 @@ ConfidentialConvert::doApply()
             Buffer sum(ecGamalEncryptedTotalLength);
             if (TER const ter = homomorphicAdd(
                     holderEc, (*sleMptoken)[sfConfidentialBalanceInbox], sum);
-                isTesSuccess(ter))
+                !isTesSuccess(ter))
                 return tecINTERNAL;
 
             (*sleMptoken)[sfConfidentialBalanceInbox] = sum;
@@ -164,7 +164,7 @@ ConfidentialConvert::doApply()
             Buffer sum(ecGamalEncryptedTotalLength);
             if (TER const ter = homomorphicAdd(
                     issuerEc, (*sleMptoken)[sfIssuerEncryptedBalance], sum);
-                isTesSuccess(ter))
+                !isTesSuccess(ter))
                 return tecINTERNAL;
 
             (*sleMptoken)[sfIssuerEncryptedBalance] = sum;

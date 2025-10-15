@@ -22,6 +22,8 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
+#include "test/jtx/mpt.h"
+
 namespace ripple {
 namespace test {
 namespace jtx {
@@ -332,6 +334,15 @@ MPTTester::checkDomainID(std::optional<uint256> expected) const
 }
 
 [[nodiscard]] bool
+MPTTester::printMPT(Account const& holder_) const
+{
+    return forObject(
+        [&](SLEP const& sle) -> bool { std::cout << "\n"
+                                                 << sle->getJson(); },
+        holder_);
+}
+
+[[nodiscard]] bool
 MPTTester::checkMPTokenAmount(
     Account const& holder_,
     std::int64_t expectedAmount) const
@@ -513,6 +524,30 @@ MPTTester::getIssuanceConfidentialBalance() const
         return (*sle)[~sfConfidentialOutstandingAmount].value_or(0);
 
     return 0;
+}
+
+Slice
+MPTTester::getEncryptedBalance(Account const& account, EncBalanceOptions option)
+    const
+{
+    if (!id_)
+        Throw<std::runtime_error>("MPT has not been created");
+    if (account == issuer_)
+    {
+        Throw<std::runtime_error>("Issuer has no MPTOken");
+    }
+
+    if (auto const sle = env_.le(keylet::mptoken(*id_, account.id())))
+    {
+        if (option == HOLDER_ENCRYPTED_INBOX)
+            return (*sle)[sfConfidentialBalanceInbox];
+        if (option == HOLDER_ENCRYPTED_SPENDING)
+            return (*sle)[sfConfidentialBalanceSpending];
+        if (option == ISSUER_ENCRYPTED_BALANCE)
+            return (*sle)[sfIssuerEncryptedBalance];
+    }
+
+    return Slice{};
 }
 
 std::uint32_t

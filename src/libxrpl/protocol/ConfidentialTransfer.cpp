@@ -21,7 +21,213 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TER.h>
 
+#include <openssl/rand.h>
+
 namespace ripple {
+
+int
+secp256k1_elgamal_generate_keypair(
+    secp256k1_context const* ctx,
+    unsigned char* privkey,
+    secp256k1_pubkey* pubkey)
+{
+    // 1. Generate 32 random bytes for the private key
+    do
+    {
+        if (RAND_bytes(privkey, 32) != 1)
+        {
+            return 0;  // Failure
+        }
+        // 2. Verify the random data is a valid private key.
+    } while (secp256k1_ec_seckey_verify(ctx, privkey) != 1);
+
+    // 3. Create the corresponding public key.
+    if (secp256k1_ec_pubkey_create(ctx, pubkey, privkey) != 1)
+    {
+        return 0;  // Failure
+    }
+
+    return 1;  // Success
+}
+
+// ... implementation of secp256k1_elgamal_encrypt ...
+
+int
+secp256k1_elgamal_encrypt(
+    secp256k1_context const* ctx,
+    secp256k1_pubkey* c1,
+    secp256k1_pubkey* c2,
+    secp256k1_pubkey const* pubkey_Q,
+    uint64_t amount,
+    unsigned char const* blinding_factor)
+{
+    unsigned char amount_scalar[32] = {0};
+    secp256k1_pubkey M, S;
+    secp256k1_pubkey const* points_to_add[2];
+
+    // CORRECTED: Convert uint64_t to a 32-byte BIG-ENDIAN scalar.
+    for (int i = 0; i < 8; ++i)
+    {
+        amount_scalar[31 - i] = (amount >> (i * 8)) & 0xFF;
+    }
+
+    if (secp256k1_ec_pubkey_create(ctx, &M, amount_scalar) != 1)
+        return 0;
+    if (secp256k1_ec_pubkey_create(ctx, c1, blinding_factor) != 1)
+        return 0;
+
+    S = *pubkey_Q;
+    if (secp256k1_ec_pubkey_tweak_mul(ctx, &S, blinding_factor) != 1)
+        return 0;
+
+    points_to_add[0] = &M;
+    points_to_add[1] = &S;
+    if (secp256k1_ec_pubkey_combine(ctx, c2, points_to_add, 2) != 1)
+        return 0;
+
+    return 1;
+}
+// ... implementation of secp256k1_elgamal_encrypt ...
+int
+secp256k1_elgamal_decrypt(
+    secp256k1_context const* ctx,
+    uint64_t* amount,
+    secp256k1_pubkey const* c1,
+    secp256k1_pubkey const* c2,
+    unsigned char const* privkey)
+{
+    secp256k1_pubkey S, M, G_point, current_M, next_M;
+    secp256k1_pubkey const* points_to_add[2];
+    unsigned char c2_bytes[33], s_bytes[33], m_bytes[33], current_m_bytes[33];
+    size_t len;
+    uint64_t i;
+
+    // CORRECTED: Create the scalar '1' in big-endian format.
+    unsigned char one_scalar[32] = {0};
+    one_scalar[31] = 1;
+
+    S = *c1;
+    if (secp256k1_ec_pubkey_tweak_mul(ctx, &S, privkey) != 1)
+        return 0;
+
+    // CORRECTED: Reset 'len' before each serialize call.
+    len = sizeof(c2_bytes);
+    if (secp256k1_ec_pubkey_serialize(
+            ctx, c2_bytes, &len, c2, SECP256K1_EC_COMPRESSED) != 1)
+        return 0;
+    len = sizeof(s_bytes);
+    if (secp256k1_ec_pubkey_serialize(
+            ctx, s_bytes, &len, &S, SECP256K1_EC_COMPRESSED) != 1)
+        return 0;
+    if (memcmp(c2_bytes, s_bytes, sizeof(c2_bytes)) == 0)
+    {
+        *amount = 0;
+        return 1;
+    }
+
+    if (secp256k1_ec_pubkey_negate(ctx, &S) != 1)
+        return 0;
+    points_to_add[0] = c2;
+    points_to_add[1] = &S;
+    if (secp256k1_ec_pubkey_combine(ctx, &M, points_to_add, 2) != 1)
+        return 0;
+
+    len = sizeof(m_bytes);
+    if (secp256k1_ec_pubkey_serialize(
+            ctx, m_bytes, &len, &M, SECP256K1_EC_COMPRESSED) != 1)
+        return 0;
+
+    if (secp256k1_ec_pubkey_create(ctx, &G_point, one_scalar) != 1)
+        return 0;
+    current_M = G_point;
+
+    for (i = 1; i <= 100000; ++i)
+    {
+        len = sizeof(current_m_bytes);
+        if (secp256k1_ec_pubkey_serialize(
+                ctx,
+                current_m_bytes,
+                &len,
+                &current_M,
+                SECP256K1_EC_COMPRESSED) != 1)
+            return 0;
+        if (memcmp(m_bytes, current_m_bytes, sizeof(m_bytes)) == 0)
+        {
+            *amount = i;
+            return 1;
+        }
+
+        points_to_add[0] = &current_M;
+        points_to_add[1] = &G_point;
+        if (secp256k1_ec_pubkey_combine(ctx, &next_M, points_to_add, 2) != 1)
+            return 0;
+        current_M = next_M;
+    }
+
+    return 0;
+}
+
+int
+secp256k1_elgamal_add(
+    secp256k1_context const* ctx,
+    secp256k1_pubkey* sum_c1,
+    secp256k1_pubkey* sum_c2,
+    secp256k1_pubkey const* a_c1,
+    secp256k1_pubkey const* a_c2,
+    secp256k1_pubkey const* b_c1,
+    secp256k1_pubkey const* b_c2)
+{
+    secp256k1_pubkey const* c1_points[2] = {a_c1, b_c1};
+    if (secp256k1_ec_pubkey_combine(ctx, sum_c1, c1_points, 2) != 1)
+    {
+        return 0;
+    }
+
+    secp256k1_pubkey const* c2_points[2] = {a_c2, b_c2};
+    if (secp256k1_ec_pubkey_combine(ctx, sum_c2, c2_points, 2) != 1)
+    {
+        return 0;
+    }
+    return 1;
+}
+
+int
+secp256k1_elgamal_subtract(
+    secp256k1_context const* ctx,
+    secp256k1_pubkey* diff_c1,
+    secp256k1_pubkey* diff_c2,
+    secp256k1_pubkey const* a_c1,
+    secp256k1_pubkey const* a_c2,
+    secp256k1_pubkey const* b_c1,
+    secp256k1_pubkey const* b_c2)
+{
+    // To subtract, we add the negation: (A - B) is (A + (-B))
+    // Make a local, modifiable copy of B's points.
+    secp256k1_pubkey neg_b_c1 = *b_c1;
+    secp256k1_pubkey neg_b_c2 = *b_c2;
+
+    // Negate the copies
+    if (secp256k1_ec_pubkey_negate(ctx, &neg_b_c1) != 1 ||
+        secp256k1_ec_pubkey_negate(ctx, &neg_b_c2) != 1)
+    {
+        return 0;  // Negation failed
+    }
+
+    // Now, add A and the negated copies of B
+    secp256k1_pubkey const* c1_points[2] = {a_c1, &neg_b_c1};
+    if (secp256k1_ec_pubkey_combine(ctx, diff_c1, c1_points, 2) != 1)
+    {
+        return 0;
+    }
+
+    secp256k1_pubkey const* c2_points[2] = {a_c2, &neg_b_c2};
+    if (secp256k1_ec_pubkey_combine(ctx, diff_c2, c2_points, 2) != 1)
+    {
+        return 0;
+    }
+
+    return 1;  // Success
+}
 
 bool
 makeEcPair(Slice const& buffer, secp256k1_pubkey& out1, secp256k1_pubkey& out2)
@@ -82,10 +288,10 @@ homomorphicAdd(Slice const& a, Slice const& b, Buffer& out)
     secp256k1_pubkey sum_c2;
 
     // todo:: support addition after it's supported
-    // if (secp256k1_elgamal_add(
-    //         secp256k1Context(), &sum_c1, &sum_c2, a_c1, a_c2, b_c1, b_c2_) !=
-    //         1)
-    //     return tecINTERNAL;
+    if (secp256k1_elgamal_add(
+            secp256k1Context(), &sum_c1, &sum_c2, &a_c1, &a_c2, &b_c1, &b_c2) !=
+        1)
+        return tecINTERNAL;
 
     if (!serializeEcPair(sum_c1, sum_c2, out))
         return tecINTERNAL;

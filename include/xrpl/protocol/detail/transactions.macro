@@ -741,6 +741,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet,
     {sfMPTokenMetadata, soeOPTIONAL},
     {sfTransferFee, soeOPTIONAL},
     {sfMutableFlags, soeOPTIONAL},
+    {sfIssuerElGamalPublicKey, soeOPTIONAL},
 }))
 
 /** This transaction type authorizes a MPToken instance */
