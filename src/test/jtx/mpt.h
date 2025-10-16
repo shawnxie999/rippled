@@ -177,7 +177,7 @@ class MPTTester
     std::unordered_map<AccountID, Buffer> privKeys;
 
 public:
-    enum EncBalanceOptions {
+    enum EncryptedBalanceType {
         ISSUER_ENCRYPTED_BALANCE,
         HOLDER_ENCRYPTED_INBOX,
         HOLDER_ENCRYPTED_SPENDING,
@@ -269,10 +269,10 @@ public:
     std::int64_t
     getIssuanceConfidentialBalance() const;
 
-    Buffer
+    std::optional<Buffer>
     getEncryptedBalance(
         Account const& account,
-        EncBalanceOptions option = HOLDER_ENCRYPTED_INBOX) const;
+        EncryptedBalanceType option = HOLDER_ENCRYPTED_INBOX) const;
 
     MPT
     operator[](std::string const& name);

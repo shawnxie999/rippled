@@ -113,13 +113,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         mptAlice.printMPT(bob);
         {
-            Buffer bobEnc = mptAlice.getEncryptedBalance(bob);
+            auto bobEnc = mptAlice.getEncryptedBalance(bob);
 
             secp256k1_pubkey c1;
             secp256k1_pubkey c2;
 
             uint64_t decryptedAmt;
-            BEAST_EXPECT(makeEcPair(bobEnc, c1, c2));
+            BEAST_EXPECT(makeEcPair(*bobEnc, c1, c2));
             BEAST_EXPECT(secp256k1_elgamal_decrypt(
                 secp256k1Context(), &decryptedAmt, &c1, &c2, holderPrivkey));
             std::cout << "\n decrpypted amt is " << decryptedAmt << '\n';
@@ -145,13 +145,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         env.close();
         mptAlice.printMPT(bob);
         {
-            Buffer bobEnc = mptAlice.getEncryptedBalance(bob);
+            auto bobEnc = mptAlice.getEncryptedBalance(bob);
 
             secp256k1_pubkey c1;
             secp256k1_pubkey c2;
 
             uint64_t decryptedAmt;
-            BEAST_EXPECT(makeEcPair(bobEnc, c1, c2));
+            BEAST_EXPECT(makeEcPair(*bobEnc, c1, c2));
             BEAST_EXPECT(secp256k1_elgamal_decrypt(
                 secp256k1Context(), &decryptedAmt, &c1, &c2, holderPrivkey));
             std::cout << "\n decrpypted amt is " << decryptedAmt << '\n';

@@ -531,9 +531,10 @@ MPTTester::getIssuanceConfidentialBalance() const
     return 0;
 }
 
-Buffer
-MPTTester::getEncryptedBalance(Account const& account, EncBalanceOptions option)
-    const
+std::optional<Buffer>
+MPTTester::getEncryptedBalance(
+    Account const& account,
+    EncryptedBalanceType option) const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -544,18 +545,23 @@ MPTTester::getEncryptedBalance(Account const& account, EncBalanceOptions option)
 
     if (auto const sle = env_.le(keylet::mptoken(*id_, account.id())))
     {
-        if (option == HOLDER_ENCRYPTED_INBOX)
+        if (option == HOLDER_ENCRYPTED_INBOX &&
+            sle->isFieldPresent(sfConfidentialBalanceInbox))
             return Buffer(
                 (*sle)[sfConfidentialBalanceInbox].data(),
                 (*sle)[sfConfidentialBalanceInbox].size());
-        if (option == HOLDER_ENCRYPTED_SPENDING)
+        if (option == HOLDER_ENCRYPTED_SPENDING &&
+            sle->isFieldPresent(sfConfidentialBalanceSpending))
             return Buffer(
                 (*sle)[sfConfidentialBalanceSpending].data(),
                 (*sle)[sfConfidentialBalanceSpending].size());
-        if (option == ISSUER_ENCRYPTED_BALANCE)
+        if (option == ISSUER_ENCRYPTED_BALANCE &&
+            sle->isFieldPresent(sfIssuerEncryptedBalance))
             return Buffer(
                 (*sle)[sfIssuerEncryptedBalance].data(),
                 (*sle)[sfIssuerEncryptedBalance].size());
+
+        return {};
     }
 
     Throw<std::runtime_error>("MPToken does not exist");
@@ -626,16 +632,11 @@ MPTTester::convert(MPTConvert const& arg)
     auto const holderAmt = getBalance(*arg.account);
     auto const prevConfidentialOutstanding = getIssuanceConfidentialBalance();
 
-    uint64_t prevInboxBalance = 0;
-    try
-    {
-        prevInboxBalance = decryptAmount(
-            *arg.account,
-            getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX));
-    }
-    catch (std::exception const& e)
-    {
-    }
+    auto maybeEncrypted =
+        getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+
+    uint64_t prevInboxBalance =
+        maybeEncrypted ? decryptAmount(*arg.account, *maybeEncrypted) : 0;
 
     if (submit(arg, jv) == tesSUCCESS)
     {
@@ -647,9 +648,12 @@ MPTTester::convert(MPTConvert const& arg)
                 curConfidentialOutstanding;
         }));
         env_.require(requireAny([&]() -> bool {
-            uint64_t const decryptedAmt = decryptAmount(
-                *arg.account,
-                getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX));
+            auto maybeEncrypted =
+                getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+
+            uint64_t decryptedAmt = maybeEncrypted
+                ? decryptAmount(*arg.account, *maybeEncrypted)
+                : 0;
             std::cout << "\n decrpypted amt is " << decryptedAmt << '\n';
             return prevInboxBalance + *arg.amt == decryptedAmt;
         }));
