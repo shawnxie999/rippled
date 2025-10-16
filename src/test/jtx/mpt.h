@@ -27,6 +27,8 @@
 
 #include <xrpl/protocol/UintTypes.h>
 
+#include <cstdint>
+
 namespace ripple {
 namespace test {
 namespace jtx {
@@ -145,7 +147,7 @@ struct MPTSet
     std::optional<std::string> metadata = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
     std::optional<uint256> domainID = std::nullopt;
-    std::optional<std::string> pubKey = std::nullopt;
+    std::optional<Buffer> pubKey = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -155,9 +157,9 @@ struct MPTConvert
     std::optional<MPTID> id = std::nullopt;
     std::optional<std::uint64_t> amt = std::nullopt;
     std::optional<std::string> proof = std::nullopt;
-    std::optional<std::string> holderPubKey = std::nullopt;
-    std::optional<std::string> holderEncryptedAmt = std::nullopt;
-    std::optional<std::string> issuerEncryptedAmt = std::nullopt;
+    std::optional<Buffer> holderPubKey = std::nullopt;
+    std::optional<Buffer> holderEncryptedAmt = std::nullopt;
+    std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -171,6 +173,8 @@ class MPTTester
     std::unordered_map<std::string, Account> const holders_;
     std::optional<MPTID> id_;
     bool close_;
+    std::unordered_map<AccountID, Buffer> pubKeys;
+    std::unordered_map<AccountID, Buffer> privKeys;
 
 public:
     enum EncBalanceOptions {
@@ -265,7 +269,7 @@ public:
     std::int64_t
     getIssuanceConfidentialBalance() const;
 
-    Slice
+    Buffer
     getEncryptedBalance(
         Account const& account,
         EncBalanceOptions option = HOLDER_ENCRYPTED_INBOX) const;
@@ -275,6 +279,21 @@ public:
 
     bool
     printMPT(Account const& holder_) const;
+
+    void
+    generateKeyPair(Account const& account);
+
+    Buffer
+    getPubKey(Account const& account) const;
+
+    Buffer
+    getPrivKey(Account const& account) const;
+
+    Buffer
+    encryptAmount(Account const& account, uint64_t amt) const;
+
+    uint64_t
+    decryptAmount(Account const& account, Buffer const& amt) const;
 
 private:
     using SLEP = std::shared_ptr<SLE const>;

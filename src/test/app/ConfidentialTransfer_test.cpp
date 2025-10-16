@@ -49,20 +49,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.pay(alice, bob, 100);
         env.close();
 
-        // std::uint8_t const rawData[] = {
-        //     0xB9, 0xE8, 0xC7, 0xD6, 0xA5, 0xF4, 0xB3, 0xA2, 0xC1, 0xD0, 0xE9,
-        //     0xF8, 0xB7, 0xA6, 0xC5, 0xD4, 0xE3, 0xF2, 0xA1, 0xB0, 0xC9, 0xD8,
-        //     0xE7, 0xF6, 0xA5, 0xB4, 0xC3, 0xD2, 0xE1, 0xF0, 0xB9, 0xA8, 0xC7,
-        //     0xD6, 0xE5, 0xF4, 0xB3, 0xA2, 0xC1, 0xD0, 0xB9, 0xE8, 0xA7, 0xF6,
-        //     0xC5, 0xD4, 0xB3, 0xA2, 0xE1, 0xF0, 0xB9, 0xC8, 0xD7, 0xA6, 0xE5,
-        //     0xF4, 0xB3, 0xA2, 0xC1, 0xD0, 0xB9, 0xE8, 0xA7, 0xF6, 0xB5,
-        //     0xA4};
-
-        // Slice encAmt{rawData, ecGamalEncryptedTotalLength};
-        // std::string data =
-        //     "B9E8C7D6A5F4B3A2C1D0E9F8B7A6C5D4E3F2A1B0C9D8E7F6A5B4C3D2E1F0B9A8C7"
-        //     "D6E5F4B3A2C1D0B9E8A7F6C5D4B3A2E1F0B9C8D7A6E5F4B3A2C1D0B9E8A7F6B5A"
-        //     "4";
         unsigned char issuerPrivkey[32];
         secp256k1_pubkey issuerPubkey;
         BEAST_EXPECT(secp256k1_elgamal_generate_keypair(
@@ -71,7 +57,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // mptAlice.set({.account = alice, .flags = tfMPTLock});
 
         mptAlice.set(
-            {.account = alice, .pubKey = strHex(Slice{issuerPubkey.data, 64})});
+            {.account = alice, .pubKey = Buffer{issuerPubkey.data, 64}});
 
         unsigned char holderPrivkey[32];
         secp256k1_pubkey holderPubkey;
@@ -113,18 +99,21 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         BEAST_EXPECT(encryptToBuffer(
             secp256k1Context(), issuerPubkey, 10, issuerEncryptedAmt));
 
+        std::cout << " \n holder pub key "
+                  << strHex(Slice{holderPubkey.data, 64}) << std::endl;
+
         mptAlice.convert(
             {.account = bob,
              .amt = 10,
              .proof = "123",
-             .holderPubKey = strHex(Slice{holderPubkey.data, 64}),
-             .holderEncryptedAmt = strHex(holderEncryptedAmt),
-             .issuerEncryptedAmt = strHex(issuerEncryptedAmt)});
+             .holderPubKey = Buffer{holderPubkey.data, 64},
+             .holderEncryptedAmt = (holderEncryptedAmt),
+             .issuerEncryptedAmt = (issuerEncryptedAmt)});
         env.close();
 
         mptAlice.printMPT(bob);
         {
-            Slice bobEnc = mptAlice.getEncryptedBalance(bob);
+            Buffer bobEnc = mptAlice.getEncryptedBalance(bob);
 
             secp256k1_pubkey c1;
             secp256k1_pubkey c2;
@@ -151,12 +140,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             {.account = bob,
              .amt = 10,
              .proof = "123",
-             .holderEncryptedAmt = strHex(holderEncryptedAmt2),
-             .issuerEncryptedAmt = strHex(issuerEncryptedAmt2)});
+             .holderEncryptedAmt = (holderEncryptedAmt2),
+             .issuerEncryptedAmt = (issuerEncryptedAmt2)});
         env.close();
-
+        mptAlice.printMPT(bob);
         {
-            Slice bobEnc = mptAlice.getEncryptedBalance(bob);
+            Buffer bobEnc = mptAlice.getEncryptedBalance(bob);
 
             secp256k1_pubkey c1;
             secp256k1_pubkey c2;
@@ -170,9 +159,63 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testConvert2(FeatureBitset features)
+    {
+        testcase("test convert");
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create(
+            {.ownerCount = 1,
+             .holderCount = 0,
+             .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+        mptAlice.authorize({.account = bob});
+        env.close();
+        mptAlice.pay(alice, bob, 100);
+        env.close();
+
+        mptAlice.generateKeyPair(alice);
+
+        // mptAlice.set({.account = alice, .flags = tfMPTLock});
+
+        mptAlice.set({.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.generateKeyPair(bob);
+
+        auto const issuerAmt = mptAlice.encryptAmount(alice, 10);
+        auto const holderAmt = mptAlice.encryptAmount(bob, 10);
+
+        mptAlice.convert({
+            .account = bob,
+            .amt = 10,
+            .proof = "123",
+            .holderPubKey = mptAlice.getPubKey(bob),
+            .holderEncryptedAmt = holderAmt,
+            .issuerEncryptedAmt = issuerAmt,
+        });
+        env.close();
+
+        mptAlice.printMPT(bob);
+
+        mptAlice.convert({
+            .account = bob,
+            .amt = 20,
+            .proof = "123",
+        });
+
+        env.close();
+        mptAlice.printMPT(bob);
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
-        testConvert(features);
+        //   testConvert(features);
+        testConvert2(features);
     }
 
 public:
