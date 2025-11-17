@@ -3115,4 +3115,26 @@ ValidVault::finalize(
     return true;
 }
 
+// void
+// ValidConfidentialTransfer::visitEntry(
+//     bool,
+//     std::shared_ptr<SLE const> const& before,
+//     std::shared_ptr<SLE const> const& after)
+// {
+//     if (before && after &&)
+// }
+
+// bool
+// ValidConfidentialTransfer::finalize(
+//     STTx const& tx,
+//     TER const result,
+//     XRPAmount const,
+//     ReadView const& view,
+//     beast::Journal const& j)
+// {
+//     auto const txType = tx.getTxnType();
+
+//     return true;
+// }
+
 }  // namespace ripple
