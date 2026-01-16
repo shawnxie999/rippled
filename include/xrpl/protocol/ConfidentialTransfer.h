@@ -213,6 +213,63 @@ secp256k1_equality_plaintext_verify(
     uint64_t amount,
     unsigned char const* tx_context_id);
 
+/**
+ * @brief Proves the link between an ElGamal ciphertext and a Pedersen
+ * commitment.
+ * * Formal Statement: Knowledge of (m, r, rho) such that:
+ * C1 = r*G, C2 = m*G + r*Pk, and PCm = m*G + rho*H.
+ * * @param ctx         Pointer to a secp256k1 context object.
+ * @param proof       [OUT] Pointer to 195-byte buffer for the proof output.
+ * @param c1          Pointer to the ElGamal C1 point (r*G).
+ * @param c2          Pointer to the ElGamal C2 point (m*G + r*Pk).
+ * @param pk          Pointer to the recipient's public key.
+ * @param pcm         Pointer to the Pedersen Commitment (m*G + rho*H).
+ * @param amount      The plaintext amount (m).
+ * @param r           The 32-byte secret ElGamal blinding factor.
+ * @param rho         The 32-byte secret Pedersen blinding factor.
+ * @param context_id  32-byte unique transaction context identifier.
+ * @return 1 on success, 0 on failure.
+ */
+int
+secp256k1_elgamal_pedersen_link_prove(
+    secp256k1_context const* ctx,
+    unsigned char* proof,
+    secp256k1_pubkey const* c1,
+    secp256k1_pubkey const* c2,
+    secp256k1_pubkey const* pk,
+    secp256k1_pubkey const* pcm,
+    uint64_t amount,
+    unsigned char const* r,
+    unsigned char const* rho,
+    unsigned char const* context_id);
+
+/**
+ * @brief Verifies the link proof between ElGamal and Pedersen commitments.
+ * * @return 1 if the proof is valid, 0 otherwise.
+ */
+int
+secp256k1_elgamal_pedersen_link_verify(
+    secp256k1_context const* ctx,
+    unsigned char const* proof,
+    secp256k1_pubkey const* c1,
+    secp256k1_pubkey const* c2,
+    secp256k1_pubkey const* pk,
+    secp256k1_pubkey const* pcm,
+    unsigned char const* context_id);
+
+/**
+ * Verifies that (c1, c2) is a valid ElGamal encryption of 'amount'
+ * for 'pubkey_Q' using the revealed 'blinding_factor'.
+ */
+int
+secp256k1_elgamal_verify_encryption(
+    secp256k1_context const* ctx,
+    secp256k1_pubkey const* c1,
+    secp256k1_pubkey const* c2,
+    secp256k1_pubkey const* pubkey_Q,
+    uint64_t amount,
+    unsigned char const* blinding_factor);
+
 // breaks a 66-byte encrypted amount into two 33-byte components
 // then parses each 33-byte component into 64-byte secp256k1_pubkey format
 bool
@@ -325,6 +382,14 @@ size_t inline getEqualityProofLength(bool const hasAuditor)
 {
     return getEqualityProofSize(hasAuditor) * ecEqualityProofLength;
 }
+
+TER
+verifyPedersenLinkage(
+    Slice const& proof,
+    Slice const& encAmt,
+    Slice const& pubKeySlice,
+    Slice const& pcmSlice,
+    uint256 const& context_id);
 
 }  // namespace ripple
 

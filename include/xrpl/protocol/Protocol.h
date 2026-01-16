@@ -311,6 +311,9 @@ std::size_t constexpr ecPubKeyLength = 64;
 
 /** Length of EC private key */
 std::size_t constexpr ecPrivKeyLength = 32;
+
+/** Length of Pedersen linkage proof */
+std::size_t constexpr pedersenLinkageProofLength = 195;
 }  // namespace ripple
 
 #endif
