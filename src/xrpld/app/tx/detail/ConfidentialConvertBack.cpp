@@ -53,7 +53,7 @@ verifyProofs(
     auto const mptIssuanceID = tx[sfMPTokenIssuanceID];
     auto const account = tx[sfAccount];
     auto const amount = tx[sfMPTAmount];
-
+    Buffer zkps = Buffer(tx[sfZKProof].data(), tx[sfZKProof].size());
     auto const contextHash = getConvertBackContextHash(
         account,
         tx[sfSequence],
@@ -72,10 +72,13 @@ verifyProofs(
                 tx[sfAuditorEncryptedAmount]});
     }
 
+    std::uint8_t* ptr = zkps.data();
+
     // verify equality proofs
     {
-        auto const equalityZkps = getEqualityProofs(
-            Slice{tx[sfZKProof].data(), getEqualityProofLength(hasAuditor)});
+        auto const proofLen = getEqualityProofLength(hasAuditor);
+        auto const equalityZkps =
+            getEqualityProofs(Slice{zkps.data(), proofLen});
 
         return verifyEqualityProofs(
             amount,
@@ -88,6 +91,15 @@ verifyProofs(
                 tx[sfIssuerEncryptedAmount]},  // Issuer
             auditor,                           // Optional auditor
             contextHash);
+
+        ptr += proofLen;
+    }
+
+    // verify pedersen proofs
+    {
+        auto const proofLen = pedersenLinkageProofLength;
+
+        ptr += proofLen;
     }
 
     return tesSUCCESS;
