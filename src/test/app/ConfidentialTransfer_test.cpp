@@ -1818,6 +1818,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amt = 30,
                  .issuerEncryptedAmt = getBadCiphertext(),
                  .err = temBAD_CIPHERTEXT});
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = 30,
+                 .pedersenCommitment = Buffer(),
+                 .err = temMALFORMED});
         }
     }
 
@@ -3000,6 +3006,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Account const bob("bob");
         MPTTester mptAlice(env, alice, {.holders = {bob}});
 
+        // --------------- Setup test --------------- //
         mptAlice.create(
             {.ownerCount = 1,
              .holderCount = 0,
@@ -3048,6 +3055,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.encryptAmount(bob, amt, blindingFactor);
         auto const version = mptAlice.getMPTokenVersion(bob);
 
+        // --------------- Finish setup --------------- //
+
+        // There are several tests that use bad params to generate the
+        // pedersen linkage proof. These don't really need to be tested in
+        // rippled, as this is mainly the responsibility of the crypto lib to
+        // unit test correctly. But we still test a few cases since it's easy to
+        // do.
+
         // generate a proof using a pedersen commitment using the wrong value
         {
             uint256 const contextHash = getConvertBackContextHash(
@@ -3078,43 +3093,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .issuerEncryptedAmt = issuerCiphertext,
                  .blindingFactor = blindingFactor,
                  .pedersenCommitment = pedersenCommitment,
-                 .err = tecBAD_PROOF});
-        }
-
-        // test when the pedersen commitment is wrong while the proof is
-        // right
-        {
-            // generate the context hash again because bob's sequence
-            // incremented from prev txn
-            uint256 const contextHash = getConvertBackContextHash(
-                bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
-
-            Buffer const badPedersenCommitment =
-                mptAlice.getPedersenCommitment(1, pcBlindingFactor);
-            Buffer const proof = mptAlice.getConvertBackProof(
-                bob,
-                amt,
-                contextHash,
-                bobCiphertext,
-                issuerCiphertext,
-                {},
-                blindingFactor,
-                {
-                    .pedersenCommitment = pedersenCommitment,
-                    .amt = *spendingBalance,
-                    .encryptedAmt = *encryptedSpendingBalance,
-                    .blindingFactor = pcBlindingFactor,
-                });
-
-            mptAlice.convertBack(
-                {.account = bob,
-                 .amt = amt,
-                 .proof = proof,
-                 .holderEncryptedAmt = bobCiphertext,
-                 .issuerEncryptedAmt = issuerCiphertext,
-                 .blindingFactor = blindingFactor,
-                 .pedersenCommitment =
-                     badPedersenCommitment,  // wrong pc used here
                  .err = tecBAD_PROOF});
         }
 
@@ -3150,6 +3128,77 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .issuerEncryptedAmt = issuerCiphertext,
                  .blindingFactor = blindingFactor,
                  .pedersenCommitment = pedersenCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // the balance for pedersen proof is wrong
+        {
+            // generate the context hash again because bob's sequence
+            // incremented from prev txn
+            uint256 const contextHash = getConvertBackContextHash(
+                bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+
+            Buffer const proof = mptAlice.getConvertBackProof(
+                bob,
+                amt,
+                contextHash,
+                bobCiphertext,
+                issuerCiphertext,
+                {},
+                blindingFactor,
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = 1,  // proof is generated using a wrong balance
+                    .encryptedAmt = *encryptedSpendingBalance,
+                    .blindingFactor = pcBlindingFactor,
+                });
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = amt,
+                 .proof = proof,
+                 .holderEncryptedAmt = bobCiphertext,
+                 .issuerEncryptedAmt = issuerCiphertext,
+                 .blindingFactor = blindingFactor,
+                 .pedersenCommitment = pedersenCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // test when the pedersen commitment is wrong while the proof is
+        // right
+        {
+            // generate the context hash again because bob's sequence
+            // incremented from prev txn
+            uint256 const contextHash = getConvertBackContextHash(
+                bob, env.seq(bob), mptAlice.issuanceID(), amt, version);
+
+            // pc is generated using a wrong balance
+            Buffer const badPedersenCommitment =
+                mptAlice.getPedersenCommitment(1, pcBlindingFactor);
+            Buffer const proof = mptAlice.getConvertBackProof(
+                bob,
+                amt,
+                contextHash,
+                bobCiphertext,
+                issuerCiphertext,
+                {},
+                blindingFactor,
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = *spendingBalance,
+                    .encryptedAmt = *encryptedSpendingBalance,
+                    .blindingFactor = pcBlindingFactor,
+                });
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = amt,
+                 .proof = proof,
+                 .holderEncryptedAmt = bobCiphertext,
+                 .issuerEncryptedAmt = issuerCiphertext,
+                 .blindingFactor = blindingFactor,
+                 .pedersenCommitment =
+                     badPedersenCommitment,  // wrong pc used here
                  .err = tecBAD_PROOF});
         }
 
