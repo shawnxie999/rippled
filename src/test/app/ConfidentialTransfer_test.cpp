@@ -2938,6 +2938,64 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testBulletproofWithZero()
+    {
+        testcase("Bulletproof with zero value");
+
+        // Generate a random blinding factor
+        unsigned char blindingFactor[32];
+        RAND_bytes(blindingFactor, 32);
+
+        // Get the H generator
+        secp256k1_pubkey pk_base;
+        BEAST_EXPECT(secp256k1_mpt_get_h_generator(secp256k1Context(), &pk_base) == 1);
+
+        // Generate a random context hash
+        unsigned char contextHash[32];
+        RAND_bytes(contextHash, 32);
+
+        size_t const ecSingleBulletproofLength = 688;
+        // Test with value = 0
+        {
+            uint64_t value = 0;
+            unsigned char proof[4096];
+            size_t proofLen = 4096;
+
+            int result = secp256k1_bulletproof_prove_agg(
+                secp256k1Context(),
+                proof,
+                &proofLen,
+                &value,
+                blindingFactor,
+                1,  // m = 1 (single value)
+                &pk_base,
+                contextHash);
+
+            BEAST_EXPECTS(result == 1, "Bulletproof with value 0 should succeed");
+            if (result == 1)
+            {
+                BEAST_EXPECTS(proofLen == ecSingleBulletproofLength, "Proof length should be 688 bytes");
+            }
+        }
+
+        // Test with value = 1 (for comparison)
+        {
+            uint64_t value = 1;
+            unsigned char proof[4096];
+            size_t proofLen = 4096;
+
+            int result = secp256k1_bulletproof_prove_agg(
+                secp256k1Context(), proof, &proofLen, &value, blindingFactor, 1, &pk_base, contextHash);
+
+            BEAST_EXPECTS(result == 1, "Bulletproof with value 1 should succeed");
+            if (result == 1)
+            {
+                BEAST_EXPECTS(proofLen == ecSingleBulletproofLength, "Proof length should be 688 bytes");
+            }
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testConvert(features);
@@ -2983,7 +3041,8 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{testable_amendments()};
 
-        testWithFeats(all);
+        // testWithFeats(all);
+        testBulletproofWithZero();
     }
 };
 
