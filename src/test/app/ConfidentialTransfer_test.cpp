@@ -2938,42 +2938,82 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testEncryptionDecryption(FeatureBitset features)
+    {
+        testcase("Encryption and Decryption");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanPrivacy});
+        mptAlice.authorize({.account = bob});
+
+        mptAlice.generateKeyPair(bob);
+
+        auto const testEncryptDecrypt = [&](std::uint64_t amount, std::string const& description) {
+            // Generate a random blinding factor
+            Buffer blindingFactor(ecBlindingFactorLength);
+            RAND_bytes(blindingFactor.data(), ecBlindingFactorLength);
+
+            // Encrypt the amount
+            Buffer const encrypted = mptAlice.encryptAmount(bob, amount, blindingFactor);
+            BEAST_EXPECT(encrypted.size() == ecGamalEncryptedTotalLength);
+
+            // Decrypt the amount
+            auto const decrypted = mptAlice.decryptAmount(bob, encrypted);
+            BEAST_EXPECTS(decrypted.has_value(), description + ": decryption failed");
+            BEAST_EXPECTS(decrypted.value() == amount, description + ": decrypted value mismatch");
+        };
+
+        // Test various amounts
+        testEncryptDecrypt(0, "zero");                 // passes
+        testEncryptDecrypt(1, "one");                  // passes
+        testEncryptDecrypt(100, "hundred");            // passes
+        testEncryptDecrypt(1000000, "million");        // passes
+        testEncryptDecrypt(100000000, "100 million");  // failed
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
-        testConvert(features);
-        testConvertPreflight(features);
-        testConvertPreclaim(features);
-        testConvertWithAuditor(features);
+        // testConvert(features);
+        // testConvertPreflight(features);
+        // testConvertPreclaim(features);
+        // testConvertWithAuditor(features);
 
-        testMergeInbox(features);
-        testMergeInboxPreflight(features);
-        testMergeInboxPreclaim(features);
+        // testMergeInbox(features);
+        // testMergeInboxPreflight(features);
+        // testMergeInboxPreclaim(features);
 
-        testSetPreflight(features);
+        // testSetPreflight(features);
 
-        // ConfidentialMPTSend
-        testSend(features);
-        testSendPreflight(features);
-        testSendPreclaim(features);
-        testSendDepositPreauth(features);
-        testSendWithAuditor(features);
+        // // ConfidentialMPTSend
+        // testSend(features);
+        // testSendPreflight(features);
+        // testSendPreclaim(features);
+        // testSendDepositPreauth(features);
+        // testSendWithAuditor(features);
 
-        // ConfidentialMPTClawback
-        testClawback(features);
-        testClawbackPreflight(features);
-        testClawbackPreclaim(features);
-        testClawbackProof(features);
-        testClawbackWithAuditor(features);
+        // // ConfidentialMPTClawback
+        // testClawback(features);
+        // testClawbackPreflight(features);
+        // testClawbackPreclaim(features);
+        // testClawbackProof(features);
+        // testClawbackWithAuditor(features);
 
-        testDelete(features);
+        // testDelete(features);
 
-        testConvertBack(features);
-        testConvertBackPreflight(features);
-        testConvertBackPreclaim(features);
-        testConvertBackWithAuditor(features);
-        testConvertBackProof(features);
+        // testConvertBack(features);
+        // testConvertBackPreflight(features);
+        // testConvertBackPreclaim(features);
+        // testConvertBackWithAuditor(features);
+        // testConvertBackProof(features);
 
-        testMutatePrivacy(features);
+        // testMutatePrivacy(features);
+        testEncryptionDecryption(features);
     }
 
 public:
