@@ -176,14 +176,6 @@ pathTypeToString(Pathfinder::PathType const& type)
     return ret;
 }
 
-// Return the smallest amount of useful liquidity for a given amount, and the
-// total number of paths we have to evaluate.
-STAmount
-smallestUsefulAmount(STAmount const& amount, int maxPaths)
-{
-    return divide(amount, STAmount(maxPaths + 2), amount.asset());
-}
-
 STAmount
 amountFromPathAsset(
     PathAsset const& pathAsset,

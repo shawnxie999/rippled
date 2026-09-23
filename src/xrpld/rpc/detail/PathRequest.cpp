@@ -34,6 +34,7 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 
 #include <algorithm>
@@ -796,7 +797,23 @@ PathRequest::doUpdate(
     JLOG(journal_.debug()) << iIdentifier_ << " processing at level " << iLevel_;
 
     json::Value jvArray = json::ValueType::Array;
-    if (findPaths(cache, iLevel_, jvArray, continueCallback))
+    bool foundPaths = false;
+    try
+    {
+        foundPaths = findPaths(cache, iLevel_, jvArray, continueCallback);
+    }
+    catch (SHAMapMissingNode const&)
+    {
+        // LedgerMaster::updatePaths acquires the missing ledger and retries.
+        throw;
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(journal_.error()) << iIdentifier_ << " pathfinding failed: " << e.what();
+        foundPaths = false;
+    }
+
+    if (foundPaths)
     {
         bLastSuccess_ = jvArray.size() != 0;
         newStatus[jss::alternatives] = std::move(jvArray);
